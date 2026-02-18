@@ -1,0 +1,73 @@
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .header {
+        background: #0b2343;
+        padding: 30px;
+        text-align: center;
+      }
+      .header h1 {
+        color: #ffffff;
+        margin: 0;
+        font-size: 24px;
+      }
+      .body {
+        padding: 30px;
+      }
+      .body p {
+        color: #333;
+        line-height: 1.6;
+      }
+      .btn {
+        display: inline-block;
+        background: #f59e0b;
+        color: #ffffff;
+        padding: 14px 32px;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: bold;
+        margin: 20px 0;
+      }
+      .footer {
+        padding: 20px 30px;
+        background: #f9fafb;
+        text-align: center;
+        color: #9ca3af;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Amber Training</h1>
+      </div>
+      <div class="body">
+        <p>Hi {{name}},</p>
+        <p>Thank you for registering with Amber Training. Please verify your
+          email address by clicking the button below:</p>
+        <p style="text-align: center;">
+          <a href="{{url}}" class="btn">Verify Email</a>
+        </p>
+        <p>If you did not create an account, please ignore this email.</p>
+        <p>Best regards,<br />The Amber Training Team</p>
+      </div>
+      <div class="footer">
+        <p>&copy; {{year}} Amber Training. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>

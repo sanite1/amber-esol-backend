@@ -1,0 +1,259 @@
+<!-- src/services/templates/accountDeleted.hbs -->
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account Deleted</title>
+  </head>
+  <body
+    style="margin: 0; padding: 0; background-color: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;"
+  >
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      style="background-color: #f4f5f7; padding: 40px 20px;"
+    >
+      <tr>
+        <td align="center">
+          <table
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            role="presentation"
+            style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06);"
+          >
+
+            <!-- Header -->
+            <tr>
+              <td
+                style="background: linear-gradient(135deg, #0B2343 0%, #1a3a5c 100%); padding: 36px 40px; text-align: center;"
+              >
+                <h1
+                  style="margin: 0; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.3px;"
+                >
+                  Amber Training
+                </h1>
+              </td>
+            </tr>
+
+            <!-- Icon -->
+            {{! <tr>
+              <td align="center" style="padding: 32px 40px 0 40px;">
+                <div
+                  style="width: 64px; height: 64px; border-radius: 50%; background-color: #fef2f2; display: inline-flex; align-items: center; justify-content: center;"
+                >
+                  <span style="font-size: 28px;">👋</span>
+                </div>
+              </td>
+            </tr> }}
+
+            <!-- Body -->
+            <tr>
+              <td style="padding: 24px 40px 0 40px;">
+                <h2
+                  style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #0B2343; text-align: center;"
+                >
+                  Account Deleted
+                </h2>
+                <p
+                  style="margin: 0 0 20px 0; font-size: 14px; color: #0B2343; opacity: 0.55; text-align: center; line-height: 1.6;"
+                >
+                  Hi
+                  {{firstname}}, we're sorry to see you go.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Details card -->
+            <tr>
+              <td style="padding: 0 40px;">
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  role="presentation"
+                  style="background-color: #fafbfc; border-radius: 12px; border: 1px solid rgba(11,35,67,0.06);"
+                >
+                  <tr>
+                    <td style="padding: 20px 24px;">
+                      <p
+                        style="margin: 0 0 12px 0; font-size: 13px; color: #0B2343; opacity: 0.4; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;"
+                      >
+                        Deletion Summary
+                      </p>
+                      <table
+                        width="100%"
+                        cellpadding="0"
+                        cellspacing="0"
+                        role="presentation"
+                      >
+                        <tr>
+                          <td
+                            style="padding: 6px 0; font-size: 13px; color: #0B2343; opacity: 0.4;"
+                          >Account</td>
+                          <td
+                            style="padding: 6px 0; font-size: 13px; color: #0B2343; opacity: 0.7; text-align: right; font-weight: 500;"
+                          >{{email}}</td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="padding: 6px 0; font-size: 13px; color: #0B2343; opacity: 0.4;"
+                          >Name</td>
+                          <td
+                            style="padding: 6px 0; font-size: 13px; color: #0B2343; opacity: 0.7; text-align: right; font-weight: 500;"
+                          >{{firstname}} {{lastname}}</td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="padding: 6px 0; font-size: 13px; color: #0B2343; opacity: 0.4;"
+                          >Deleted on</td>
+                          <td
+                            style="padding: 6px 0; font-size: 13px; color: #0B2343; opacity: 0.7; text-align: right; font-weight: 500;"
+                          >{{deletionDate}}</td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="padding: 6px 0; font-size: 13px; color: #0B2343; opacity: 0.4;"
+                          >Status</td>
+                          <td style="padding: 6px 0; text-align: right;">
+                            <span
+                              style="display: inline-block; font-size: 11px; font-weight: 600; color: #dc2626; background-color: #fef2f2; padding: 3px 10px; border-radius: 20px;"
+                            >
+                              Terminated
+                            </span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- What happens next -->
+            <tr>
+              <td style="padding: 24px 40px 0 40px;">
+                <p
+                  style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #0B2343;"
+                >
+                  What happens now?
+                </p>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  role="presentation"
+                >
+                  <tr>
+                    <td
+                      style="padding: 6px 0; font-size: 13px; color: #0B2343; opacity: 0.55; line-height: 1.5;"
+                    >
+                      <span
+                        style="color: #dc2626; font-weight: 600;"
+                      >•</span>&nbsp;&nbsp;Your profile is no longer visible to
+                      tutors or other students.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="padding: 6px 0; font-size: 13px; color: #0B2343; opacity: 0.55; line-height: 1.5;"
+                    >
+                      <span
+                        style="color: #dc2626; font-weight: 600;"
+                      >•</span>&nbsp;&nbsp;Any upcoming lessons have been
+                      cancelled.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="padding: 6px 0; font-size: 13px; color: #0B2343; opacity: 0.55; line-height: 1.5;"
+                    >
+                      <span
+                        style="color: #dc2626; font-weight: 600;"
+                      >•</span>&nbsp;&nbsp;Your lesson history and messages are
+                      no longer accessible.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="padding: 6px 0; font-size: 13px; color: #0B2343; opacity: 0.55; line-height: 1.5;"
+                    >
+                      <span
+                        style="color: #dc2626; font-weight: 600;"
+                      >•</span>&nbsp;&nbsp;Payment records are retained for 90
+                      days for legal compliance.
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- CTA -->
+            <tr>
+              <td style="padding: 28px 40px 0 40px;">
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  role="presentation"
+                  style="background-color: #fffbf5; border-radius: 12px; border: 1px solid rgba(255,124,34,0.12);"
+                >
+                  <tr>
+                    <td style="padding: 20px 24px; text-align: center;">
+                      <p
+                        style="margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: #0B2343;"
+                      >
+                        Changed your mind?
+                      </p>
+                      <p
+                        style="margin: 0 0 16px 0; font-size: 12px; color: #0B2343; opacity: 0.45; line-height: 1.5;"
+                      >
+                        You can request account reactivation within 30 days by
+                        contacting our support team.
+                      </p>
+                      <a
+                        href="{{reactivateUrl}}"
+                        style="display: inline-block; padding: 10px 28px; background-color: #ff7c22; color: #ffffff; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 10px;"
+                      >
+                        Contact Support
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding: 32px 40px; text-align: center;">
+                <p
+                  style="margin: 0 0 4px 0; font-size: 11px; color: #0B2343; opacity: 0.25;"
+                >
+                  If you did not request this deletion, please contact us
+                  immediately at
+                </p>
+                <a
+                  href="mailto:{{supportEmail}}"
+                  style="font-size: 11px; color: #ff7c22; text-decoration: none; font-weight: 500;"
+                >
+                  {{supportEmail}}
+                </a>
+                <p
+                  style="margin: 16px 0 0 0; font-size: 10px; color: #0B2343; opacity: 0.15;"
+                >
+                  ©
+                  {{currentYear}}
+                  Amber Training. All rights reserved.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

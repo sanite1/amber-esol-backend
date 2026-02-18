@@ -1,0 +1,29 @@
+#!/bin/sh
+
+echo '🏗️👷 Styling, testing and building your project before committing'
+
+# Check Prettier formatting
+npm run check-format || {
+    echo 'Red flag developer...😔😔😔
+    Prettier Check Failed. Run npm run format, add changes and try commit again.';
+    exit 1;
+}
+
+# Check TypeScript errors
+npm run check-types || {
+   echo '🤡😂❌🤡 Failed Type check. 🤡😂❌🤡
+    Beans!!!!!!!!!!!!.';
+    exit 1;
+}
+
+# If everything passes... Now we can commit
+echo '🤔🤔🤔🤔... Alright let us see if it builds.... 🤔🤔🤔🤔'
+
+# Build the project
+npm run build || {
+    echo '❌👷🔨❌ No.. dont do this ❌👷🔨❌ Next build failed: View the errors above to see why.';
+    exit 1;
+}
+
+# If everything passes... Now we can commit
+echo '✅✅✅✅ Alright.. you win... I am committing this now. ✅✅✅✅'
