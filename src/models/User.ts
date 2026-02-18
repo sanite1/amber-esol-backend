@@ -236,11 +236,6 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-// Indexes
-// userSchema.index({ email: 1 });
-// userSchema.index({ role: 1, isActive: 1 });
-// userSchema.index({ role: 1, verified: 1 });
-
 const User = model<IUser>("User", userSchema);
 
 export default User;

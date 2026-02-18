@@ -6,6 +6,7 @@ import { connectDb } from "./config/db";
 import { globalErrorHandler } from "./middlewares/globalErrorHandler";
 import ApiError from "./errors/apiError";
 import userRoutes from "./routes/user.routes";
+import availabilityRoutes from "./routes/availability.routes";
 
 const PORT = 4000;
 
@@ -22,6 +23,7 @@ app.use(cors(corsOption));
 connectDb();
 
 app.use("/api/users", userRoutes);
+app.use("/api/availability", availabilityRoutes);
 
 app.listen(PORT, () => {
   console.log("Server Listening on port 4000...");
