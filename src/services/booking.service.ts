@@ -23,6 +23,9 @@ import {
   sendBookingCancelledByTutorMail,
   sendPaymentSuccessMail,
 } from "./nodemailer/mail.service";
+import { creditTutorForCompletedLesson } from "./payment.service";
+import Transaction from "../models/Transaction";
+import Wallet from "../models/Wallet";
 
 /* ── Stripe init ── */
 
@@ -302,6 +305,43 @@ export const handleStripeWebhookService = async (
             ? session.payment_intent
             : session.payment_intent?.id;
         await booking.save();
+      }
+
+      // Create transaction records for each booking
+      const PLATFORM_COMMISSION_RATE = 0.15;
+      for (const booking of bookings) {
+        const commission =
+          Math.round(booking.price * PLATFORM_COMMISSION_RATE * 100) / 100;
+        const tutorEarnings =
+          Math.round((booking.price - commission) * 100) / 100;
+
+        await Transaction.create({
+          bookingId: booking._id,
+          studentId: booking.studentId,
+          tutorId: booking.tutorId,
+          amount: booking.price,
+          platformCommission: commission,
+          tutorEarnings,
+          currency: booking.currency,
+          status: "paid",
+          type: booking.type === "trial" ? "trial" : "lesson",
+          paymentMethod: "card",
+          stripePaymentIntentId:
+            typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : session.payment_intent?.id,
+          stripeCheckoutSessionId: session.id,
+        });
+
+        // Credit tutor wallet (pending balance)
+        let wallet = await Wallet.findOne({ tutorId: booking.tutorId });
+        if (!wallet) {
+          wallet = await Wallet.create({ tutorId: booking.tutorId });
+        }
+        wallet.pendingBalance += tutorEarnings;
+        wallet.totalEarned += tutorEarnings;
+        wallet.lifetimeEarnings += tutorEarnings;
+        await wallet.save();
       }
 
       // Check if tutor has auto-accept enabled
@@ -787,6 +827,7 @@ export const completeBookingService = async (
   booking.status = "completed";
   booking.completedAt = new Date();
   await booking.save();
+  await creditTutorForCompletedLesson(bookingId);
 
   // Update user stats
   await User.findByIdAndUpdate(booking.tutorId, {

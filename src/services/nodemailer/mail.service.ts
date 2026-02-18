@@ -346,3 +346,106 @@ export const sendPaymentSuccessMail = async (ctx: PaymentEmailContext) => {
     console.error("Error sending payment success email:", error);
   }
 };
+
+import {
+  PayoutEmailContext,
+  RefundEmailContext,
+} from "../../interfaces/payment.interface";
+
+/* ── Payout Requested (sent to TUTOR) ── */
+
+export const sendPayoutRequestedMail = async (ctx: PayoutEmailContext) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.tutorEmail,
+    template: "./payoutRequested",
+    subject: `Payout Request Submitted - £${ctx.amount} - Amber Training`,
+    context: {
+      tutorName: ctx.tutorName,
+      amount: ctx.amount,
+      currency: ctx.currency,
+      status: ctx.status,
+      dashboardUrl: `${DOMAIN_NAME}/tutor/payments`,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending payout requested email:", error);
+  }
+};
+
+/* ── Payout Completed (sent to TUTOR) ── */
+
+export const sendPayoutCompletedMail = async (ctx: PayoutEmailContext) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.tutorEmail,
+    template: "./payoutCompleted",
+    subject: `Payout Completed - £${ctx.amount} - Amber Training`,
+    context: {
+      tutorName: ctx.tutorName,
+      amount: ctx.amount,
+      currency: ctx.currency,
+      reference: ctx.reference || "N/A",
+      dashboardUrl: `${DOMAIN_NAME}/tutor/payments`,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending payout completed email:", error);
+  }
+};
+
+/* ── Payout Rejected (sent to TUTOR) ── */
+
+export const sendPayoutRejectedMail = async (ctx: PayoutEmailContext) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.tutorEmail,
+    template: "./payoutRejected",
+    subject: `Payout Request Update - Amber Training`,
+    context: {
+      tutorName: ctx.tutorName,
+      amount: ctx.amount,
+      currency: ctx.currency,
+      reason: ctx.reason || "No reason provided",
+      supportEmail: process.env.AUTH_EMAIL,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending payout rejected email:", error);
+  }
+};
+
+/* ── Refund Issued (sent to STUDENT) ── */
+
+export const sendRefundIssuedMail = async (ctx: RefundEmailContext) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.studentEmail,
+    template: "./refundIssued",
+    subject: `Refund Processed - £${ctx.amount} - Amber Training`,
+    context: {
+      studentName: ctx.studentName,
+      tutorName: ctx.tutorName,
+      amount: ctx.amount,
+      currency: ctx.currency,
+      reason: ctx.reason || "Refund processed",
+      bookingDate: ctx.bookingDate,
+      lessonsUrl: `${DOMAIN_NAME}/lessons`,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending refund email:", error);
+  }
+};
