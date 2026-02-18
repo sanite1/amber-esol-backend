@@ -82,7 +82,7 @@ export type UserStatus = "active" | "suspended" | "terminated" | "unverified";
 /* ── Main User document ── */
 
 export interface IUser extends Document {
-  _id: Types.ObjectId;
+  _id: Types.ObjectId | string;
 
   // Core fields (all roles)
   firstname: string;

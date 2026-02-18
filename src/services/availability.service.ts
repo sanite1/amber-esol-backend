@@ -11,6 +11,7 @@ import {
   ITimeBlock,
   DayOfWeek,
 } from "../interfaces/availability.interface";
+import Booking from "../models/Booking";
 
 /* ── Helper: day name from a date string ── */
 
@@ -396,9 +397,16 @@ export const getAvailableSlotsService = async (
     );
   }
 
-  // TODO: In Phase 3 (Bookings), filter out slots that are already booked
-  // const bookedSlots = await Booking.find({ tutorId, date: requestedDate, status: { $in: ["confirmed", "pending"] } });
-  // filteredSlots = filteredSlots.filter(slot => !bookedSlots.some(b => b.startTime === slot.startTime));
+  // ── Filter out slots that are already booked ──
+  const bookedSlots = await Booking.find({
+    tutorId,
+    date: requestedDate,
+    status: { $in: ["pending", "confirmed"] },
+  }).select("startTime");
+
+  filteredSlots = filteredSlots.filter(
+    (slot) => !bookedSlots.some((b) => b.startTime === slot.startTime)
+  );
 
   return new ApiResponse(200, "Available slots retrieved successfully", {
     date: requestedDate,

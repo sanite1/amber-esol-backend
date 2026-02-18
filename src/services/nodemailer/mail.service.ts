@@ -1,7 +1,12 @@
 import ApiError from "../../errors/apiError";
 import { IUser } from "../../interfaces/user.interface";
 import transporter from "./nodemailer";
-
+import {
+  BookingEmailContext,
+  PaymentEmailContext,
+  SingleBookingEmailContext,
+  formatBookingDate,
+} from "../../interfaces/booking.interface";
 const DOMAIN_NAME = process.env.DOMAIN_NAME;
 
 export const sendVerificationMail = async (userInfo: IUser) => {
@@ -129,5 +134,215 @@ export const sendAccountDeletedMail = async (user: IUser) => {
     await transporter.sendMail(mailOptions);
   } catch (error) {
     console.error("Error sending account deleted email:", error);
+  }
+};
+
+/* ── Booking Request (sent to TUTOR) ── */
+
+export const sendBookingRequestMail = async (ctx: BookingEmailContext) => {
+  const slotSummary = ctx.bookings
+    .map((b) => `${formatBookingDate(b.date)} at ${b.startTime} – ${b.endTime}`)
+    .join(", ");
+
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.tutor.email,
+    template: "./bookingRequest",
+    subject: `New Booking Request${ctx.isTrial ? " (Trial)" : ""} - Amber Training`,
+    context: {
+      tutorName: ctx.tutor.firstname,
+      studentName: `${ctx.student.firstname} ${ctx.student.lastname}`,
+      isTrial: ctx.isTrial,
+      slotCount: ctx.bookings.length,
+      slotSummary,
+      totalAmount: ctx.totalPrice,
+      message: ctx.bookings[0]?.message || "",
+      dashboardUrl: `${DOMAIN_NAME}/tutor/lessons`,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending booking request email:", error);
+  }
+};
+
+/* ── Booking Pending (sent to STUDENT) ── */
+
+export const sendBookingPendingMail = async (ctx: BookingEmailContext) => {
+  const slotSummary = ctx.bookings
+    .map((b) => `${formatBookingDate(b.date)} at ${b.startTime} – ${b.endTime}`)
+    .join(", ");
+
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.student.email,
+    template: "./bookingPending",
+    subject: `Booking ${ctx.isTrial ? "Trial " : ""}Submitted - Amber Training`,
+    context: {
+      studentName: ctx.student.firstname,
+      tutorName: `${ctx.tutor.firstname} ${ctx.tutor.lastname}`,
+      isTrial: ctx.isTrial,
+      slotCount: ctx.bookings.length,
+      slotSummary,
+      totalAmount: ctx.totalPrice,
+      lessonsUrl: `${DOMAIN_NAME}/lessons`,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending booking pending email:", error);
+  }
+};
+
+/* ── Booking Confirmed (sent to STUDENT) ── */
+
+export const sendBookingConfirmedMail = async (ctx: BookingEmailContext) => {
+  const slotSummary = ctx.bookings
+    .map((b) => `${formatBookingDate(b.date)} at ${b.startTime} – ${b.endTime}`)
+    .join(", ");
+
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.student.email,
+    template: "./bookingConfirmed",
+    subject: `Booking Confirmed! - Amber Training`,
+    context: {
+      studentName: ctx.student.firstname,
+      tutorName: `${ctx.tutor.firstname} ${ctx.tutor.lastname}`,
+      isTrial: ctx.isTrial,
+      slotCount: ctx.bookings.length,
+      slotSummary,
+      meetingUrl: ctx.bookings[0]?.meetingUrl || "",
+      lessonsUrl: `${DOMAIN_NAME}/lessons`,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending booking confirmed email:", error);
+  }
+};
+
+/* ── Booking Declined (sent to STUDENT) ── */
+
+export const sendBookingDeclinedMail = async (
+  ctx: SingleBookingEmailContext
+) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.student.email,
+    template: "./bookingDeclined",
+    subject: `Booking Not Accepted - Amber Training`,
+    context: {
+      studentName: ctx.student.firstname,
+      tutorName: `${ctx.tutor.firstname} ${ctx.tutor.lastname}`,
+      date: formatBookingDate(ctx.booking.date),
+      time: `${ctx.booking.startTime} – ${ctx.booking.endTime}`,
+      reason: ctx.reason || "The tutor was unable to accept this booking",
+      refunded: ctx.booking.paymentStatus === "refunded",
+      findTutorsUrl: `${DOMAIN_NAME}/tutors`,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending booking declined email:", error);
+  }
+};
+
+/* ── Booking Cancelled by Student (sent to TUTOR) ── */
+
+export const sendBookingCancelledByStudentMail = async (
+  ctx: SingleBookingEmailContext
+) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.tutor.email,
+    template: "./bookingCancelledByStudent",
+    subject: `Booking Cancelled by Student - Amber Training`,
+    context: {
+      tutorName: ctx.tutor.firstname,
+      studentName: `${ctx.student.firstname} ${ctx.student.lastname}`,
+      date: formatBookingDate(ctx.booking.date),
+      time: `${ctx.booking.startTime} – ${ctx.booking.endTime}`,
+      reason: ctx.reason || "No reason provided",
+      dashboardUrl: `${DOMAIN_NAME}/tutor/lessons`,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending cancellation email to tutor:", error);
+  }
+};
+
+/* ── Booking Cancelled by Tutor (sent to STUDENT) ── */
+
+export const sendBookingCancelledByTutorMail = async (
+  ctx: SingleBookingEmailContext
+) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.student.email,
+    template: "./bookingCancelledByTutor",
+    subject: `Booking Cancelled - Amber Training`,
+    context: {
+      studentName: ctx.student.firstname,
+      tutorName: `${ctx.tutor.firstname} ${ctx.tutor.lastname}`,
+      date: formatBookingDate(ctx.booking.date),
+      time: `${ctx.booking.startTime} – ${ctx.booking.endTime}`,
+      reason: ctx.reason || "The tutor was unable to fulfil this booking",
+      refunded: ctx.refunded,
+      findTutorsUrl: `${DOMAIN_NAME}/tutors`,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending cancellation email to student:", error);
+  }
+};
+
+/* ── Payment Success (sent to STUDENT) ── */
+
+export const sendPaymentSuccessMail = async (ctx: PaymentEmailContext) => {
+  const slotSummary = ctx.bookings
+    .map((b) => `${formatBookingDate(b.date)} at ${b.startTime} – ${b.endTime}`)
+    .join(", ");
+
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.student.email,
+    template: "./paymentSuccess",
+    subject: `Payment Confirmed - £${ctx.totalPrice} - Amber Training`,
+    context: {
+      studentName: ctx.student.firstname,
+      tutorName: `${ctx.tutor.firstname} ${ctx.tutor.lastname}`,
+      totalAmount: ctx.totalPrice,
+      slotCount: ctx.bookings.length,
+      slotSummary,
+      lessonsUrl: `${DOMAIN_NAME}/lessons`,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending payment success email:", error);
   }
 };
