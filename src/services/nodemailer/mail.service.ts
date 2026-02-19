@@ -351,6 +351,11 @@ import {
   PayoutEmailContext,
   RefundEmailContext,
 } from "../../interfaces/payment.interface";
+import {
+  ReviewEmailContext,
+  ReviewReplyEmailContext,
+  ReviewReportEmailContext,
+} from "../../interfaces/review.interface";
 
 /* ── Payout Requested (sent to TUTOR) ── */
 
@@ -447,5 +452,127 @@ export const sendRefundIssuedMail = async (ctx: RefundEmailContext) => {
     await transporter.sendMail(mailOptions);
   } catch (error) {
     console.error("Error sending refund email:", error);
+  }
+};
+
+/* ── New Review (sent to TUTOR) ── */
+
+export const sendNewReviewMail = async (ctx: ReviewEmailContext) => {
+  const stars = "★".repeat(ctx.rating) + "☆".repeat(5 - ctx.rating);
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.tutorEmail,
+    template: "./newReview",
+    subject: `New ${ctx.rating}-Star Review - Amber Training`,
+    context: {
+      tutorName: ctx.tutorName,
+      studentName: ctx.studentName,
+      rating: ctx.rating,
+      stars,
+      comment: ctx.comment,
+      lessonTopic: ctx.lessonTopic || "General",
+      reviewUrl: ctx.reviewUrl,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending new review email:", error);
+  }
+};
+
+/* ── Review Reply (sent to STUDENT) ── */
+
+export const sendReviewReplyMail = async (ctx: ReviewReplyEmailContext) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.studentEmail,
+    template: "./reviewReply",
+    subject: `Your Tutor Replied to Your Review - Amber Training`,
+    context: {
+      studentName: ctx.studentName,
+      tutorName: ctx.tutorName,
+      replyText: ctx.replyText,
+      reviewUrl: ctx.reviewUrl,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending review reply email:", error);
+  }
+};
+
+/* ── Review Report (sent to ADMIN) ── */
+
+export const sendReviewReportAdminMail = async (
+  ctx: ReviewReportEmailContext
+) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: process.env.ADMIN_EMAIL || process.env.AUTH_EMAIL,
+    template: "./reviewReportAdmin",
+    subject: `Review Reported - Action Required - Amber Training`,
+    context: {
+      reviewId: ctx.reviewId,
+      reporterName: ctx.reporterName,
+      reason: ctx.reason,
+      adminUrl: ctx.adminUrl,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending review report admin email:", error);
+  }
+};
+
+/* ── Review Hidden (sent to STUDENT) ── */
+
+export const sendReviewHiddenMail = async (ctx: ReviewEmailContext) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.studentEmail,
+    template: "./reviewHidden",
+    subject: `Review Update - Amber Training`,
+    context: {
+      studentName: ctx.studentName,
+      rating: ctx.rating,
+      comment:
+        ctx.comment.length > 100
+          ? ctx.comment.substring(0, 100) + "..."
+          : ctx.comment,
+      supportEmail: process.env.AUTH_EMAIL,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending review hidden email:", error);
+  }
+};
+
+/* ── Review Restored (sent to STUDENT) ── */
+
+export const sendReviewRestoredMail = async (ctx: ReviewEmailContext) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.studentEmail,
+    template: "./reviewRestored",
+    subject: `Review Restored - Amber Training`,
+    context: {
+      studentName: ctx.studentName,
+      reviewUrl: ctx.reviewUrl,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending review restored email:", error);
   }
 };

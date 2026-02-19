@@ -9,6 +9,7 @@ import userRoutes from "./routes/user.routes";
 import availabilityRoutes from "./routes/availability.routes";
 import bookingRoutes from "./routes/booking.routes";
 import paymentRoutes from "./routes/payment.routes";
+import reviewRoutes from "./routes/review.routes";
 import { stripeWebhook } from "./controllers/booking.controller";
 import { paymentWebhook } from "./controllers/payment.controller";
 
@@ -42,6 +43,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 app.listen(PORT, () => {
   console.log("Server Listening on port 4000...");
