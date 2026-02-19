@@ -356,6 +356,7 @@ import {
   ReviewReplyEmailContext,
   ReviewReportEmailContext,
 } from "../../interfaces/review.interface";
+import { NewMessageEmailContext } from "../../interfaces/messaging.interface";
 
 /* ── Payout Requested (sent to TUTOR) ── */
 
@@ -574,5 +575,30 @@ export const sendReviewRestoredMail = async (ctx: ReviewEmailContext) => {
     await transporter.sendMail(mailOptions);
   } catch (error) {
     console.error("Error sending review restored email:", error);
+  }
+};
+
+/* ── New Message Notification (sent to RECIPIENT) ── */
+
+export const sendNewMessageNotificationMail = async (
+  ctx: NewMessageEmailContext
+) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.recipientEmail,
+    template: "./newMessage",
+    subject: `New Message from ${ctx.senderName} - Amber Training`,
+    context: {
+      recipientName: ctx.recipientName,
+      senderName: ctx.senderName,
+      messagePreview: ctx.messagePreview,
+      conversationUrl: ctx.conversationUrl,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending new message notification email:", error);
   }
 };

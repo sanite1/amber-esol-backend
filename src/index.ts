@@ -2,6 +2,7 @@ import express, { raw } from "express";
 import dotenv from "dotenv";
 dotenv.config();
 import cors from "cors";
+import { createServer } from "http";
 import { connectDb } from "./config/db";
 import { globalErrorHandler } from "./middlewares/globalErrorHandler";
 import ApiError from "./errors/apiError";
@@ -10,12 +11,15 @@ import availabilityRoutes from "./routes/availability.routes";
 import bookingRoutes from "./routes/booking.routes";
 import paymentRoutes from "./routes/payment.routes";
 import reviewRoutes from "./routes/review.routes";
+import messagingRoutes from "./routes/messaging.routes";
 import { stripeWebhook } from "./controllers/booking.controller";
 import { paymentWebhook } from "./controllers/payment.controller";
+import { initSocketIO } from "./services/websocket.service";
 
 const PORT = 4000;
 
 const app = express();
+const server = createServer(app);
 
 app.use(express.json());
 
@@ -39,15 +43,21 @@ app.post(
 
 connectDb();
 
+// ── Initialise WebSocket ── ← NEW
+initSocketIO(server);
+
 app.use("/api/users", userRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/conversations", messagingRoutes);
 
-app.listen(PORT, () => {
+// ── Use server.listen instead of app.listen for Socket.IO ── ← CHANGED
+server.listen(PORT, () => {
   console.log("Server Listening on port 4000...");
 });
+
 app.all("*", (req, _res, next) => {
   next(new ApiError(404, `Can't find ${req.originalUrl} on the server!`));
 });
