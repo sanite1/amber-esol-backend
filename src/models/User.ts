@@ -159,6 +159,15 @@ const userSchema = new Schema<IUser>(
       default: "offline",
     },
     lastSeen: { type: Date },
+
+    suspendedAt: {
+      type: Date,
+    },
+    suspendedReason: {
+      type: String,
+      default: "",
+    },
+
     deletionReason: {
       type: String,
       default: "",

@@ -12,6 +12,7 @@ import bookingRoutes from "./routes/booking.routes";
 import paymentRoutes from "./routes/payment.routes";
 import reviewRoutes from "./routes/review.routes";
 import messagingRoutes from "./routes/messaging.routes";
+import notificationRoutes from "./routes/notification.routes";
 import { stripeWebhook } from "./controllers/booking.controller";
 import { paymentWebhook } from "./controllers/payment.controller";
 import { initSocketIO } from "./services/websocket.service";
@@ -52,6 +53,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/conversations", messagingRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // ── Use server.listen instead of app.listen for Socket.IO ── ← CHANGED
 server.listen(PORT, () => {

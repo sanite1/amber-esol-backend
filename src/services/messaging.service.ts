@@ -11,6 +11,7 @@ import {
 } from "../interfaces/messaging.interface";
 import { sendNewMessageNotificationMail } from "./nodemailer/mail.service";
 import { cloudinaryImageUpload } from "./cloudinary.service";
+import { createNotification } from "./notification.service";
 
 const DOMAIN_NAME = process.env.DOMAIN_NAME || "http://localhost:3000";
 
@@ -253,13 +254,14 @@ export const sendMessageService = async (
     "firstname lastname profilePicture role"
   );
 
-  // Send email notification to recipient (non-blocking, respects preferences)
+  // Send email notification and in-app notification to recipient (non-blocking, respects preferences)
   const recipientId = conversation.participants.find(
     (p) => p.toString() !== userId
   );
   if (recipientId) {
     const isMuted = conversation.muted.get(recipientId.toString()) || false;
     if (!isMuted) {
+      // Email notification
       _sendMessageNotification(
         userId,
         recipientId.toString(),
@@ -267,6 +269,16 @@ export const sendMessageService = async (
         conversationId
       ).catch((err) =>
         console.error("Error sending message notification:", err)
+      );
+
+      // In-app notification
+      _sendMessageInAppNotification(
+        userId,
+        recipientId.toString(),
+        preview,
+        conversationId
+      ).catch((err) =>
+        console.error("Error creating message notification:", err)
       );
     }
   }
@@ -324,13 +336,14 @@ export const sendFileMessageService = async (
     "firstname lastname profilePicture role"
   );
 
-  // Notify recipient (non-blocking)
+  // Notify recipient (non-blocking, respects mute)
   const recipientId = conversation.participants.find(
     (p) => p.toString() !== userId
   );
   if (recipientId) {
     const isMuted = conversation.muted.get(recipientId.toString()) || false;
     if (!isMuted) {
+      // Email notification
       _sendMessageNotification(
         userId,
         recipientId.toString(),
@@ -338,6 +351,16 @@ export const sendFileMessageService = async (
         conversationId
       ).catch((err) =>
         console.error("Error sending message notification:", err)
+      );
+
+      // In-app notification
+      _sendMessageInAppNotification(
+        userId,
+        recipientId.toString(),
+        preview,
+        conversationId
+      ).catch((err) =>
+        console.error("Error creating file message notification:", err)
       );
     }
   }
@@ -456,4 +479,34 @@ async function _sendMessageNotification(
     messagePreview,
     conversationUrl: `${DOMAIN_NAME}/messages?conversation=${conversationId}`,
   }).catch((err) => console.error("Error sending new message email:", err));
+}
+
+/* ══════════════════════════════════════════════
+   Private: send in-app notification for new message
+   (respects mute — caller already checks mute status)
+   ══════════════════════════════════════════════ */
+
+async function _sendMessageInAppNotification(
+  senderId: string,
+  recipientId: string,
+  messagePreview: string,
+  conversationId: string
+) {
+  const sender = await User.findById(senderId).select("firstname lastname");
+  if (!sender) return;
+
+  const senderName = `${sender.firstname} ${sender.lastname}`;
+
+  await createNotification({
+    userId: recipientId,
+    type: "message_received",
+    title: "New Message",
+    message: `${senderName}: ${messagePreview.length > 80 ? messagePreview.substring(0, 80) + "..." : messagePreview}`,
+    data: {
+      conversationId,
+      senderId,
+      senderName,
+      preview: messagePreview,
+    },
+  });
 }

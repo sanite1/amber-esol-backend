@@ -20,6 +20,10 @@ import {
   sendReviewHiddenMail,
   sendReviewRestoredMail,
 } from "./nodemailer/mail.service";
+import {
+  createNotification,
+  createBulkNotifications,
+} from "./notification.service";
 
 /* ══════════════════════════════════════════════
    Helper: recalculate tutor average rating
@@ -126,6 +130,22 @@ export const createReviewService = async (
       reviewUrl: `${DOMAIN_NAME}/tutor/reviews`,
     }).catch((err) => console.error("Error sending new review email:", err));
   }
+
+  // 8. Notify tutor of new review
+  const stars = "★".repeat(data.rating) + "☆".repeat(5 - data.rating);
+  createNotification({
+    userId: booking.tutorId,
+    type: "review_posted",
+    title: "New Review Received",
+    message: `${student?.firstname || "A student"} ${student?.lastname || ""} left a ${data.rating}-star review (${stars}): "${data.comment.length > 80 ? data.comment.substring(0, 80) + "..." : data.comment}"`,
+    data: {
+      reviewId: review._id.toString(),
+      bookingId: booking._id.toString(),
+      rating: data.rating,
+      studentId,
+      lessonTopic: booking.specialty || null,
+    },
+  }).catch((err) => console.error("Error creating review notification:", err));
 
   return new ApiResponse(201, "Review submitted successfully", review.toJSON());
 };
@@ -341,6 +361,24 @@ export const addReplyService = async (
     }).catch((err) => console.error("Error sending review reply email:", err));
   }
 
+  // Notify student that the tutor replied
+  createNotification({
+    userId: review.studentId,
+    type: "review_reply",
+    title: "Tutor Replied to Your Review",
+    message: `${tutor?.firstname || "Your tutor"} ${tutor?.lastname || ""} replied to your review: "${data.text.length > 80 ? data.text.substring(0, 80) + "..." : data.text}"`,
+    data: {
+      reviewId: review._id.toString(),
+      tutorId: tutorId,
+      replyPreview:
+        data.text.length > 120
+          ? data.text.substring(0, 120) + "..."
+          : data.text,
+    },
+  }).catch((err) =>
+    console.error("Error creating review reply notification:", err)
+  );
+
   return new ApiResponse(200, "Reply added successfully", review.toJSON());
 };
 
@@ -422,7 +460,7 @@ export const reportReviewService = async (
   review.reported = true;
   await review.save();
 
-  // Notify admin (non-blocking)
+  // Notify admin via email (non-blocking)
   const reporter = await User.findById(reporterId);
   if (reporter) {
     const DOMAIN_NAME = process.env.DOMAIN_NAME || "http://localhost:3000";
@@ -433,6 +471,28 @@ export const reportReviewService = async (
       adminUrl: `${DOMAIN_NAME}/admin/reviews`,
     }).catch((err) =>
       console.error("Error sending report notification email:", err)
+    );
+  }
+
+  // Notify all admins via in-app notification
+  const admins = await User.find({ role: "admin" }).select("_id").lean();
+  if (admins.length > 0) {
+    createBulkNotifications({
+      userIds: admins.map((a) => a._id),
+      type: "review_reported",
+      title: "Review Reported",
+      message: `${reporter?.firstname || "A user"} ${reporter?.lastname || ""} reported a review: "${data.reason.length > 80 ? data.reason.substring(0, 80) + "..." : data.reason}"`,
+      data: {
+        reviewId: review._id.toString(),
+        reporterId,
+        reporterName: reporter
+          ? `${reporter.firstname} ${reporter.lastname}`
+          : "Unknown",
+        reason: data.reason,
+        totalReports: review.reports.length,
+      },
+    }).catch((err) =>
+      console.error("Error creating report notifications:", err)
     );
   }
 
@@ -640,7 +700,7 @@ export const adminHideReviewService = async (
   // Recalculate tutor rating (hidden reviews excluded)
   await recalcTutorRating(review.tutorId.toString());
 
-  // Notify student (non-blocking)
+  // Notify student via email (non-blocking)
   const student = await User.findById(review.studentId);
   if (student) {
     const DOMAIN_NAME = process.env.DOMAIN_NAME || "http://localhost:3000";
@@ -654,6 +714,20 @@ export const adminHideReviewService = async (
       reviewUrl: `${DOMAIN_NAME}/lessons`,
     }).catch((err) => console.error("Error sending review hidden email:", err));
   }
+
+  // Notify student via in-app notification
+  createNotification({
+    userId: review.studentId,
+    type: "review_hidden",
+    title: "Your Review Has Been Hidden",
+    message: `An administrator has hidden your ${review.rating}-star review pending investigation. If you believe this is an error, please contact support.`,
+    data: {
+      reviewId: review._id.toString(),
+      rating: review.rating,
+    },
+  }).catch((err) =>
+    console.error("Error creating review hidden notification:", err)
+  );
 
   return new ApiResponse(200, "Review hidden successfully", review.toJSON());
 };
@@ -678,7 +752,7 @@ export const adminUnhideReviewService = async (
 
   await recalcTutorRating(review.tutorId.toString());
 
-  // Notify student (non-blocking)
+  // Notify student via email (non-blocking)
   const student = await User.findById(review.studentId);
   if (student) {
     const DOMAIN_NAME = process.env.DOMAIN_NAME || "http://localhost:3000";
@@ -694,6 +768,20 @@ export const adminUnhideReviewService = async (
       console.error("Error sending review restored email:", err)
     );
   }
+
+  // Notify student via in-app notification
+  createNotification({
+    userId: review.studentId,
+    type: "review_restored",
+    title: "Your Review Has Been Restored",
+    message: `Your previously hidden ${review.rating}-star review has been restored and is now visible again.`,
+    data: {
+      reviewId: review._id.toString(),
+      rating: review.rating,
+    },
+  }).catch((err) =>
+    console.error("Error creating review restored notification:", err)
+  );
 
   return new ApiResponse(200, "Review unhidden successfully", review.toJSON());
 };
@@ -718,6 +806,21 @@ export const adminRemoveReviewService = async (
 
   await recalcTutorRating(review.tutorId.toString());
 
+  // Notify student that their review was permanently removed
+  createNotification({
+    userId: review.studentId,
+    type: "review_hidden",
+    title: "Your Review Has Been Removed",
+    message: `An administrator has removed your ${review.rating}-star review. If you believe this is an error, please contact support.`,
+    data: {
+      reviewId: review._id.toString(),
+      rating: review.rating,
+      action: "removed",
+    },
+  }).catch((err) =>
+    console.error("Error creating review removed notification:", err)
+  );
+
   return new ApiResponse(200, "Review removed successfully", review.toJSON());
 };
 
@@ -740,6 +843,21 @@ export const adminRestoreReviewService = async (
   await review.save();
 
   await recalcTutorRating(review.tutorId.toString());
+
+  // Notify student that their removed review was restored
+  createNotification({
+    userId: review.studentId,
+    type: "review_restored",
+    title: "Your Review Has Been Restored",
+    message: `Your previously removed ${review.rating}-star review has been restored and is now visible again.`,
+    data: {
+      reviewId: review._id.toString(),
+      rating: review.rating,
+      action: "restored_from_removed",
+    },
+  }).catch((err) =>
+    console.error("Error creating review restored notification:", err)
+  );
 
   return new ApiResponse(200, "Review restored successfully", review.toJSON());
 };

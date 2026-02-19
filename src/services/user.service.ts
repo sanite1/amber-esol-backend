@@ -24,6 +24,7 @@ import {
   sendAccountDeletedMail,
 } from "./nodemailer/mail.service";
 import { IUserDecoded } from "../middlewares/authMiddleWare";
+import { createNotification } from "./notification.service";
 
 const saltRounds = 13;
 
@@ -472,6 +473,81 @@ export const updateOnlineStatusService = async (
 
   await User.findByIdAndUpdate(userId, updateData);
 };
+
+/* ── Suspend User (admin) ── */
+
+export const suspendUserService = async (
+  userId: string,
+  data: { reason: string }
+) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  if (!user.isActive) {
+    throw new ApiError(400, "User is already suspended");
+  }
+
+  user.isActive = false;
+  user.status = "suspended";
+  user.suspendedAt = new Date();
+  user.suspendedReason = data.reason;
+  await user.save();
+
+  // Notify user via in-app notification
+  createNotification({
+    userId: user._id,
+    type: "account_suspended",
+    title: "Account Suspended",
+    message: `Your account has been suspended.${data.reason ? ` Reason: ${data.reason}` : ""} Please contact support if you believe this is an error.`,
+    data: {
+      reason: data.reason,
+      suspendedAt: user.suspendedAt.toISOString(),
+    },
+  }).catch((err) =>
+    console.error("Error creating suspension notification:", err)
+  );
+
+  return new ApiResponse(200, "User suspended successfully", user.toJSON());
+};
+
+/* ── Reactivate User (admin) ── */
+
+export const reactivateUserService = async (userId: string) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  if (user.isActive) {
+    throw new ApiError(400, "User is already active");
+  }
+
+  user.isActive = true;
+  user.status = "active";
+  // user.suspendedAt = undefined;
+  // user.suspendedReason = undefined;
+  await user.save();
+
+  // Notify user via in-app notification
+  createNotification({
+    userId: user._id,
+    type: "account_reactivated",
+    title: "Account Reactivated",
+    message:
+      "Your account has been reactivated. Welcome back! You can now access all features of the platform.",
+    data: {
+      reactivatedAt: new Date().toISOString(),
+    },
+  }).catch((err) =>
+    console.error("Error creating reactivation notification:", err)
+  );
+
+  return new ApiResponse(200, "User reactivated successfully", user.toJSON());
+};
+
+/* ── Delete Account ── */
 
 export const deleteAccountService = async (
   id: string,

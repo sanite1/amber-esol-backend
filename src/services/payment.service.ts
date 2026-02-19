@@ -26,6 +26,7 @@ import {
   sendPayoutRejectedMail,
   sendRefundIssuedMail,
 } from "./nodemailer/mail.service";
+import { createNotification } from "./notification.service";
 
 /* ── Stripe init ── */
 
@@ -174,6 +175,27 @@ export const handlePaymentWebhookService = async (
         wallet.totalEarned += transaction.tutorEarnings;
         wallet.lifetimeEarnings += transaction.tutorEarnings;
         await wallet.save();
+
+        // Notify student of successful payment
+        const booking = await Booking.findById(transaction.bookingId);
+        const tutor = await User.findById(transaction.tutorId).select(
+          "firstname lastname"
+        );
+
+        createNotification({
+          userId: transaction.studentId,
+          type: "payment_processed",
+          title: "Payment Successful",
+          message: `Your payment of £${transaction.amount.toFixed(2)} for the lesson${booking ? ` on ${booking.date}` : ""} with ${tutor?.firstname || "your tutor"} ${tutor?.lastname || ""} has been processed successfully.`,
+          data: {
+            transactionId: transaction._id.toString(),
+            bookingId: transaction.bookingId.toString(),
+            amount: transaction.amount,
+            date: booking?.date || null,
+          },
+        }).catch((err) =>
+          console.error("Error creating payment success notification:", err)
+        );
       }
       break;
     }
@@ -192,6 +214,27 @@ export const handlePaymentWebhookService = async (
         await Booking.findByIdAndUpdate(transaction.bookingId, {
           $set: { paymentStatus: "failed" },
         });
+
+        // Notify student of failed payment
+        const booking = await Booking.findById(transaction.bookingId);
+        const tutor = await User.findById(transaction.tutorId).select(
+          "firstname lastname"
+        );
+
+        createNotification({
+          userId: transaction.studentId,
+          type: "payment_failed",
+          title: "Payment Failed",
+          message: `Your payment of £${transaction.amount.toFixed(2)} for the lesson${booking ? ` on ${booking.date}` : ""} with ${tutor?.firstname || "your tutor"} ${tutor?.lastname || ""} could not be processed. Please try again or use a different payment method.`,
+          data: {
+            transactionId: transaction._id.toString(),
+            bookingId: transaction.bookingId.toString(),
+            amount: transaction.amount,
+            date: booking?.date || null,
+          },
+        }).catch((err) =>
+          console.error("Error creating payment failed notification:", err)
+        );
       }
       break;
     }
@@ -455,6 +498,22 @@ export const requestPayoutService = async (
     );
   }
 
+  // Notify tutor via in-app notification
+  createNotification({
+    userId: tutorId,
+    type: "payout_requested",
+    title: "Payout Request Submitted",
+    message: `Your payout request of £${data.amount.toFixed(2)} has been submitted and is awaiting processing.`,
+    data: {
+      payoutId: payout._id.toString(),
+      amount: data.amount,
+      currency: wallet.currency,
+      method: data.method,
+    },
+  }).catch((err) =>
+    console.error("Error creating payout requested notification:", err)
+  );
+
   return new ApiResponse(
     201,
     "Payout request submitted successfully",
@@ -540,6 +599,22 @@ export const approvePayoutService = async (
   if (data.notes) payout.notes = data.notes;
   await payout.save();
 
+  // Notify tutor that their payout has been approved and is processing
+  createNotification({
+    userId: payout.tutorId,
+    type: "payout_requested",
+    title: "Payout Approved",
+    message: `Your payout of £${payout.amount.toFixed(2)} has been approved and is now being processed.`,
+    data: {
+      payoutId: payout._id.toString(),
+      amount: payout.amount,
+      currency: payout.currency,
+      status: "processing",
+    },
+  }).catch((err) =>
+    console.error("Error creating payout approved notification:", err)
+  );
+
   return new ApiResponse(
     200,
     "Payout approved and is now processing",
@@ -576,7 +651,7 @@ export const rejectPayoutService = async (
   payout.processedAt = new Date();
   await payout.save();
 
-  // Notify tutor
+  // Notify tutor via email
   const tutor = await User.findById(payout.tutorId);
   if (tutor) {
     sendPayoutRejectedMail({
@@ -590,6 +665,22 @@ export const rejectPayoutService = async (
       console.error("Error sending payout rejected email:", err)
     );
   }
+
+  // Notify tutor via in-app notification
+  createNotification({
+    userId: payout.tutorId,
+    type: "payout_rejected",
+    title: "Payout Rejected",
+    message: `Your payout request of £${payout.amount.toFixed(2)} has been rejected.${data.reason ? ` Reason: ${data.reason}` : ""} The funds have been returned to your available balance.`,
+    data: {
+      payoutId: payout._id.toString(),
+      amount: payout.amount,
+      currency: payout.currency,
+      reason: data.reason || null,
+    },
+  }).catch((err) =>
+    console.error("Error creating payout rejected notification:", err)
+  );
 
   return new ApiResponse(200, "Payout rejected", payout.toJSON());
 };
@@ -623,7 +714,7 @@ export const completePayoutService = async (
   if (data.notes) payout.notes = data.notes;
   await payout.save();
 
-  // Notify tutor
+  // Notify tutor via email
   const tutor = await User.findById(payout.tutorId);
   if (tutor) {
     sendPayoutCompletedMail({
@@ -637,6 +728,22 @@ export const completePayoutService = async (
       console.error("Error sending payout completed email:", err)
     );
   }
+
+  // Notify tutor via in-app notification
+  createNotification({
+    userId: payout.tutorId,
+    type: "payout_completed",
+    title: "Payout Completed",
+    message: `Your payout of £${payout.amount.toFixed(2)} has been processed successfully.${data.reference ? ` Reference: ${data.reference}` : ""}`,
+    data: {
+      payoutId: payout._id.toString(),
+      amount: payout.amount,
+      currency: payout.currency,
+      reference: data.reference || null,
+    },
+  }).catch((err) =>
+    console.error("Error creating payout completed notification:", err)
+  );
 
   return new ApiResponse(200, "Payout completed successfully", payout.toJSON());
 };
@@ -722,6 +829,40 @@ export const refundTransactionService = async (
       bookingDate: booking?.date || "",
     }).catch((err) => console.error("Error sending refund email:", err));
   }
+
+  // Notify student of refund via in-app notification
+  createNotification({
+    userId: transaction.studentId._id || transaction.studentId,
+    type: "refund_processed",
+    title: "Refund Processed",
+    message: `A refund of £${transaction.amount.toFixed(2)} has been issued to your account for the lesson${booking ? ` on ${booking.date}` : ""} with ${tutor?.firstname || "your tutor"} ${tutor?.lastname || ""}.${data.reason ? ` Reason: ${data.reason}` : ""}`,
+    data: {
+      transactionId: transaction._id.toString(),
+      bookingId: transaction.bookingId.toString(),
+      amount: transaction.amount,
+      date: booking?.date || null,
+      reason: data.reason || null,
+    },
+  }).catch((err) =>
+    console.error("Error creating refund notification for student:", err)
+  );
+
+  // Notify tutor that earnings were deducted due to refund
+  createNotification({
+    userId: transaction.tutorId._id || transaction.tutorId,
+    type: "refund_processed",
+    title: "Earnings Adjusted — Refund Issued",
+    message: `A refund of £${transaction.amount.toFixed(2)} was issued for the lesson${booking ? ` on ${booking.date}` : ""} with ${student?.firstname || "a student"} ${student?.lastname || ""}. £${transaction.tutorEarnings.toFixed(2)} has been deducted from your wallet.`,
+    data: {
+      transactionId: transaction._id.toString(),
+      bookingId: transaction.bookingId.toString(),
+      refundAmount: transaction.amount,
+      earningsDeducted: transaction.tutorEarnings,
+      date: booking?.date || null,
+    },
+  }).catch((err) =>
+    console.error("Error creating refund notification for tutor:", err)
+  );
 
   return new ApiResponse(
     200,

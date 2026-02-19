@@ -24,6 +24,7 @@ import {
   sendPaymentSuccessMail,
 } from "./nodemailer/mail.service";
 import { creditTutorForCompletedLesson } from "./payment.service";
+import { createNotification } from "./notification.service";
 import Transaction from "../models/Transaction";
 import Wallet from "../models/Wallet";
 
@@ -256,6 +257,50 @@ export const createBookingService = async (
   //     );
   //   }
 
+  // 11. Send notifications
+  const firstSlot = data.slots[0];
+  const slotSummary =
+    data.slots.length > 1
+      ? `${data.slots.length} sessions starting ${firstSlot.date}`
+      : `${firstSlot.date} at ${firstSlot.startTime}`;
+
+  // Notify tutor about new booking request
+  createNotification({
+    userId: tutor._id,
+    type: "booking_created",
+    title: "New Booking Request",
+    message: `${student.firstname} ${student.lastname} has requested a ${data.type} lesson on ${slotSummary}.`,
+    data: {
+      bookingIds: bookings.map((b) => b._id.toString()),
+      bookingGroupId: bookingGroupId || null,
+      studentId,
+      date: firstSlot.date,
+      startTime: firstSlot.startTime,
+      endTime: firstSlot.endTime,
+      type: data.type,
+      totalSlots: data.slots.length,
+    },
+  }).catch((err) => console.error("Error creating booking notification:", err));
+
+  // If free + auto-confirm, also notify student of confirmation
+  if (isFree && autoConfirm) {
+    createNotification({
+      userId: studentId,
+      type: "booking_confirmed",
+      title: "Booking Confirmed",
+      message: `Your ${data.type} lesson with ${tutor.firstname} ${tutor.lastname} on ${slotSummary} has been automatically confirmed.`,
+      data: {
+        bookingIds: bookings.map((b) => b._id.toString()),
+        bookingGroupId: bookingGroupId || null,
+        tutorId: data.tutorId,
+        date: firstSlot.date,
+        startTime: firstSlot.startTime,
+      },
+    }).catch((err) =>
+      console.error("Error creating confirmed notification:", err)
+    );
+  }
+
   return new ApiResponse(201, "Booking created successfully", {
     bookings: bookings.map((b) => b.toJSON()),
     bookingGroupId: bookingGroupId || null,
@@ -370,6 +415,22 @@ export const handleStripeWebhookService = async (
             }).catch((err) =>
               console.error("Error sending confirmed email:", err)
             );
+
+            // Notify student of auto-confirmation after payment
+            createNotification({
+              userId: student._id,
+              type: "booking_confirmed",
+              title: "Booking Confirmed",
+              message: `Your lesson${updatedBookings.length > 1 ? "s" : ""} with ${tutor.firstname} ${tutor.lastname} on ${updatedBookings[0].date} ${updatedBookings.length > 1 ? `(${updatedBookings.length} sessions)` : `at ${updatedBookings[0].startTime}`} ha${updatedBookings.length > 1 ? "ve" : "s"} been confirmed.`,
+              data: {
+                bookingIds: updatedBookings.map((b) => b._id.toString()),
+                tutorId: tutor._id.toString(),
+                date: updatedBookings[0].date,
+                startTime: updatedBookings[0].startTime,
+              },
+            }).catch((err) =>
+              console.error("Error creating confirmed notification:", err)
+            );
           }
         }
 
@@ -384,6 +445,23 @@ export const handleStripeWebhookService = async (
           }).catch((err) =>
             console.error("Error sending payment success email:", err)
           );
+
+          // Notify student of successful payment
+          const totalPaid = bookings.reduce((sum, b) => sum + b.price, 0);
+          createNotification({
+            userId: student._id,
+            type: "payment_processed",
+            title: "Payment Successful",
+            message: `Payment of £${totalPaid.toFixed(2)} for your lesson${bookings.length > 1 ? "s" : ""} with ${tutor.firstname} ${tutor.lastname} on ${bookings[0].date} was processed successfully.`,
+            data: {
+              bookingIds: bookings.map((b) => b._id.toString()),
+              amount: totalPaid,
+              date: bookings[0].date,
+              tutorId: tutor._id.toString(),
+            },
+          }).catch((err) =>
+            console.error("Error creating payment notification:", err)
+          );
         }
       }
       break;
@@ -394,6 +472,12 @@ export const handleStripeWebhookService = async (
       const bookingIds = session.metadata?.bookingIds?.split(",") || [];
 
       if (bookingIds.length > 0) {
+        // Fetch bookings before updating so we can notify
+        const bookings = await Booking.find({
+          _id: { $in: bookingIds },
+          paymentStatus: "pending",
+        });
+
         // Mark bookings as failed since payment expired
         await Booking.updateMany(
           { _id: { $in: bookingIds }, paymentStatus: "pending" },
@@ -407,6 +491,22 @@ export const handleStripeWebhookService = async (
             },
           }
         );
+
+        // Notify student that payment expired
+        if (bookings.length > 0) {
+          createNotification({
+            userId: bookings[0].studentId,
+            type: "payment_failed",
+            title: "Payment Expired",
+            message: `Your payment session for the lesson on ${bookings[0].date} has expired. The booking has been cancelled.`,
+            data: {
+              bookingIds: bookings.map((b) => b._id.toString()),
+              date: bookings[0].date,
+            },
+          }).catch((err) =>
+            console.error("Error creating payment expired notification:", err)
+          );
+        }
       }
       break;
     }
@@ -480,13 +580,13 @@ export const listBookingsService = async (
   }
 
   // Sort
-  let sortOption: any = { date: -1, startTime: -1 }; // default: newest
+  let sortOption: any = { createdAt: -1 }; // default: newest
   switch (query.sort) {
     case "newest":
-      sortOption = { date: -1, startTime: -1 };
+      sortOption = { createdAt: -1 };
       break;
     case "oldest":
-      sortOption = { date: 1, startTime: 1 };
+      sortOption = { createdAt: 1 };
       break;
     case "price_high":
       sortOption = { price: -1 };
@@ -613,6 +713,24 @@ export const confirmBookingService = async (
     $inc: { totalStudents: 1 },
   });
 
+  // Notify student that their booking has been confirmed
+  createNotification({
+    userId: booking.studentId,
+    type: "booking_confirmed",
+    title: "Booking Confirmed",
+    message: `Your ${booking.type} lesson on ${booking.date} at ${booking.startTime} with ${tutor?.firstname || "your tutor"} ${tutor?.lastname || ""} has been confirmed.`,
+    data: {
+      bookingId: booking._id.toString(),
+      tutorId: booking.tutorId.toString(),
+      date: booking.date,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      type: booking.type,
+    },
+  }).catch((err) =>
+    console.error("Error creating confirmed notification:", err)
+  );
+
   return new ApiResponse(
     200,
     "Booking confirmed successfully",
@@ -674,6 +792,41 @@ export const declineBookingService = async (
       booking,
       reason: data.reason,
     }).catch((err) => console.error("Error sending declined email:", err));
+  }
+
+  // Notify student that their booking has been declined
+  createNotification({
+    userId: booking.studentId,
+    type: "booking_declined",
+    title: "Booking Declined",
+    message: `Your booking request for ${booking.date} at ${booking.startTime} with ${tutor?.firstname || "your tutor"} ${tutor?.lastname || ""} has been declined.${data.reason ? ` Reason: ${data.reason}` : ""}`,
+    data: {
+      bookingId: booking._id.toString(),
+      tutorId: booking.tutorId.toString(),
+      date: booking.date,
+      startTime: booking.startTime,
+      reason: data.reason || null,
+      refunded: booking.paymentStatus === "refunded",
+    },
+  }).catch((err) =>
+    console.error("Error creating declined notification:", err)
+  );
+
+  // If refunded, also notify student about the refund
+  if (booking.paymentStatus === "refunded") {
+    createNotification({
+      userId: booking.studentId,
+      type: "refund_processed",
+      title: "Refund Processed",
+      message: `A refund of £${booking.price.toFixed(2)} has been issued for your declined booking on ${booking.date}.`,
+      data: {
+        bookingId: booking._id.toString(),
+        amount: booking.price,
+        date: booking.date,
+      },
+    }).catch((err) =>
+      console.error("Error creating refund notification:", err)
+    );
   }
 
   return new ApiResponse(
@@ -790,6 +943,51 @@ export const cancelBookingService = async (
     }
   }
 
+  // Notify the other party about the cancellation
+  const recipientId =
+    cancelledBy === "student" ? booking.tutorId : booking.studentId;
+  const cancellerName =
+    cancelledBy === "student"
+      ? `${student?.firstname || "Student"} ${student?.lastname || ""}`
+      : cancelledBy === "tutor"
+        ? `${tutor?.firstname || "Tutor"} ${tutor?.lastname || ""}`
+        : "An administrator";
+
+  createNotification({
+    userId: recipientId,
+    type: "booking_cancelled",
+    title: "Booking Cancelled",
+    message: `${cancellerName} has cancelled the ${booking.type} lesson on ${booking.date} at ${booking.startTime}.${data.reason ? ` Reason: ${data.reason}` : ""}`,
+    data: {
+      bookingId: booking._id.toString(),
+      cancelledBy,
+      date: booking.date,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      reason: data.reason || null,
+      refunded: booking.paymentStatus === "refunded",
+    },
+  }).catch((err) =>
+    console.error("Error creating cancellation notification:", err)
+  );
+
+  // If refunded, also notify the student
+  if (booking.paymentStatus === "refunded" && cancelledBy !== "student") {
+    createNotification({
+      userId: booking.studentId,
+      type: "refund_processed",
+      title: "Refund Processed",
+      message: `A refund of £${booking.price.toFixed(2)} has been issued for the cancelled lesson on ${booking.date}.`,
+      data: {
+        bookingId: booking._id.toString(),
+        amount: booking.price,
+        date: booking.date,
+      },
+    }).catch((err) =>
+      console.error("Error creating refund notification:", err)
+    );
+  }
+
   return new ApiResponse(
     200,
     "Booking cancelled successfully",
@@ -837,6 +1035,46 @@ export const completeBookingService = async (
   await User.findByIdAndUpdate(booking.studentId, {
     $inc: { totalLessonsTaken: 1, totalHoursLearned: 1 },
   });
+
+  // Fetch names for notification messages
+  const student = await User.findById(booking.studentId).select(
+    "firstname lastname"
+  );
+  const tutor = await User.findById(booking.tutorId).select(
+    "firstname lastname"
+  );
+
+  // Notify student
+  createNotification({
+    userId: booking.studentId,
+    type: "booking_completed",
+    title: "Lesson Completed",
+    message: `Your ${booking.type} lesson on ${booking.date} with ${tutor?.firstname || "your tutor"} ${tutor?.lastname || ""} has been marked as completed.`,
+    data: {
+      bookingId: booking._id.toString(),
+      tutorId: booking.tutorId.toString(),
+      date: booking.date,
+      startTime: booking.startTime,
+    },
+  }).catch((err) =>
+    console.error("Error creating student completion notification:", err)
+  );
+
+  // Notify tutor
+  createNotification({
+    userId: booking.tutorId,
+    type: "booking_completed",
+    title: "Lesson Completed",
+    message: `Your ${booking.type} lesson on ${booking.date} with ${student?.firstname || "your student"} ${student?.lastname || ""} has been completed. Earnings have been credited.`,
+    data: {
+      bookingId: booking._id.toString(),
+      studentId: booking.studentId.toString(),
+      date: booking.date,
+      startTime: booking.startTime,
+    },
+  }).catch((err) =>
+    console.error("Error creating tutor completion notification:", err)
+  );
 
   return new ApiResponse(200, "Booking marked as completed", booking.toJSON());
 };

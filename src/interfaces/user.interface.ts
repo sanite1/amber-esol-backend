@@ -111,6 +111,9 @@ export interface IUser extends Document {
   lastSeen?: Date;
   status: UserStatus;
 
+  suspendedAt: Date;
+  suspendedReason?: string;
+
   deletionReason?: string;
   deletionFeedback?: string;
   deletedAt?: Date;
