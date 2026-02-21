@@ -27,6 +27,7 @@ import { createNotification } from "./notification.service";
 import Transaction from "../models/Transaction";
 import Wallet from "../models/Wallet";
 import { createDailyRoom } from "./daily.service";
+import { createZoomMeeting } from "./zoom.service";
 
 /* ── Stripe init ── */
 
@@ -439,6 +440,32 @@ export const confirmBookingService = async (
   }
 
   booking.status = "confirmed";
+
+  // ── Auto-generate a Zoom meeting link if no URL exists yet ──
+  if (!booking.meetingUrl) {
+    const student = await User.findById(booking.studentId).select(
+      "firstname lastname"
+    );
+    const tutor = await User.findById(booking.tutorId).select(
+      "firstname lastname"
+    );
+
+    const zoomUrl = await createZoomMeeting(
+      booking._id.toString(),
+      booking.date,
+      booking.startTime,
+      booking.endTime,
+      `${tutor?.firstname || "Tutor"} ${tutor?.lastname || ""}`.trim(),
+      `${student?.firstname || "Student"} ${student?.lastname || ""}`.trim(),
+      booking.type,
+      booking.specialty
+    );
+
+    if (zoomUrl) {
+      booking.meetingUrl = zoomUrl;
+    }
+  }
+
   await booking.save();
 
   const student = await User.findById(booking.studentId);
@@ -471,6 +498,7 @@ export const confirmBookingService = async (
       startTime: booking.startTime,
       endTime: booking.endTime,
       type: booking.type,
+      meetingUrl: booking.meetingUrl || null,
     },
   }).catch((err) =>
     console.error("Error creating confirmed notification:", err)

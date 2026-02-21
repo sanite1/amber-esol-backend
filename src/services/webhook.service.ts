@@ -126,21 +126,30 @@ export const handleStripeWebhookService = async (
             { $set: { status: "confirmed" } }
           );
 
-          // ── Auto-generate Daily rooms for auto-accepted bookings ──
-          const { createDailyRoom } = require("./daily.service");
+          // ── Auto-generate Zoom meetings for auto-accepted bookings ──
+          const { createZoomMeeting } = require("./zoom.service");
+          const student = await User.findById(bookings[0].studentId).select(
+            "firstname lastname"
+          );
           const confirmedBookings = await Booking.find({
             _id: { $in: bookingIds },
             status: "confirmed",
-            meetingUrl: { $exists: false },
+            $or: [{ meetingUrl: { $exists: false } }, { meetingUrl: null }],
           });
+
           for (const cb of confirmedBookings) {
-            const dailyUrl = await createDailyRoom(
+            const zoomUrl = await createZoomMeeting(
               cb._id.toString(),
               cb.date,
-              cb.endTime
+              cb.startTime,
+              cb.endTime,
+              `${tutor.firstname} ${tutor.lastname}`.trim(),
+              `${student?.firstname || "Student"} ${student?.lastname || ""}`.trim(),
+              cb.type,
+              cb.specialty
             );
-            if (dailyUrl) {
-              cb.meetingUrl = dailyUrl;
+            if (zoomUrl) {
+              cb.meetingUrl = zoomUrl;
               await cb.save();
             }
           }
@@ -149,7 +158,7 @@ export const handleStripeWebhookService = async (
           const updatedBookings = await Booking.find({
             _id: { $in: bookingIds },
           });
-          const student = await User.findById(updatedBookings[0].studentId);
+          //   const student = await User.findById(updatedBookings[0].studentId);
 
           if (student && tutor) {
             sendBookingConfirmedMail({
