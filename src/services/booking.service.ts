@@ -439,19 +439,6 @@ export const confirmBookingService = async (
   }
 
   booking.status = "confirmed";
-
-  // ── Auto-generate a Daily.co meeting room if no URL exists yet ──
-  if (!booking.meetingUrl) {
-    const dailyUrl = await createDailyRoom(
-      booking._id.toString(),
-      booking.date,
-      booking.endTime
-    );
-    if (dailyUrl) {
-      booking.meetingUrl = dailyUrl;
-    }
-  }
-
   await booking.save();
 
   const student = await User.findById(booking.studentId);
@@ -484,7 +471,6 @@ export const confirmBookingService = async (
       startTime: booking.startTime,
       endTime: booking.endTime,
       type: booking.type,
-      meetingUrl: booking.meetingUrl || null,
     },
   }).catch((err) =>
     console.error("Error creating confirmed notification:", err)
