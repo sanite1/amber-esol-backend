@@ -512,9 +512,20 @@ export const confirmBookingService = async (
     }).catch((err) => console.error("Error sending confirmed email:", err));
   }
 
-  await User.findByIdAndUpdate(tutorId, {
-    $inc: { totalStudents: 1 },
+  // Only increment totalStudents if this is the first completed/confirmed booking
+  // between this student and tutor
+  const previousBookings = await Booking.countDocuments({
+    studentId: booking.studentId,
+    tutorId: booking.tutorId,
+    status: { $in: ["confirmed", "completed"] },
+    _id: { $ne: booking._id }, // exclude the current booking
   });
+
+  if (previousBookings === 0) {
+    await User.findByIdAndUpdate(tutorId, {
+      $inc: { totalStudents: 1 },
+    });
+  }
 
   createNotification({
     userId: booking.studentId,

@@ -167,8 +167,24 @@ export const getStudentDashboardService = async (
   const totalLessonsNeeded = levelDiff * 20;
   const lessonsCompleted = completedBookings;
 
+  const now = new Date();
+
+  // After fetching upcomingBookings, filter out lessons whose start time has passed
+  const filteredUpcoming = upcomingBookings.filter((b: any) => {
+    const lessonDate = new Date(b.date + "T00:00:00");
+    if (lessonDate.toDateString() !== now.toDateString()) {
+      // Future date — always include
+      return true;
+    }
+    // Same day — only include if start time hasn't passed
+    const [h, m] = (b.startTime || "00:00").split(":").map(Number);
+    const lessonStart = new Date(lessonDate);
+    lessonStart.setHours(h, m, 0, 0);
+    return lessonStart > now;
+  });
+
   /* ── Build upcoming lessons array ── */
-  const upcomingLessonsData = upcomingBookings.map((b) => {
+  const upcomingLessonsData = filteredUpcoming.map((b) => {
     const tutor =
       typeof b.tutorId === "object" && b.tutorId !== null
         ? (b.tutorId as any)
@@ -283,13 +299,13 @@ export const getStudentDashboardService = async (
   );
 
   /* ── Find next lesson time for welcome banner ── */
-  const nextLesson = upcomingBookings[0] || null;
+  const nextLesson = filteredUpcoming[0] || null;
 
   /* ── Assemble response ── */
   return new ApiResponse(200, "Student dashboard retrieved successfully", {
     welcome: {
       firstName: student.firstname,
-      hasUpcomingLesson: upcomingBookings.length > 0,
+      hasUpcomingLesson: filteredUpcoming.length > 0,
       nextLessonTime: nextLesson
         ? `${nextLesson.date}T${nextLesson.startTime}:00`
         : null,

@@ -397,16 +397,26 @@ export const getAvailableSlotsService = async (
     );
   }
 
-  // ── Filter out slots that are already booked ──
+  // ── Filter out slots that overlap with existing bookings ──
   const bookedSlots = await Booking.find({
     tutorId,
     date: requestedDate,
     status: { $in: ["pending", "confirmed"] },
-  }).select("startTime");
+  }).select("startTime endTime");
 
-  filteredSlots = filteredSlots.filter(
-    (slot) => !bookedSlots.some((b) => b.startTime === slot.startTime)
-  );
+  filteredSlots = filteredSlots.filter((slot) => {
+    const slotStart = timeToMinutes(slot.startTime);
+    const slotEnd = timeToMinutes(slot.endTime);
+
+    // A slot is unavailable if it overlaps with ANY existing booking
+    return !bookedSlots.some((b) => {
+      const bookingStart = timeToMinutes(b.startTime);
+      const bookingEnd = timeToMinutes(b.endTime);
+
+      // Two ranges overlap if one starts before the other ends
+      return slotStart < bookingEnd && slotEnd > bookingStart;
+    });
+  });
 
   return new ApiResponse(200, "Available slots retrieved successfully", {
     date: requestedDate,

@@ -248,17 +248,28 @@ export const getTutorDashboardService = async (
 
   /* ── 4. Build welcome ── */
 
+  const filteredUpcoming = (upcomingBookings as any[]).filter((b) => {
+    if (b.date !== todayStr) return true; // future date → keep
+    const [h, m] = (b.startTime || "00:00").split(":").map(Number);
+    const lessonStart = new Date(now);
+    lessonStart.setHours(h, m, 0, 0);
+    return lessonStart > now;
+  });
+
   const confirmedUpcoming = upcomingBookings.filter(
     (b: any) => b.status === "confirmed" && b.date === todayStr
   );
-  const nextLesson = confirmedUpcoming[0] as any;
+
+  const todayUpcoming = filteredUpcoming.filter(
+    (b: any) => b.status === "confirmed" && b.date === todayStr
+  );
 
   const welcome: IDashboardWelcome = {
     firstName: tutor.firstname,
     avatarUrl: tutor.profilePicture || "",
     isOnline: tutor.onlineStatus === "online",
-    todayLessons: todayBookings,
-    nextLessonTime: nextLesson?.startTime || null,
+    todayLessons: todayUpcoming.length, // ← filtered count
+    nextLessonTime: todayUpcoming[0]?.startTime || null, // ← first future lesson
     averageRating: tutor.averageRating || 0,
     totalStudents: tutor.totalStudents || uniqueStudentsCount.length,
   };
@@ -277,7 +288,7 @@ export const getTutorDashboardService = async (
   const upcomingLessons: IDashboardUpcomingLesson[] = [];
   const pendingBookings: IDashboardPendingBooking[] = [];
 
-  for (const b of upcomingBookings as any[]) {
+  for (const b of filteredUpcoming as any[]) {
     const student = typeof b.studentId === "object" ? b.studentId : null;
     const studentName = student
       ? `${student.firstname} ${student.lastname}`
@@ -351,7 +362,7 @@ export const getTutorDashboardService = async (
 
   // Find next available slot from upcoming confirmed lessons
   let nextAvailableSlot: string | null = null;
-  const nextConfirmed = upcomingBookings.find(
+  const nextConfirmed = filteredUpcoming.find(
     (b: any) =>
       b.status === "confirmed" && new Date(`${b.date}T${b.startTime}:00`) > now
   ) as any;
