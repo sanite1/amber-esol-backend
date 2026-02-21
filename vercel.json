@@ -15,7 +15,7 @@
   "crons": [
     {
       "path": "/api/cron/complete-lessons",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
