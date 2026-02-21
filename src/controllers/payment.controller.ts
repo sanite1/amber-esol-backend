@@ -15,7 +15,6 @@ import {
 } from "../interfaces/payment.interface";
 import {
   createPaymentIntentService,
-  handlePaymentWebhookService,
   listTransactionsService,
   getTransactionByIdService,
   paymentSummaryService,
@@ -44,24 +43,6 @@ export const createPaymentIntent: ExpressFunction<
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const data = await createPaymentIntentService(userId, req.body);
     return res.status(data.statusCode).json(data);
-  } catch (error) {
-    next(error);
-  }
-};
-
-/* ── Stripe Webhook ── */
-
-export const paymentWebhook = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const signature = req.headers["stripe-signature"] as string;
-    if (!signature)
-      return res.status(400).json({ message: "Missing Stripe signature" });
-    const data = await handlePaymentWebhookService(req.body, signature);
-    return res.status(200).json(data);
   } catch (error) {
     next(error);
   }

@@ -21,7 +21,6 @@ import {
   sendBookingDeclinedMail,
   sendBookingCancelledByStudentMail,
   sendBookingCancelledByTutorMail,
-  sendPaymentSuccessMail,
 } from "./nodemailer/mail.service";
 import { creditTutorForCompletedLesson } from "./payment.service";
 import { createNotification } from "./notification.service";
@@ -73,7 +72,6 @@ export const createBookingService = async (
       throw new ApiError(400, "This tutor does not offer trial lessons");
     }
 
-    // Check if student already had a trial with this tutor
     const existingTrial = await Booking.findOne({
       studentId,
       tutorId: data.tutorId,
@@ -100,13 +98,11 @@ export const createBookingService = async (
   for (const slot of data.slots) {
     const slotDate = slot.date;
 
-    // Check date is not in the past
     const today = new Date().toISOString().split("T")[0];
     if (slotDate < today) {
       throw new ApiError(400, `Cannot book a slot in the past (${slotDate})`);
     }
 
-    // Check date is within max booking advance
     const maxDate = new Date();
     maxDate.setDate(maxDate.getDate() + availability.maxBookingAdvance);
     const reqDate = new Date(slotDate + "T00:00:00Z");
@@ -117,7 +113,6 @@ export const createBookingService = async (
       );
     }
 
-    // Check for existing booking conflict
     const conflict = await Booking.findOne({
       tutorId: data.tutorId,
       date: slotDate,
@@ -131,7 +126,6 @@ export const createBookingService = async (
       );
     }
 
-    // Check date override (unavailable)
     const override = await DateOverride.findOne({
       tutorId: data.tutorId,
       date: slotDate,
@@ -183,7 +177,6 @@ export const createBookingService = async (
   let checkoutUrl: string | null = null;
 
   if (!isFree) {
-    // Create Stripe Checkout Session
     const lineItems = [
       {
         price_data: {
@@ -192,7 +185,7 @@ export const createBookingService = async (
             name: `${data.type === "trial" ? "Trial" : ""} Lesson with ${tutor.firstname} ${tutor.lastname}`.trim(),
             description: `${data.slots.length} × ${data.type === "trial" ? "30" : "60"}-minute session${data.slots.length > 1 ? "s" : ""}`,
           },
-          unit_amount: Math.round(pricePerSlot * 100), // pence
+          unit_amount: Math.round(pricePerSlot * 100),
         },
         quantity: data.slots.length,
       },
@@ -218,10 +211,9 @@ export const createBookingService = async (
       metadata: sessionMetadata,
       success_url: successUrl,
       cancel_url: cancelUrl,
-      expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // 30 min expiry
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
     });
 
-    // Store checkout session ID on all bookings
     await Booking.updateMany(
       { _id: { $in: bookings.map((b) => b._id) } },
       { $set: { stripeCheckoutSessionId: session.id } }
@@ -230,41 +222,13 @@ export const createBookingService = async (
     checkoutUrl = session.url;
   }
 
-  // 10. Send emails (non-blocking)
-  const emailContext = {
-    student,
-    tutor,
-    bookings,
-    totalPrice,
-    isTrial,
-    bookingGroupId,
-  };
-
-  //   // Notify tutor of new booking request
-  //   sendBookingRequestMail(emailContext).catch((err) =>
-  //     console.error("Error sending booking request email:", err)
-  //   );
-
-  //   // Notify student that booking is pending
-  //   sendBookingPendingMail(emailContext).catch((err) =>
-  //     console.error("Error sending booking pending email:", err)
-  //   );
-
-  //   // If free + auto-confirm, also send confirmed email
-  //   if (isFree && autoConfirm) {
-  //     sendBookingConfirmedMail(emailContext).catch((err) =>
-  //       console.error("Error sending booking confirmed email:", err)
-  //     );
-  //   }
-
-  // 11. Send notifications
+  // 10. Send notifications
   const firstSlot = data.slots[0];
   const slotSummary =
     data.slots.length > 1
       ? `${data.slots.length} sessions starting ${firstSlot.date}`
       : `${firstSlot.date} at ${firstSlot.startTime}`;
 
-  // Notify tutor about new booking request
   createNotification({
     userId: tutor._id,
     type: "booking_created",
@@ -282,7 +246,6 @@ export const createBookingService = async (
     },
   }).catch((err) => console.error("Error creating booking notification:", err));
 
-  // If free + auto-confirm, also notify student of confirmation
   if (isFree && autoConfirm) {
     createNotification({
       userId: studentId,
@@ -310,210 +273,7 @@ export const createBookingService = async (
   });
 };
 
-/* ── Stripe Webhook Handler ── */
-
-export const handleStripeWebhookService = async (
-  rawBody: Buffer,
-  signature: string
-) => {
-  const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!WEBHOOK_SECRET) {
-    throw new ApiError(500, "Stripe webhook secret is not configured");
-  }
-
-  let event: Stripe.Event;
-  try {
-    event = stripe.webhooks.constructEvent(rawBody, signature, WEBHOOK_SECRET);
-  } catch (err: any) {
-    throw new ApiError(
-      400,
-      `Webhook signature verification failed: ${err.message}`
-    );
-  }
-
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const bookingIds = session.metadata?.bookingIds?.split(",") || [];
-
-      if (bookingIds.length === 0) break;
-
-      // Update all bookings to paid
-      const bookings = await Booking.find({
-        _id: { $in: bookingIds },
-      });
-
-      for (const booking of bookings) {
-        booking.paymentStatus = "paid";
-        booking.stripePaymentIntentId =
-          typeof session.payment_intent === "string"
-            ? session.payment_intent
-            : session.payment_intent?.id;
-        await booking.save();
-      }
-
-      // Create transaction records for each booking
-      const PLATFORM_COMMISSION_RATE = 0.15;
-      for (const booking of bookings) {
-        const commission =
-          Math.round(booking.price * PLATFORM_COMMISSION_RATE * 100) / 100;
-        const tutorEarnings =
-          Math.round((booking.price - commission) * 100) / 100;
-
-        await Transaction.create({
-          bookingId: booking._id,
-          studentId: booking.studentId,
-          tutorId: booking.tutorId,
-          amount: booking.price,
-          platformCommission: commission,
-          tutorEarnings,
-          currency: booking.currency,
-          status: "paid",
-          type: booking.type === "trial" ? "trial" : "lesson",
-          paymentMethod: "card",
-          stripePaymentIntentId:
-            typeof session.payment_intent === "string"
-              ? session.payment_intent
-              : session.payment_intent?.id,
-          stripeCheckoutSessionId: session.id,
-        });
-
-        // Credit tutor wallet (pending balance)
-        let wallet = await Wallet.findOne({ tutorId: booking.tutorId });
-        if (!wallet) {
-          wallet = await Wallet.create({ tutorId: booking.tutorId });
-        }
-        wallet.pendingBalance += tutorEarnings;
-        wallet.totalEarned += tutorEarnings;
-        wallet.lifetimeEarnings += tutorEarnings;
-        await wallet.save();
-      }
-
-      // Check if tutor has auto-accept enabled
-      if (bookings.length > 0) {
-        const tutor = await User.findById(bookings[0].tutorId);
-        if (tutor?.teachingPreferences?.autoAcceptBookings) {
-          await Booking.updateMany(
-            { _id: { $in: bookingIds }, status: "pending" },
-            { $set: { status: "confirmed" } }
-          );
-
-          // Re-fetch and send confirmed emails
-          const updatedBookings = await Booking.find({
-            _id: { $in: bookingIds },
-          });
-          const student = await User.findById(updatedBookings[0].studentId);
-
-          if (student && tutor) {
-            sendBookingConfirmedMail({
-              student,
-              tutor,
-              bookings: updatedBookings,
-              totalPrice: updatedBookings.reduce((sum, b) => sum + b.price, 0),
-              isTrial: updatedBookings[0].type === "trial",
-              bookingGroupId: updatedBookings[0].bookingGroupId,
-            }).catch((err) =>
-              console.error("Error sending confirmed email:", err)
-            );
-
-            // Notify student of auto-confirmation after payment
-            createNotification({
-              userId: student._id,
-              type: "booking_confirmed",
-              title: "Booking Confirmed",
-              message: `Your lesson${updatedBookings.length > 1 ? "s" : ""} with ${tutor.firstname} ${tutor.lastname} on ${updatedBookings[0].date} ${updatedBookings.length > 1 ? `(${updatedBookings.length} sessions)` : `at ${updatedBookings[0].startTime}`} ha${updatedBookings.length > 1 ? "ve" : "s"} been confirmed.`,
-              data: {
-                bookingIds: updatedBookings.map((b) => b._id.toString()),
-                tutorId: tutor._id.toString(),
-                date: updatedBookings[0].date,
-                startTime: updatedBookings[0].startTime,
-              },
-            }).catch((err) =>
-              console.error("Error creating confirmed notification:", err)
-            );
-          }
-        }
-
-        // Send payment success email
-        const student = await User.findById(bookings[0].studentId);
-        if (student && tutor) {
-          sendPaymentSuccessMail({
-            student,
-            tutor,
-            bookings,
-            totalPrice: bookings.reduce((sum, b) => sum + b.price, 0),
-          }).catch((err) =>
-            console.error("Error sending payment success email:", err)
-          );
-
-          // Notify student of successful payment
-          const totalPaid = bookings.reduce((sum, b) => sum + b.price, 0);
-          createNotification({
-            userId: student._id,
-            type: "payment_processed",
-            title: "Payment Successful",
-            message: `Payment of £${totalPaid.toFixed(2)} for your lesson${bookings.length > 1 ? "s" : ""} with ${tutor.firstname} ${tutor.lastname} on ${bookings[0].date} was processed successfully.`,
-            data: {
-              bookingIds: bookings.map((b) => b._id.toString()),
-              amount: totalPaid,
-              date: bookings[0].date,
-              tutorId: tutor._id.toString(),
-            },
-          }).catch((err) =>
-            console.error("Error creating payment notification:", err)
-          );
-        }
-      }
-      break;
-    }
-
-    case "checkout.session.expired": {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const bookingIds = session.metadata?.bookingIds?.split(",") || [];
-
-      if (bookingIds.length > 0) {
-        // Fetch bookings before updating so we can notify
-        const bookings = await Booking.find({
-          _id: { $in: bookingIds },
-          paymentStatus: "pending",
-        });
-
-        // Mark bookings as failed since payment expired
-        await Booking.updateMany(
-          { _id: { $in: bookingIds }, paymentStatus: "pending" },
-          {
-            $set: {
-              paymentStatus: "failed",
-              status: "cancelled_student",
-              cancelReason: "Payment session expired",
-              cancelledBy: "student",
-              cancelledAt: new Date(),
-            },
-          }
-        );
-
-        // Notify student that payment expired
-        if (bookings.length > 0) {
-          createNotification({
-            userId: bookings[0].studentId,
-            type: "payment_failed",
-            title: "Payment Expired",
-            message: `Your payment session for the lesson on ${bookings[0].date} has expired. The booking has been cancelled.`,
-            data: {
-              bookingIds: bookings.map((b) => b._id.toString()),
-              date: bookings[0].date,
-            },
-          }).catch((err) =>
-            console.error("Error creating payment expired notification:", err)
-          );
-        }
-      }
-      break;
-    }
-  }
-
-  return new ApiResponse(200, "Webhook processed successfully");
-};
+// ── REMOVED: handleStripeWebhookService — moved to webhook.service.ts ──
 
 /* ── List Bookings (role-aware) ── */
 
@@ -526,7 +286,6 @@ export const listBookingsService = async (
   const limit = parseInt(query.limit || "10", 10);
   const skip = (page - 1) * limit;
 
-  // Build filter based on role
   const filter: any = {};
 
   if (role === "student") {
@@ -534,30 +293,24 @@ export const listBookingsService = async (
   } else if (role === "tutor") {
     filter.tutorId = userId;
   }
-  // Admin sees all bookings (no role filter)
 
-  // Status filter
   if (query.status) {
     filter.status = query.status;
   }
 
-  // Type filter
   if (query.type) {
     filter.type = query.type;
   }
 
-  // Date range filter
   if (query.dateFrom || query.dateTo) {
     filter.date = {};
     if (query.dateFrom) filter.date.$gte = query.dateFrom;
     if (query.dateTo) filter.date.$lte = query.dateTo;
   }
 
-  // Search by student or tutor name
   if (query.search) {
     const searchRegex = new RegExp(query.search, "i");
 
-    // Find matching user IDs
     const matchingUsers = await User.find({
       $or: [{ firstname: searchRegex }, { lastname: searchRegex }],
     }).select("_id");
@@ -565,13 +318,10 @@ export const listBookingsService = async (
     const matchingIds = matchingUsers.map((u) => u._id);
 
     if (role === "student") {
-      // Student searching by tutor name
       filter.tutorId = { $in: matchingIds };
     } else if (role === "tutor") {
-      // Tutor searching by student name
       filter.studentId = { $in: matchingIds };
     } else {
-      // Admin can search both
       filter.$or = [
         { studentId: { $in: matchingIds } },
         { tutorId: { $in: matchingIds } },
@@ -579,8 +329,7 @@ export const listBookingsService = async (
     }
   }
 
-  // Sort
-  let sortOption: any = { createdAt: -1 }; // default: newest
+  let sortOption: any = { createdAt: -1 };
   switch (query.sort) {
     case "newest":
       sortOption = { createdAt: -1 };
@@ -644,7 +393,6 @@ export const getBookingByIdService = async (
     throw new ApiError(404, "Booking not found");
   }
 
-  // Authorization: ensure user is the student, tutor, or admin
   const isStudent = booking.studentId._id.toString() === userId;
   const isTutor = booking.tutorId._id.toString() === userId;
   const isAdmin = role === "admin";
@@ -682,7 +430,6 @@ export const confirmBookingService = async (
     );
   }
 
-  // For paid bookings, ensure payment is complete
   if (booking.paymentStatus !== "paid" && booking.paymentStatus !== "free") {
     throw new ApiError(
       400,
@@ -693,7 +440,6 @@ export const confirmBookingService = async (
   booking.status = "confirmed";
   await booking.save();
 
-  // Send confirmation email
   const student = await User.findById(booking.studentId);
   const tutor = await User.findById(booking.tutorId);
 
@@ -708,12 +454,10 @@ export const confirmBookingService = async (
     }).catch((err) => console.error("Error sending confirmed email:", err));
   }
 
-  // Update tutor stats
   await User.findByIdAndUpdate(tutorId, {
     $inc: { totalStudents: 1 },
   });
 
-  // Notify student that their booking has been confirmed
   createNotification({
     userId: booking.studentId,
     type: "booking_confirmed",
@@ -767,7 +511,6 @@ export const declineBookingService = async (
   booking.cancelledAt = new Date();
   await booking.save();
 
-  // If payment was made, issue refund
   if (booking.paymentStatus === "paid" && booking.stripePaymentIntentId) {
     try {
       await stripe.refunds.create({
@@ -777,11 +520,9 @@ export const declineBookingService = async (
       await booking.save();
     } catch (err) {
       console.error("Stripe refund error:", err);
-      // Don't block the decline — refund can be retried manually
     }
   }
 
-  // Send declined email to student
   const student = await User.findById(booking.studentId);
   const tutor = await User.findById(booking.tutorId);
 
@@ -794,7 +535,6 @@ export const declineBookingService = async (
     }).catch((err) => console.error("Error sending declined email:", err));
   }
 
-  // Notify student that their booking has been declined
   createNotification({
     userId: booking.studentId,
     type: "booking_declined",
@@ -812,7 +552,6 @@ export const declineBookingService = async (
     console.error("Error creating declined notification:", err)
   );
 
-  // If refunded, also notify student about the refund
   if (booking.paymentStatus === "refunded") {
     createNotification({
       userId: booking.studentId,
@@ -849,7 +588,6 @@ export const cancelBookingService = async (
     throw new ApiError(404, "Booking not found");
   }
 
-  // Authorization
   const isBookingStudent = booking.studentId.toString() === userId;
   const isBookingTutor = booking.tutorId.toString() === userId;
   const isAdmin = role === "admin";
@@ -869,7 +607,6 @@ export const cancelBookingService = async (
     );
   }
 
-  // Determine who is cancelling
   let cancelledBy: "student" | "tutor" | "admin";
   let newStatus: BookingStatus;
 
@@ -890,9 +627,7 @@ export const cancelBookingService = async (
   booking.cancelledAt = new Date();
   await booking.save();
 
-  // Handle refund logic
   if (booking.paymentStatus === "paid" && booking.stripePaymentIntentId) {
-    // Check if cancellation is 24+ hours before the lesson
     const lessonDateTime = new Date(`${booking.date}T${booking.startTime}:00Z`);
     const hoursUntilLesson =
       (lessonDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
@@ -902,7 +637,6 @@ export const cancelBookingService = async (
       cancelledBy === "tutor" ||
       cancelledBy === "admin"
     ) {
-      // Full refund
       try {
         await stripe.refunds.create({
           payment_intent: booking.stripePaymentIntentId,
@@ -913,10 +647,8 @@ export const cancelBookingService = async (
         console.error("Stripe refund error:", err);
       }
     }
-    // If < 24 hours and student cancelled → no refund (per cancellation policy)
   }
 
-  // Send cancellation emails
   const student = await User.findById(booking.studentId);
   const tutor = await User.findById(booking.tutorId);
 
@@ -943,7 +675,6 @@ export const cancelBookingService = async (
     }
   }
 
-  // Notify the other party about the cancellation
   const recipientId =
     cancelledBy === "student" ? booking.tutorId : booking.studentId;
   const cancellerName =
@@ -971,7 +702,6 @@ export const cancelBookingService = async (
     console.error("Error creating cancellation notification:", err)
   );
 
-  // If refunded, also notify the student
   if (booking.paymentStatus === "refunded" && cancelledBy !== "student") {
     createNotification({
       userId: booking.studentId,
@@ -1007,7 +737,6 @@ export const completeBookingService = async (
     throw new ApiError(404, "Booking not found");
   }
 
-  // Only tutor or admin can mark complete
   const isBookingTutor = booking.tutorId.toString() === userId;
   const isAdmin = role === "admin";
 
@@ -1027,7 +756,6 @@ export const completeBookingService = async (
   await booking.save();
   await creditTutorForCompletedLesson(bookingId);
 
-  // Update user stats
   await User.findByIdAndUpdate(booking.tutorId, {
     $inc: { totalLessons: 1 },
   });
@@ -1036,7 +764,6 @@ export const completeBookingService = async (
     $inc: { totalLessonsTaken: 1, totalHoursLearned: 1 },
   });
 
-  // Fetch names for notification messages
   const student = await User.findById(booking.studentId).select(
     "firstname lastname"
   );
@@ -1044,7 +771,6 @@ export const completeBookingService = async (
     "firstname lastname"
   );
 
-  // Notify student
   createNotification({
     userId: booking.studentId,
     type: "booking_completed",
@@ -1060,7 +786,6 @@ export const completeBookingService = async (
     console.error("Error creating student completion notification:", err)
   );
 
-  // Notify tutor
   createNotification({
     userId: booking.tutorId,
     type: "booking_completed",
@@ -1111,7 +836,6 @@ export const noShowBookingService = async (
   booking.status = "no_show";
   await booking.save();
 
-  // Tutor still gets paid for no-shows
   await User.findByIdAndUpdate(booking.tutorId, {
     $inc: { totalLessons: 1 },
   });
@@ -1182,7 +906,6 @@ export const bookingStatsService = async (userId: string, role: string) => {
       Booking.countDocuments({ ...roleFilter, status: "no_show" }),
     ]);
 
-  // Upcoming
   const today = new Date().toISOString().split("T")[0];
   const upcoming = await Booking.countDocuments({
     ...roleFilter,
@@ -1190,7 +913,6 @@ export const bookingStatsService = async (userId: string, role: string) => {
     date: { $gte: today },
   });
 
-  // This month aggregates
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
@@ -1202,7 +924,7 @@ export const bookingStatsService = async (userId: string, role: string) => {
     date: { $gte: monthStr },
   });
 
-  const hoursThisMonth = monthBookings.length; // each booking = 1 hour
+  const hoursThisMonth = monthBookings.length;
   const earningsThisMonth = monthBookings.reduce((sum, b) => sum + b.price, 0);
   const totalSpent = (
     await Booking.find({
@@ -1275,13 +997,11 @@ export const adminLessonStatsService = async () => {
     Booking.countDocuments({ flagged: true }),
   ]);
 
-  // Upcoming: pending or confirmed, date >= today
   const upcomingLessons = await Booking.countDocuments({
     status: { $in: ["pending", "confirmed"] },
     date: { $gte: today },
   });
 
-  // In-progress: confirmed, date is today, startTime <= now < endTime
   const inProgressLessons = await Booking.countDocuments({
     status: "confirmed",
     date: today,
@@ -1289,7 +1009,6 @@ export const adminLessonStatsService = async () => {
     endTime: { $gt: currentHHmm },
   });
 
-  // Financial aggregation from transactions
   const financials = await Transaction.aggregate([
     { $match: { status: "paid" } },
     {
@@ -1304,7 +1023,6 @@ export const adminLessonStatsService = async () => {
   const totalRevenue = financials[0]?.totalRevenue || 0;
   const totalCommission = financials[0]?.totalCommission || 0;
 
-  // Completion rate
   const finishedLessons = completedLessons + noShowLessons;
   const totalAttempted = finishedLessons + cancelledLessons;
   const completionRate =
@@ -1312,7 +1030,6 @@ export const adminLessonStatsService = async () => {
       ? Math.round((finishedLessons / totalAttempted) * 1000) / 10
       : 0;
 
-  // Average rating from reviews
   const Review = require("../models/Review").default;
   const ratingResult = await Review.aggregate([
     { $match: { status: "published" } },

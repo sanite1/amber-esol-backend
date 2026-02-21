@@ -18,11 +18,7 @@ import myStudentsRoutes from "./routes/myStudents.routes";
 import tutorDashboardRoutes from "./routes/tutorDashboard.routes";
 import studentDashboardRoutes from "./routes/studentDashboard.routes";
 import adminDashboardRoutes from "./routes/adminDashboard.routes";
-import adminStudentsRoutes from "./routes/adminStudents.routes";
-import adminTutorsRoutes from "./routes/adminTutors.routes";
-import ticketRoutes from "./routes/ticket.routes";
-import { stripeWebhook } from "./controllers/booking.controller";
-import { paymentWebhook } from "./controllers/payment.controller";
+import { stripeWebhook } from "./controllers/webhook.controller";
 import { initSocketIO } from "./services/websocket.service";
 
 const PORT = 4000;
@@ -38,21 +34,15 @@ const corsOption = {
 };
 app.use(cors(corsOption));
 
-// ── Stripe webhooks (raw body, BEFORE express.json()) ──
 app.post(
-  "/api/bookings/webhook",
+  "/api/webhooks/stripe",
   raw({ type: "application/json" }),
   stripeWebhook
-);
-app.post(
-  "/api/payments/webhook",
-  raw({ type: "application/json" }),
-  paymentWebhook
 );
 
 connectDb();
 
-// ── Initialise WebSocket ── ← NEW
+// ── Initialise WebSocket ──
 initSocketIO(server);
 
 app.use("/api/users", userRoutes);
@@ -67,11 +57,8 @@ app.use("/api/my-students", myStudentsRoutes);
 app.use("/api/tutor-dashboard", tutorDashboardRoutes);
 app.use("/api/student-dashboard", studentDashboardRoutes);
 app.use("/api/admin-dashboard", adminDashboardRoutes);
-app.use("/api/admin-students", adminStudentsRoutes);
-app.use("/api/admin-tutors", adminTutorsRoutes);
-app.use("/api/tickets", ticketRoutes);
 
-// ── Use server.listen instead of app.listen for Socket.IO ── ← CHANGED
+// ── Use server.listen instead of app.listen for Socket.IO ──
 server.listen(PORT, () => {
   console.log("Server Listening on port 4000...");
 });
