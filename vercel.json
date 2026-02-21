@@ -11,5 +11,11 @@
       "src": "/(.*)",
       "dest": "src/index.ts"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/complete-lessons",
+      "schedule": "*/15 * * * *"
+    }
   ]
 }

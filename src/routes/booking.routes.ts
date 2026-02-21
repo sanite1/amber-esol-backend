@@ -30,7 +30,9 @@ import {
   bookingStats,
   adminLessonStats,
   flagBooking,
+  updateMeetingUrl,
 } from "../controllers/booking.controller";
+import { updateMeetingUrlValidation } from "../validations/meetingUrl.validation";
 
 const router = Router();
 
@@ -118,4 +120,11 @@ router.patch(
   flagBooking
 );
 
+router.patch(
+  "/:id/meeting-url",
+  isAuthenticated,
+  isTutor,
+  updateMeetingUrlValidation(),
+  updateMeetingUrl
+);
 export default router;

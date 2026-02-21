@@ -26,6 +26,7 @@ import { creditTutorForCompletedLesson } from "./payment.service";
 import { createNotification } from "./notification.service";
 import Transaction from "../models/Transaction";
 import Wallet from "../models/Wallet";
+import { createDailyRoom } from "./daily.service";
 
 /* ── Stripe init ── */
 
@@ -438,6 +439,19 @@ export const confirmBookingService = async (
   }
 
   booking.status = "confirmed";
+
+  // ── Auto-generate a Daily.co meeting room if no URL exists yet ──
+  if (!booking.meetingUrl) {
+    const dailyUrl = await createDailyRoom(
+      booking._id.toString(),
+      booking.date,
+      booking.endTime
+    );
+    if (dailyUrl) {
+      booking.meetingUrl = dailyUrl;
+    }
+  }
+
   await booking.save();
 
   const student = await User.findById(booking.studentId);
@@ -470,6 +484,7 @@ export const confirmBookingService = async (
       startTime: booking.startTime,
       endTime: booking.endTime,
       type: booking.type,
+      meetingUrl: booking.meetingUrl || null,
     },
   }).catch((err) =>
     console.error("Error creating confirmed notification:", err)
@@ -1051,4 +1066,62 @@ export const adminLessonStatsService = async () => {
     avgRating,
     flaggedLessons,
   });
+};
+
+/* ── Update Meeting URL (tutor) ── */
+
+export const updateMeetingUrlService = async (
+  bookingId: string,
+  tutorId: string,
+  meetingUrl: string
+) => {
+  const booking = await Booking.findById(bookingId);
+  if (!booking) {
+    throw new ApiError(404, "Booking not found");
+  }
+
+  if (booking.tutorId.toString() !== tutorId) {
+    throw new ApiError(
+      403,
+      "You are not authorized to update this booking's meeting link"
+    );
+  }
+
+  if (
+    booking.status === "completed" ||
+    booking.status === "no_show" ||
+    booking.status.startsWith("cancelled")
+  ) {
+    throw new ApiError(
+      400,
+      `Cannot update meeting link for a booking with status "${booking.status}"`
+    );
+  }
+
+  booking.meetingUrl = meetingUrl;
+  await booking.save();
+
+  // Notify the student that the meeting link was updated
+  const tutor = await User.findById(tutorId).select("firstname lastname");
+
+  createNotification({
+    userId: booking.studentId,
+    type: "booking_updated" as any,
+    title: "Meeting Link Updated",
+    message: `${tutor?.firstname || "Your tutor"} ${tutor?.lastname || ""} has updated the meeting link for your lesson on ${booking.date} at ${booking.startTime}.`,
+    data: {
+      bookingId: booking._id.toString(),
+      date: booking.date,
+      startTime: booking.startTime,
+      meetingUrl,
+    },
+  }).catch((err) =>
+    console.error("Error creating meeting URL update notification:", err)
+  );
+
+  return new ApiResponse(
+    200,
+    "Meeting link updated successfully",
+    booking.toJSON()
+  );
 };

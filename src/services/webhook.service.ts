@@ -126,6 +126,25 @@ export const handleStripeWebhookService = async (
             { $set: { status: "confirmed" } }
           );
 
+          // ── Auto-generate Daily rooms for auto-accepted bookings ──
+          const { createDailyRoom } = require("./daily.service");
+          const confirmedBookings = await Booking.find({
+            _id: { $in: bookingIds },
+            status: "confirmed",
+            meetingUrl: { $exists: false },
+          });
+          for (const cb of confirmedBookings) {
+            const dailyUrl = await createDailyRoom(
+              cb._id.toString(),
+              cb.date,
+              cb.endTime
+            );
+            if (dailyUrl) {
+              cb.meetingUrl = dailyUrl;
+              await cb.save();
+            }
+          }
+
           // Re-fetch and send confirmed emails
           const updatedBookings = await Booking.find({
             _id: { $in: bookingIds },

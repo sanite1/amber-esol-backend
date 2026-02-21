@@ -21,6 +21,7 @@ import {
   bookingStatsService,
   flagBookingService,
   adminLessonStatsService,
+  updateMeetingUrlService,
 } from "../services/booking.service";
 
 /* ── Create Booking (student) ── */
@@ -258,6 +259,28 @@ export const adminLessonStats = async (
   try {
     const data = await adminLessonStatsService();
     return res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* ── Update Meeting URL (tutor) ── */
+
+export const updateMeetingUrl = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const data = await updateMeetingUrlService(
+      req.params.id,
+      userId.toString(),
+      req.body.meetingUrl
+    );
+    return res.status(data.statusCode).json(data);
   } catch (error) {
     next(error);
   }

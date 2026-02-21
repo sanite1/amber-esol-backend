@@ -122,13 +122,21 @@ async function buildStudentItem(
     b.date.localeCompare(a.date)
   )[0];
 
-  // Recent lessons (last 4)
+  /// Recent lessons (last 4)
+  const now = new Date();
+
   const recentBookings = bookings
-    .sort(
-      (a: any, b: any) =>
-        new Date(`${b.date}T${b.startTime}`).getTime() -
-        new Date(`${a.date}T${a.startTime}`).getTime()
-    )
+    .sort((a: any, b: any) => {
+      const dateA = new Date(`${a.date}T${a.startTime}`);
+      const dateB = new Date(`${b.date}T${b.startTime}`);
+      const aIsUpcoming = dateA >= now;
+      const bIsUpcoming = dateB >= now;
+
+      if (aIsUpcoming && !bIsUpcoming) return -1;
+      if (!aIsUpcoming && bIsUpcoming) return 1;
+      if (aIsUpcoming && bIsUpcoming) return dateA.getTime() - dateB.getTime();
+      return dateB.getTime() - dateA.getTime();
+    })
     .slice(0, 4);
 
   const recentLessons: IStudentLesson[] = recentBookings.map((b: any) => {

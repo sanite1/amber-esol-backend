@@ -18,6 +18,7 @@ import myStudentsRoutes from "./routes/myStudents.routes";
 import tutorDashboardRoutes from "./routes/tutorDashboard.routes";
 import studentDashboardRoutes from "./routes/studentDashboard.routes";
 import adminDashboardRoutes from "./routes/adminDashboard.routes";
+import cronRoutes from "./routes/cron.routes";
 import { stripeWebhook } from "./controllers/webhook.controller";
 import { initSocketIO } from "./services/websocket.service";
 
@@ -26,25 +27,19 @@ const PORT = 4000;
 const app = express();
 const server = createServer(app);
 
-// ── CORS must come first so preflight works for all routes ──
 const corsOption = {
   origin: "*",
   credentials: true,
 };
 app.use(cors(corsOption));
 
-// ══════════════════════════════════════════════════════════════
-// ── Stripe webhook MUST be registered BEFORE express.json() ──
-// ── because Stripe needs the raw, unparsed request body to  ──
-// ── verify the webhook signature.                            ──
-// ══════════════════════════════════════════════════════════════
+// ── Stripe webhook MUST be before express.json() ──
 app.post(
   "/api/webhooks/stripe",
   raw({ type: "application/json" }),
   stripeWebhook
 );
 
-// ── Now enable JSON parsing for all other routes ──
 app.use(express.json());
 
 connectDb();
@@ -64,6 +59,7 @@ app.use("/api/my-students", myStudentsRoutes);
 app.use("/api/tutor-dashboard", tutorDashboardRoutes);
 app.use("/api/student-dashboard", studentDashboardRoutes);
 app.use("/api/admin-dashboard", adminDashboardRoutes);
+app.use("/api/cron", cronRoutes);
 
 // ── Use server.listen instead of app.listen for Socket.IO ──
 server.listen(PORT, () => {
