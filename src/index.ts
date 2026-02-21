@@ -33,40 +33,42 @@ const corsOption = {
 };
 app.use(cors(corsOption));
 
-// ── Stripe webhook MUST be before express.json() ──
-app.post(
-  "/api/webhooks/stripe",
-  raw({ type: "application/json" }),
-  stripeWebhook
-);
+(async () => {
+  // ── Stripe webhook MUST be before express.json() ──
+  app.post(
+    "/api/webhooks/stripe",
+    raw({ type: "application/json" }),
+    stripeWebhook
+  );
 
-app.use(express.json());
+  app.use(express.json());
 
-connectDb();
+  connectDb();
 
-// ── Initialise WebSocket ──
-initSocketIO(server);
+  // ── Initialise WebSocket ──
+  initSocketIO(server);
 
-app.use("/api/users", userRoutes);
-app.use("/api/availability", availabilityRoutes);
-app.use("/api/bookings", bookingRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api/reviews", reviewRoutes);
-app.use("/api/conversations", messagingRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/my-tutors", myTutorsRoutes);
-app.use("/api/my-students", myStudentsRoutes);
-app.use("/api/tutor-dashboard", tutorDashboardRoutes);
-app.use("/api/student-dashboard", studentDashboardRoutes);
-app.use("/api/admin-dashboard", adminDashboardRoutes);
-app.use("/api/cron", cronRoutes);
+  app.use("/api/users", userRoutes);
+  app.use("/api/availability", availabilityRoutes);
+  app.use("/api/bookings", bookingRoutes);
+  app.use("/api/payments", paymentRoutes);
+  app.use("/api/reviews", reviewRoutes);
+  app.use("/api/conversations", messagingRoutes);
+  app.use("/api/notifications", notificationRoutes);
+  app.use("/api/my-tutors", myTutorsRoutes);
+  app.use("/api/my-students", myStudentsRoutes);
+  app.use("/api/tutor-dashboard", tutorDashboardRoutes);
+  app.use("/api/student-dashboard", studentDashboardRoutes);
+  app.use("/api/admin-dashboard", adminDashboardRoutes);
+  app.use("/api/cron", cronRoutes);
 
-// ── Use server.listen instead of app.listen for Socket.IO ──
-server.listen(PORT, () => {
-  console.log("Server Listening on port 4000...");
-});
+  // ── Use server.listen instead of app.listen for Socket.IO ──
+  server.listen(PORT, () => {
+    console.log("Server Listening on port 4000...");
+  });
 
-app.all("*", (req, _res, next) => {
-  next(new ApiError(404, `Can't find ${req.originalUrl} on the server!`));
-});
-app.use(globalErrorHandler);
+  app.all("*", (req, _res, next) => {
+    next(new ApiError(404, `Can't find ${req.originalUrl} on the server!`));
+  });
+  app.use(globalErrorHandler);
+})();
