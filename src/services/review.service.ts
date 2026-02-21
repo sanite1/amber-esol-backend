@@ -894,3 +894,70 @@ export const adminHandleReportService = async (
 
   return new ApiResponse(200, "Report handled successfully", review.toJSON());
 };
+
+/* ── Admin: Review Stats ── */
+
+export const adminReviewStatsService = async () => {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthStr = startOfMonth.toISOString();
+
+  const [
+    totalReviews,
+    publishedReviews,
+    hiddenReviews,
+    removedReviews,
+    reviewsThisMonth,
+    avgResult,
+    totalReports,
+    pendingReports,
+    dismissedReports,
+    actionsTaken,
+    reportsThisMonth,
+  ] = await Promise.all([
+    Review.countDocuments({}),
+    Review.countDocuments({ status: "published" }),
+    Review.countDocuments({ status: "hidden" }),
+    Review.countDocuments({ status: "removed" }),
+    Review.countDocuments({ createdAt: { $gte: startOfMonth } }),
+    Review.aggregate([
+      { $match: { status: "published" } },
+      { $group: { _id: null, avg: { $avg: "$rating" } } },
+    ]),
+    Review.aggregate([{ $unwind: "$reports" }, { $count: "total" }]),
+    Review.aggregate([
+      { $unwind: "$reports" },
+      { $match: { "reports.status": "pending" } },
+      { $count: "total" },
+    ]),
+    Review.aggregate([
+      { $unwind: "$reports" },
+      { $match: { "reports.status": "dismissed" } },
+      { $count: "total" },
+    ]),
+    Review.aggregate([
+      { $unwind: "$reports" },
+      { $match: { "reports.status": { $in: ["reviewed", "action_taken"] } } },
+      { $count: "total" },
+    ]),
+    Review.aggregate([
+      { $unwind: "$reports" },
+      { $match: { "reports.createdAt": { $gte: startOfMonth } } },
+      { $count: "total" },
+    ]),
+  ]);
+
+  return new ApiResponse(200, "Admin review stats retrieved successfully", {
+    totalReviews,
+    publishedReviews,
+    hiddenReviews,
+    removedReviews,
+    averageRating: Math.round((avgResult[0]?.avg || 0) * 100) / 100,
+    totalReports: totalReports[0]?.total || 0,
+    pendingReports: pendingReports[0]?.total || 0,
+    dismissedReports: dismissedReports[0]?.total || 0,
+    actionsTaken: actionsTaken[0]?.total || 0,
+    reviewsThisMonth,
+    reportsThisMonth: reportsThisMonth[0]?.total || 0,
+  });
+};

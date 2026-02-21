@@ -28,6 +28,7 @@ import {
   adminRemoveReviewService,
   adminRestoreReviewService,
   adminHandleReportService,
+  adminReviewStatsService,
 } from "../services/review.service";
 
 /* ── Create Review (student) ── */
@@ -304,6 +305,21 @@ export const adminHandleReport: ExpressFunction<
       req.body
     );
     return res.status(data.statusCode).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* ── Admin: Review Stats ── */
+
+export const adminReviewStats = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const data = await adminReviewStatsService();
+    return res.status(200).json(data);
   } catch (error) {
     next(error);
   }

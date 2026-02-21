@@ -39,6 +39,7 @@ import {
   adminRemoveReview,
   adminRestoreReview,
   adminHandleReport,
+  adminReviewStats,
 } from "../controllers/review.controller";
 
 const router = Router();
@@ -165,5 +166,7 @@ router.patch(
   adminReportActionValidation(),
   adminHandleReport
 );
+// ── Admin: Review stats ──
+router.get("/admin/stats", isAuthenticated, isAdmin, adminReviewStats);
 
 export default router;

@@ -6,6 +6,7 @@ import {
   IDeclineBookingRequest,
   IBookingQuery,
   IUpcomingQuery,
+  IFlagBookingRequest,
 } from "../interfaces/booking.interface";
 import {
   createBookingService,
@@ -19,6 +20,8 @@ import {
   noShowBookingService,
   upcomingBookingsService,
   bookingStatsService,
+  flagBookingService,
+  adminLessonStatsService,
 } from "../services/booking.service";
 
 /* ── Create Booking (student) ── */
@@ -244,6 +247,36 @@ export const bookingStats = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
     const data = await bookingStatsService(userId, role);
+    return res.status(200).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* ── Flag Booking (admin) ── */
+
+export const flagBooking: ExpressFunction<IFlagBookingRequest> = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const data = await flagBookingService(req.params.id, req.body);
+    return res.status(data.statusCode).json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* ── Admin Lesson Stats ── */
+
+export const adminLessonStats = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const data = await adminLessonStatsService();
     return res.status(200).json(data);
   } catch (error) {
     next(error);

@@ -18,6 +18,9 @@ import myStudentsRoutes from "./routes/myStudents.routes";
 import tutorDashboardRoutes from "./routes/tutorDashboard.routes";
 import studentDashboardRoutes from "./routes/studentDashboard.routes";
 import adminDashboardRoutes from "./routes/adminDashboard.routes";
+import adminStudentsRoutes from "./routes/adminStudents.routes";
+import adminTutorsRoutes from "./routes/adminTutors.routes";
+import ticketRoutes from "./routes/ticket.routes";
 import { stripeWebhook } from "./controllers/booking.controller";
 import { paymentWebhook } from "./controllers/payment.controller";
 import { initSocketIO } from "./services/websocket.service";
@@ -64,6 +67,9 @@ app.use("/api/my-students", myStudentsRoutes);
 app.use("/api/tutor-dashboard", tutorDashboardRoutes);
 app.use("/api/student-dashboard", studentDashboardRoutes);
 app.use("/api/admin-dashboard", adminDashboardRoutes);
+app.use("/api/admin-students", adminStudentsRoutes);
+app.use("/api/admin-tutors", adminTutorsRoutes);
+app.use("/api/tickets", ticketRoutes);
 
 // ── Use server.listen instead of app.listen for Socket.IO ── ← CHANGED
 server.listen(PORT, () => {

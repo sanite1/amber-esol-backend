@@ -37,6 +37,10 @@ export interface IBooking extends Document {
   endTime: string; // "HH:mm"
   timezone: string;
 
+  // Admin flagging
+  flagged: boolean;
+  flagReason?: string;
+
   // Pricing
   price: number; // 0 for trials
   currency: string;
@@ -148,3 +152,8 @@ export const formatBookingDate = (dateStr: string) => {
     year: "numeric",
   });
 };
+
+export interface IFlagBookingRequest {
+  flagged: boolean;
+  flagReason?: string;
+}

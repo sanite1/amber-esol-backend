@@ -18,6 +18,9 @@ const bookingSchema = new Schema<IBooking>(
       enum: ["trial", "regular"],
       required: true,
     },
+    flagged: { type: Boolean, default: false },
+    flagReason: { type: String, trim: true },
+
     status: {
       type: String,
       enum: [

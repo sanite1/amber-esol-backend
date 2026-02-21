@@ -1224,3 +1224,114 @@ export const bookingStatsService = async (userId: string, role: string) => {
     totalSpent,
   });
 };
+
+/* ── Flag / Unflag Booking (admin) ── */
+
+export const flagBookingService = async (
+  bookingId: string,
+  data: { flagged: boolean; flagReason?: string }
+) => {
+  const booking = await Booking.findById(bookingId);
+  if (!booking) {
+    throw new ApiError(404, "Booking not found");
+  }
+
+  booking.flagged = data.flagged;
+  booking.flagReason = data.flagged ? data.flagReason || undefined : undefined;
+  await booking.save();
+
+  const action = data.flagged ? "flagged" : "unflagged";
+  return new ApiResponse(
+    200,
+    `Booking ${action} successfully`,
+    booking.toJSON()
+  );
+};
+
+/* ── Admin Lesson Stats ── */
+
+export const adminLessonStatsService = async () => {
+  const now = new Date();
+  const today = now.toISOString().split("T")[0];
+  const currentHHmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+  const [
+    totalLessons,
+    completedLessons,
+    cancelledLessons,
+    noShowLessons,
+    trialLessons,
+    flaggedLessons,
+  ] = await Promise.all([
+    Booking.countDocuments({}),
+    Booking.countDocuments({ status: "completed" }),
+    Booking.countDocuments({
+      status: {
+        $in: ["cancelled_student", "cancelled_tutor", "cancelled_admin"],
+      },
+    }),
+    Booking.countDocuments({ status: "no_show" }),
+    Booking.countDocuments({ type: "trial" }),
+    Booking.countDocuments({ flagged: true }),
+  ]);
+
+  // Upcoming: pending or confirmed, date >= today
+  const upcomingLessons = await Booking.countDocuments({
+    status: { $in: ["pending", "confirmed"] },
+    date: { $gte: today },
+  });
+
+  // In-progress: confirmed, date is today, startTime <= now < endTime
+  const inProgressLessons = await Booking.countDocuments({
+    status: "confirmed",
+    date: today,
+    startTime: { $lte: currentHHmm },
+    endTime: { $gt: currentHHmm },
+  });
+
+  // Financial aggregation from transactions
+  const financials = await Transaction.aggregate([
+    { $match: { status: "paid" } },
+    {
+      $group: {
+        _id: null,
+        totalRevenue: { $sum: "$amount" },
+        totalCommission: { $sum: "$platformCommission" },
+      },
+    },
+  ]);
+
+  const totalRevenue = financials[0]?.totalRevenue || 0;
+  const totalCommission = financials[0]?.totalCommission || 0;
+
+  // Completion rate
+  const finishedLessons = completedLessons + noShowLessons;
+  const totalAttempted = finishedLessons + cancelledLessons;
+  const completionRate =
+    totalAttempted > 0
+      ? Math.round((finishedLessons / totalAttempted) * 1000) / 10
+      : 0;
+
+  // Average rating from reviews
+  const Review = require("../models/Review").default;
+  const ratingResult = await Review.aggregate([
+    { $match: { status: "published" } },
+    { $group: { _id: null, avg: { $avg: "$rating" } } },
+  ]);
+  const avgRating = Math.round((ratingResult[0]?.avg || 0) * 10) / 10;
+
+  return new ApiResponse(200, "Admin lesson stats retrieved successfully", {
+    totalLessons,
+    completedLessons,
+    upcomingLessons,
+    cancelledLessons,
+    noShowLessons,
+    inProgressLessons,
+    trialLessons,
+    totalRevenue: Math.round(totalRevenue * 100) / 100,
+    totalCommission: Math.round(totalCommission * 100) / 100,
+    completionRate,
+    avgRating,
+    flaggedLessons,
+  });
+};

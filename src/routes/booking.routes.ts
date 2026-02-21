@@ -1,5 +1,6 @@
 import { Router, raw } from "express";
 import {
+  isAdmin,
   isAuthenticated,
   isStudent,
   isTutor,
@@ -14,6 +15,7 @@ import {
   cancelBookingValidation,
   completeBookingValidation,
   noShowBookingValidation,
+  flagBookingValidation,
 } from "../validations/booking.validation";
 import {
   createBooking,
@@ -27,6 +29,8 @@ import {
   noShowBooking,
   upcomingBookings,
   bookingStats,
+  adminLessonStats,
+  flagBooking,
 } from "../controllers/booking.controller";
 
 const router = Router();
@@ -102,6 +106,17 @@ router.patch(
   isAuthenticated,
   noShowBookingValidation(),
   noShowBooking
+);
+// ── Admin: Lesson stats (enriched) ──
+router.get("/admin/stats", isAuthenticated, isAdmin, adminLessonStats);
+
+// ── Admin: Flag / Unflag booking ──
+router.patch(
+  "/:id/flag",
+  isAuthenticated,
+  isAdmin,
+  flagBookingValidation(),
+  flagBooking
 );
 
 export default router;

@@ -267,6 +267,29 @@ const noShowBookingSchema = {
   }),
 };
 
+/* ── PATCH /bookings/:id/flag (admin) ── */
+
+const flagBookingSchema = {
+  params: Joi.object({
+    id: objectId.required().messages({
+      "any.required": "Booking ID is required",
+    }),
+  }),
+  body: Joi.object({
+    flagged: Joi.boolean().required().messages({
+      "boolean.base": "Flagged must be a boolean",
+      "any.required": "Flagged is required",
+    }),
+    flagReason: Joi.string().trim().max(500).optional().allow("").messages({
+      "string.max": "Flag reason cannot exceed 500 characters",
+    }),
+  })
+    .unknown(false)
+    .messages({
+      "object.unknown": 'Field "{{#label}}" is not allowed',
+    }),
+};
+
 /* ══════════════════════════════════════════════
    Export validation middleware functions
    ══════════════════════════════════════════════ */
@@ -297,3 +320,6 @@ export const completeBookingValidation = () =>
 
 export const noShowBookingValidation = () =>
   validate(noShowBookingSchema, { context: true }, { abortEarly: false });
+
+export const flagBookingValidation = () =>
+  validate(flagBookingSchema, { context: true }, { abortEarly: false });
