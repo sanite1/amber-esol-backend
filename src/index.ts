@@ -26,19 +26,26 @@ const PORT = 4000;
 const app = express();
 const server = createServer(app);
 
-app.use(express.json());
-
+// ── CORS must come first so preflight works for all routes ──
 const corsOption = {
   origin: "*",
   credentials: true,
 };
 app.use(cors(corsOption));
 
+// ══════════════════════════════════════════════════════════════
+// ── Stripe webhook MUST be registered BEFORE express.json() ──
+// ── because Stripe needs the raw, unparsed request body to  ──
+// ── verify the webhook signature.                            ──
+// ══════════════════════════════════════════════════════════════
 app.post(
   "/api/webhooks/stripe",
   raw({ type: "application/json" }),
   stripeWebhook
 );
+
+// ── Now enable JSON parsing for all other routes ──
+app.use(express.json());
 
 connectDb();
 
