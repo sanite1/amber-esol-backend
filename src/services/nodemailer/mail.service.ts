@@ -602,3 +602,36 @@ export const sendNewMessageNotificationMail = async (
     console.error("Error sending new message notification email:", error);
   }
 };
+
+/* ── Lesson Completed + Review Prompt (sent to STUDENT) ── */
+
+export const sendLessonCompletedMail = async (ctx: {
+  studentName: string;
+  studentEmail: string;
+  tutorName: string;
+  lessonDate: string;
+  lessonTime: string;
+  lessonType: string;
+  reviewUrl: string;
+}) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.studentEmail,
+    template: "./lessonCompleted",
+    subject: `Lesson Completed — How was your session? - Amber Training`,
+    context: {
+      studentName: ctx.studentName,
+      tutorName: ctx.tutorName,
+      lessonDate: ctx.lessonDate,
+      lessonTime: ctx.lessonTime,
+      lessonType: ctx.lessonType,
+      reviewUrl: ctx.reviewUrl,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending lesson completed email:", error);
+  }
+};

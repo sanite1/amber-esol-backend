@@ -2,6 +2,7 @@ import Booking from "../models/Booking";
 import User from "../models/User";
 import { creditTutorForCompletedLesson } from "./payment.service";
 import { createNotification } from "./notification.service";
+import { sendLessonCompletedMail } from "./nodemailer/mail.service";
 
 /**
  * Auto-complete confirmed lessons whose end time has passed by
@@ -116,6 +117,40 @@ export const autoCompleteLessonsService = async () => {
           err
         )
       );
+      // ── 9. Send "Lesson Completed" email to student ──
+      if (student) {
+        const studentFull = await User.findById(booking.studentId).select(
+          "email firstname"
+        );
+        if (studentFull?.email) {
+          const DOMAIN_NAME =
+            process.env.DOMAIN_NAME || "http://localhost:3000";
+          const formattedDate = new Date(
+            `${booking.date}T00:00:00`
+          ).toLocaleDateString("en-GB", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          });
+
+          sendLessonCompletedMail({
+            studentName: studentFull.firstname,
+            studentEmail: studentFull.email,
+            tutorName:
+              `${tutor?.firstname || "Tutor"} ${tutor?.lastname || ""}`.trim(),
+            lessonDate: formattedDate,
+            lessonTime: `${booking.startTime} – ${booking.endTime}`,
+            lessonType: booking.type,
+            reviewUrl: `${DOMAIN_NAME}/lessons`,
+          }).catch((err) =>
+            console.error(
+              `[cron] Error sending completed email to ${booking.studentId}:`,
+              err
+            )
+          );
+        }
+      }
 
       completedCount++;
     } catch (err: any) {

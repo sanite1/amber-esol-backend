@@ -21,6 +21,7 @@ import {
   sendBookingDeclinedMail,
   sendBookingCancelledByStudentMail,
   sendBookingCancelledByTutorMail,
+  sendLessonCompletedMail,
 } from "./nodemailer/mail.service";
 import { creditTutorForCompletedLesson } from "./payment.service";
 import { createNotification } from "./notification.service";
@@ -362,9 +363,37 @@ export const listBookingsService = async (
       .limit(limit),
     Booking.countDocuments(filter),
   ]);
+  // ── Attach review data to each booking ──
+  const Review = require("../models/Review").default;
+  const bookingIds = bookings.map((b) => b._id);
+  const reviews = await Review.find({
+    bookingId: { $in: bookingIds },
+    status: "published",
+  })
+    .select("bookingId rating comment createdAt")
+    .lean();
+
+  const reviewMap = new Map<string, any>();
+  for (const r of reviews) {
+    reviewMap.set(r.bookingId.toString(), r);
+  }
+
+  const bookingsWithReviews = bookings.map((b) => {
+    const json = b.toJSON() as any;
+    const review = reviewMap.get(b._id.toString());
+    json.review = review
+      ? {
+          rating: review.rating,
+          comment: review.comment,
+          date: review.createdAt,
+        }
+      : null;
+    json.hasReview = !!review;
+    return json;
+  });
 
   return new ApiResponse(200, "Bookings retrieved successfully", {
-    bookings: bookings.map((b) => b.toJSON()),
+    bookings: bookingsWithReviews,
     pagination: {
       page,
       limit,
@@ -444,8 +473,9 @@ export const confirmBookingService = async (
   // ── Auto-generate a Zoom meeting link if no URL exists yet ──
   if (!booking.meetingUrl) {
     const student = await User.findById(booking.studentId).select(
-      "firstname lastname"
+      "firstname lastname email"
     );
+
     const tutor = await User.findById(booking.tutorId).select(
       "firstname lastname"
     );
@@ -828,6 +858,48 @@ export const completeBookingService = async (
     },
   }).catch((err) =>
     console.error("Error creating tutor completion notification:", err)
+  );
+
+  // ── Send "Lesson Completed + Review Prompt" email to student ──
+  if (student) {
+    const DOMAIN_NAME = process.env.DOMAIN_NAME || "http://localhost:3000";
+    const formattedDate = new Date(
+      `${booking.date}T00:00:00`
+    ).toLocaleDateString("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    sendLessonCompletedMail({
+      studentName: student.firstname,
+      studentEmail:
+        (await User.findById(booking.studentId).select("email"))?.email || "",
+      tutorName:
+        `${tutor?.firstname || "Your tutor"} ${tutor?.lastname || ""}`.trim(),
+      lessonDate: formattedDate,
+      lessonTime: `${booking.startTime} – ${booking.endTime}`,
+      lessonType: booking.type,
+      reviewUrl: `${DOMAIN_NAME}/lessons`,
+    }).catch((err) =>
+      console.error("Error sending lesson completed email:", err)
+    );
+  }
+
+  // ── Review prompt notification ──
+  createNotification({
+    userId: booking.studentId,
+    type: "review_prompt" as any,
+    title: "How was your lesson?",
+    message: `Your lesson with ${tutor?.firstname || "your tutor"} ${tutor?.lastname || ""} on ${booking.date} is complete. We'd love to hear your feedback!`,
+    data: {
+      bookingId: booking._id.toString(),
+      tutorId: booking.tutorId.toString(),
+      date: booking.date,
+    },
+  }).catch((err) =>
+    console.error("Error sending review prompt notification:", err)
   );
 
   return new ApiResponse(200, "Booking marked as completed", booking.toJSON());
