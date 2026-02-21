@@ -19,7 +19,6 @@ import {
 } from "../validations/booking.validation";
 import {
   createBooking,
-  stripeWebhook,
   listBookings,
   getBookingById,
   confirmBooking,

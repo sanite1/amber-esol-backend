@@ -22,7 +22,6 @@ import {
 } from "../validations/payment.validation";
 import {
   createPaymentIntent,
-  paymentWebhook,
   listTransactions,
   getTransactionById,
   paymentSummary,
