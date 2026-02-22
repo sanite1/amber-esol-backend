@@ -103,7 +103,7 @@ router.get("/tutors", getTutorsValidation(), getTutors);
 // ── User Profile (authenticated) ──
 router
   .route("/:id")
-  .get(isAuthenticated, getUserByIdValidation(), getUserById)
+  .get(getUserByIdValidation(), getUserById)
   .patch(
     isAuthenticated,
     upload.fields([{ name: "profilePicture", maxCount: 1 }]),
