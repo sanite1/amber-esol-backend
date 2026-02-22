@@ -8,6 +8,7 @@ import Message from "../models/Message";
 import Review from "../models/Review";
 import { IStudentDashboardQuery } from "../interfaces/studentDashboard.interface";
 import { completeStaleBookings } from "../utils/completeStaleBookings";
+import { hasLessonStarted, todayInTz } from "../utils/timezone";
 
 /* ══════════════════════════════════════════════
    GET STUDENT DASHBOARD
@@ -31,7 +32,7 @@ export const getStudentDashboardService = async (
   }
 
   /* ── Date helpers ── */
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayInTz("Europe/London");
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
@@ -170,20 +171,11 @@ export const getStudentDashboardService = async (
   const totalLessonsNeeded = levelDiff * 20;
   const lessonsCompleted = completedBookings;
 
-  const now = new Date();
-
   // After fetching upcomingBookings, filter out lessons whose start time has passed
   const filteredUpcoming = upcomingBookings.filter((b: any) => {
-    const lessonDate = new Date(b.date + "T00:00:00");
-    if (lessonDate.toDateString() !== now.toDateString()) {
-      // Future date — always include
-      return true;
-    }
-    // Same day — only include if start time hasn't passed
-    const [h, m] = (b.startTime || "00:00").split(":").map(Number);
-    const lessonStart = new Date(lessonDate);
-    lessonStart.setHours(h, m, 0, 0);
-    return lessonStart > now;
+    const tz = b.timezone || "Europe/London";
+    if (b.date !== today) return true; // future date — always include
+    return !hasLessonStarted(b.date, b.startTime, tz);
   });
 
   /* ── Build upcoming lessons array ── */

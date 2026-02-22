@@ -4,6 +4,8 @@ import { creditTutorForCompletedLesson } from "./payment.service";
 import { createNotification } from "./notification.service";
 import { sendLessonCompletedMail } from "./nodemailer/mail.service";
 import logger from "../config/logger";
+import { hasLessonEnded, todayInTz } from "../utils/timezone";
+import { lessonDurationHours } from "../utils/timeHelpers";
 
 /**
  * Auto-complete confirmed lessons whose end time has passed by
@@ -19,7 +21,7 @@ export const autoCompleteLessonsService = async () => {
   // ── 1. Find all confirmed bookings whose lesson date is today or earlier ──
   // We'll do a precise time check in JS because date + endTime are stored
   // as separate string fields, not a single Date.
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = todayInTz("Europe/London");
 
   const candidates = await Booking.find({
     status: "confirmed",
@@ -32,14 +34,9 @@ export const autoCompleteLessonsService = async () => {
   for (const booking of candidates) {
     try {
       // ── 2. Build the real end-of-lesson datetime ──
-      const [endH, endM] = booking.endTime.split(":").map(Number);
-      const lessonEnd = new Date(`${booking.date}T00:00:00`);
-      lessonEnd.setHours(endH, endM, 0, 0);
 
-      // ── 3. Only complete if 30+ minutes have passed since lesson ended ──
-      const minutesSinceEnd =
-        (now.getTime() - lessonEnd.getTime()) / (1000 * 60);
-      if (minutesSinceEnd < 30) continue;
+      const tz = booking.timezone || "Europe/London";
+      if (!hasLessonEnded(booking.date, booking.endTime, tz, 30)) continue;
 
       // ── 4. Mark as completed ──
       booking.status = "completed";
@@ -55,7 +52,13 @@ export const autoCompleteLessonsService = async () => {
       });
 
       await User.findByIdAndUpdate(booking.studentId, {
-        $inc: { totalLessonsTaken: 1, totalHoursLearned: 1 },
+        $inc: {
+          totalLessonsTaken: 1,
+          totalHoursLearned: lessonDurationHours(
+            booking.startTime,
+            booking.endTime
+          ),
+        },
       });
 
       // ── 7. Notify both parties ──

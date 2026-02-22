@@ -12,6 +12,8 @@ import {
   DayOfWeek,
 } from "../interfaces/availability.interface";
 import Booking from "../models/Booking";
+import moment from "moment-timezone";
+import { nowInTz, todayInTz } from "../utils/timezone";
 
 /* ── Helper: day name from a date string ── */
 
@@ -200,8 +202,12 @@ export const createOverrideService = async (
   tutorId: string,
   data: ICreateOverrideRequest
 ) => {
+  // Get tutor's timezone for accurate "today" check
+  const availability = await Availability.findOne({ tutorId });
+  const tz = availability?.timezone || "Europe/London";
+  const today = todayInTz(tz);
+
   // Validate date is not in the past
-  const today = new Date().toISOString().split("T")[0];
   if (data.date < today) {
     throw new ApiError(400, "Cannot create an override for a past date");
   }
@@ -288,28 +294,29 @@ export const getAvailableSlotsService = async (
     });
   }
 
+  const tz = availability.timezone || "Europe/London";
   const durationMinutes = parseInt(query.duration || "60", 10);
   const requestedDate = query.date;
 
   // 1. Check if the date is within the allowed booking window
-  const today = new Date();
-  const maxDate = new Date();
-  maxDate.setDate(maxDate.getDate() + availability.maxBookingAdvance);
+  const { dateStr: todayStr, momentObj: nowMoment } = nowInTz(tz);
 
-  const reqDate = new Date(requestedDate + "T00:00:00Z");
-  if (reqDate < new Date(today.toISOString().split("T")[0] + "T00:00:00Z")) {
+  if (requestedDate < todayStr) {
     return new ApiResponse(200, "Date is in the past", {
       date: requestedDate,
       slots: [],
-      timezone: availability.timezone,
+      timezone: tz,
     });
   }
 
-  if (reqDate > maxDate) {
+  const maxDate = moment.tz(tz).add(availability.maxBookingAdvance, "days");
+  const reqMoment = moment.tz(requestedDate, "YYYY-MM-DD", tz);
+
+  if (reqMoment.isAfter(maxDate, "day")) {
     return new ApiResponse(200, "Date is beyond the maximum booking advance", {
       date: requestedDate,
       slots: [],
-      timezone: availability.timezone,
+      timezone: tz,
     });
   }
 
@@ -324,13 +331,12 @@ export const getAvailableSlotsService = async (
       return new ApiResponse(200, "Tutor is unavailable on this date", {
         date: requestedDate,
         slots: [],
-        timezone: availability.timezone,
+        timezone: tz,
         override: { type: "unavailable", reason: override.reason },
       });
     }
 
     if (override.type === "extra" && override.blocks) {
-      // Use the override blocks instead of the regular schedule
       const dayOfWeek = getDayOfWeek(requestedDate);
       const regularDay = availability.weeklySchedule.find(
         (d) => d.day === dayOfWeek
@@ -338,24 +344,50 @@ export const getAvailableSlotsService = async (
       const regularBlocks =
         regularDay && regularDay.enabled ? regularDay.blocks : [];
 
-      // Merge regular + extra blocks
       const allBlocks = [...regularBlocks, ...override.blocks];
-
-      // Sort by start time
       allBlocks.sort(
         (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
       );
 
-      const slots = generateSlots(
+      let slots = generateSlots(
         allBlocks,
         durationMinutes,
         availability.bufferMinutes
       );
 
+      // Filter past slots if today
+      if (requestedDate === todayStr) {
+        const nowMinutes =
+          nowMoment.hours() * 60 +
+          nowMoment.minutes() +
+          availability.minBookingNotice * 60;
+
+        slots = slots.filter(
+          (slot) => timeToMinutes(slot.startTime) >= nowMinutes
+        );
+      }
+
+      // Filter booked slots
+      const bookedSlots = await Booking.find({
+        tutorId,
+        date: requestedDate,
+        status: { $in: ["pending", "confirmed"] },
+      }).select("startTime endTime");
+
+      slots = slots.filter((slot) => {
+        const slotStart = timeToMinutes(slot.startTime);
+        const slotEnd = timeToMinutes(slot.endTime);
+        return !bookedSlots.some((b) => {
+          const bookingStart = timeToMinutes(b.startTime);
+          const bookingEnd = timeToMinutes(b.endTime);
+          return slotStart < bookingEnd && slotEnd > bookingStart;
+        });
+      });
+
       return new ApiResponse(200, "Available slots retrieved successfully", {
         date: requestedDate,
         slots,
-        timezone: availability.timezone,
+        timezone: tz,
         override: { type: "extra", reason: override.reason },
       });
     }
@@ -371,7 +403,7 @@ export const getAvailableSlotsService = async (
     return new ApiResponse(200, "Tutor is not available on this day", {
       date: requestedDate,
       slots: [],
-      timezone: availability.timezone,
+      timezone: tz,
     });
   }
 
@@ -383,13 +415,12 @@ export const getAvailableSlotsService = async (
   );
 
   // 5. If the requested date is today, filter out past slots
-  const todayStr = today.toISOString().split("T")[0];
   let filteredSlots = slots;
 
   if (requestedDate === todayStr) {
     const nowMinutes =
-      today.getUTCHours() * 60 +
-      today.getUTCMinutes() +
+      nowMoment.hours() * 60 +
+      nowMoment.minutes() +
       availability.minBookingNotice * 60;
 
     filteredSlots = slots.filter(
@@ -397,7 +428,7 @@ export const getAvailableSlotsService = async (
     );
   }
 
-  // ── Filter out slots that overlap with existing bookings ──
+  // 6. Filter out slots that overlap with existing bookings
   const bookedSlots = await Booking.find({
     tutorId,
     date: requestedDate,
@@ -408,12 +439,9 @@ export const getAvailableSlotsService = async (
     const slotStart = timeToMinutes(slot.startTime);
     const slotEnd = timeToMinutes(slot.endTime);
 
-    // A slot is unavailable if it overlaps with ANY existing booking
     return !bookedSlots.some((b) => {
       const bookingStart = timeToMinutes(b.startTime);
       const bookingEnd = timeToMinutes(b.endTime);
-
-      // Two ranges overlap if one starts before the other ends
       return slotStart < bookingEnd && slotEnd > bookingStart;
     });
   });
@@ -421,6 +449,6 @@ export const getAvailableSlotsService = async (
   return new ApiResponse(200, "Available slots retrieved successfully", {
     date: requestedDate,
     slots: filteredSlots,
-    timezone: availability.timezone,
+    timezone: tz,
   });
 };

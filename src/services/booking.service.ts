@@ -31,6 +31,8 @@ import { createDailyRoom } from "./daily.service";
 import { createZoomMeeting } from "./zoom.service";
 import Review from "../models/Review";
 import logger from "../config/logger";
+import { currentTimeInTz, toDateInTz, todayInTz } from "../utils/timezone";
+import { lessonDurationHours } from "../utils/timeHelpers";
 
 /* ── Stripe init ── */
 
@@ -103,7 +105,7 @@ export const createBookingService = async (
   for (const slot of data.slots) {
     const slotDate = slot.date;
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayInTz(availability.timezone || "Europe/London");
     if (slotDate < today) {
       throw new ApiError(400, `Cannot book a slot in the past (${slotDate})`);
     }
@@ -701,7 +703,8 @@ export const cancelBookingService = async (
   await booking.save();
 
   if (booking.paymentStatus === "paid" && booking.stripePaymentIntentId) {
-    const lessonDateTime = new Date(`${booking.date}T${booking.startTime}:00Z`);
+    const tz = booking.timezone || "Europe/London";
+    const lessonDateTime = toDateInTz(booking.date, booking.startTime, tz);
     const hoursUntilLesson =
       (lessonDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
 
@@ -834,7 +837,13 @@ export const completeBookingService = async (
   });
 
   await User.findByIdAndUpdate(booking.studentId, {
-    $inc: { totalLessonsTaken: 1, totalHoursLearned: 1 },
+    $inc: {
+      totalLessonsTaken: 1,
+      totalHoursLearned: lessonDurationHours(
+        booking.startTime,
+        booking.endTime
+      ),
+    },
   });
 
   const student = await User.findById(booking.studentId).select(
@@ -1117,8 +1126,8 @@ export const flagBookingService = async (
 
 export const adminLessonStatsService = async () => {
   const now = new Date();
-  const today = now.toISOString().split("T")[0];
-  const currentHHmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const today = todayInTz("Europe/London");
+  const currentHHmm = currentTimeInTz("Europe/London");
 
   const [
     totalLessons,

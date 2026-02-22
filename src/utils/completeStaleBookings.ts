@@ -3,15 +3,19 @@ import { creditTutorForCompletedLesson } from "../services/payment.service";
 import { createNotification } from "../services/notification.service";
 import User from "../models/User";
 import logger from "../config/logger";
+import { hasLessonEnded, todayInTz } from "./timezone";
+import { lessonDurationHours } from "./timeHelpers";
 
 export const completeStaleBookings = async (
   userId: string,
   role: "student" | "tutor"
 ) => {
+  const todayStr = todayInTz("Europe/London");
   const now = new Date();
+
   const filter: any = {
     status: "confirmed",
-    date: { $lte: now.toISOString().split("T")[0] },
+    date: { $lte: todayStr },
     ...(role === "student" ? { studentId: userId } : { tutorId: userId }),
   };
 
@@ -19,12 +23,10 @@ export const completeStaleBookings = async (
 
   for (const booking of staleBookings) {
     try {
-      const [endH, endM] = (booking.endTime || "23:59").split(":").map(Number);
-      const lessonEnd = new Date(booking.date + "T00:00:00");
-      lessonEnd.setHours(endH, endM, 0, 0);
+      const tz = booking.timezone || "Europe/London";
 
       // 30-minute grace period
-      if (now.getTime() - lessonEnd.getTime() < 30 * 60 * 1000) continue;
+      if (!hasLessonEnded(booking.date, booking.endTime, tz, 30)) continue;
 
       booking.status = "completed";
       booking.completedAt = now;
@@ -38,10 +40,10 @@ export const completeStaleBookings = async (
       await User.findByIdAndUpdate(booking.studentId, {
         $inc: {
           totalLessonsTaken: 1,
-          totalHoursLearned:
-            booking.endTime && booking.startTime
-              ? (parseInt(booking.endTime) - parseInt(booking.startTime)) / 60
-              : 1,
+          totalHoursLearned: lessonDurationHours(
+            booking.startTime,
+            booking.endTime
+          ),
         },
       });
 

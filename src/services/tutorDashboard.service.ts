@@ -20,6 +20,7 @@ import {
   IDashboardRecentMessage,
 } from "../interfaces/tutorDashboard.interface";
 import { completeStaleBookings } from "../utils/completeStaleBookings";
+import { hasLessonStarted, todayInTz } from "../utils/timezone";
 
 /* ══════════════════════════════════════════════
    Helper: count weekly slots from schedule
@@ -75,7 +76,7 @@ export const getTutorDashboardService = async (
   /* ── 2. Dates ── */
 
   const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const todayStr = todayInTz("Europe/London");
 
   // Start of current week (Monday)
   const startOfWeek = new Date(now);
@@ -251,11 +252,9 @@ export const getTutorDashboardService = async (
   /* ── 4. Build welcome ── */
 
   const filteredUpcoming = (upcomingBookings as any[]).filter((b) => {
-    if (b.date !== todayStr) return true; // future date → keep
-    const [h, m] = (b.startTime || "00:00").split(":").map(Number);
-    const lessonStart = new Date(now);
-    lessonStart.setHours(h, m, 0, 0);
-    return lessonStart > now;
+    const tz = b.timezone || "Europe/London";
+    if (b.date !== todayStr) return true;
+    return !hasLessonStarted(b.date, b.startTime, tz);
   });
 
   const confirmedUpcoming = upcomingBookings.filter(
