@@ -43,8 +43,8 @@ app.use(cors(corsOption));
 
   app.use(express.json());
 
-  connectDb();
-
+  // ✅ Wait for DB before registering routes
+  await connectDb();
   // ── Initialise WebSocket ──
   initSocketIO(server);
 
