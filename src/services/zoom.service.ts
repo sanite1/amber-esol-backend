@@ -15,6 +15,8 @@
  *   - No credit card required
  */
 
+import logger from "../config/logger";
+
 /* ── Token cache ── */
 let cachedToken: string | null = null;
 let tokenExpiresAt = 0;
@@ -54,7 +56,10 @@ const getZoomAccessToken = async (): Promise<string> => {
 
   if (!response.ok) {
     const errorBody = await response.text();
-    console.error("[zoom] Token request failed:", response.status, errorBody);
+    logger.error(
+      { status: response.status, body: errorBody },
+      "Zoom token request failed"
+    );
     throw new Error(`Zoom token request failed: ${response.status}`);
   }
 
@@ -89,7 +94,7 @@ export const createZoomMeeting = async (
     !process.env.ZOOM_CLIENT_ID ||
     !process.env.ZOOM_CLIENT_SECRET
   ) {
-    console.warn("[zoom] Zoom credentials not set — skipping meeting creation");
+    logger.warn("Zoom credentials not set — skipping meeting creation");
     return null;
   }
 
@@ -134,22 +139,19 @@ export const createZoomMeeting = async (
 
     if (!response.ok) {
       const errorBody = await response.text();
-      console.error(
-        "[zoom] Meeting creation failed:",
-        response.status,
-        errorBody
+      logger.error(
+        { status: response.status, body: errorBody },
+        "Zoom meeting creation failed"
       );
       return null;
     }
 
     const meeting = await response.json();
-    console.log(
-      `[zoom] Meeting created for booking ${bookingId}: ${meeting.join_url}`
-    );
+    logger.info({ meetingUrl: meeting.join_url }, "Zoom meeting created");
 
     return meeting.join_url;
   } catch (err: any) {
-    console.error("[zoom] Error creating meeting:", err.message);
+    logger.error({ err }, "Error creating Zoom meeting");
     return null;
   }
 };

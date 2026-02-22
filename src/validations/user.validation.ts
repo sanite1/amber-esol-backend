@@ -627,12 +627,6 @@ const resetPasswordSchema = {
 /* ── Update Password ── */
 
 const updatePasswordSchema = {
-  params: Joi.object({
-    id: objectId.required().messages({
-      "any.invalid": "User ID must be a valid ID",
-      "any.required": "User ID is required",
-    }),
-  }),
   body: Joi.object({
     oldPassword: Joi.string().required().messages({
       "string.base": "Current password must be a string",

@@ -32,6 +32,7 @@ import {
   getTutors,
   deleteAccount,
 } from "../controllers/user.controller";
+import { authLimiter, passwordResetLimiter } from "../config/rateLimiter";
 
 const router = Router();
 
@@ -40,6 +41,7 @@ router.post(
   "/register/student",
   upload.fields([{ name: "profilePicture", maxCount: 1 }]),
   parseJsonFields,
+  authLimiter,
   registerStudentValidation(),
   registerStudent
 );
@@ -48,6 +50,7 @@ router.post(
   "/register/tutor",
   upload.fields([{ name: "profilePicture", maxCount: 1 }]),
   parseJsonFields,
+  authLimiter,
   registerTutorValidation(),
   registerTutor
 );
@@ -55,28 +58,40 @@ router.post(
 router.post(
   "/register/admin",
   upload.fields([{ name: "profilePicture", maxCount: 1 }]),
+  authLimiter,
   registerAdminValidation(),
   registerAdmin
 );
 
 // ── Auth ──
-router.post("/login", loginValidation(), login);
-router.post("/refresh", refreshTokenValidation(), refresh);
-router.post("/forgot-password", forgotPasswordValidation(), forgotPassword);
+router.post("/login", authLimiter, loginValidation(), login);
+router.post("/refresh", authLimiter, refreshTokenValidation(), refresh);
+router.post(
+  "/forgot-password",
+  passwordResetLimiter,
+  forgotPasswordValidation(),
+  forgotPassword
+);
 
 // ── Email Verification ──
-router.get("/verify/:id/:token", verifyEmailValidation(), verifyEmail);
+router.get(
+  "/verify/:id/:token",
+  authLimiter,
+  verifyEmailValidation(),
+  verifyEmail
+);
 
 // ── Password Reset ──
 router.patch(
   "/reset-password/:id/:token",
+  passwordResetLimiter,
   resetPasswordValidation(),
   resetPassword
 );
 
 // ── Password Update (authenticated) ──
 router.patch(
-  "/update-password/:id",
+  "/update-password",
   isAuthenticated,
   updatePasswordValidation(),
   updatePassword

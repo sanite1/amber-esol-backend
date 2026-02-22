@@ -1,6 +1,7 @@
 import { createTransport } from "nodemailer";
 import hbs from "nodemailer-express-handlebars";
 import path from "path";
+import logger from "../../config/logger";
 
 const transporter = createTransport({
   host: "mail.privateemail.com",
@@ -28,9 +29,9 @@ transporter.use("compile", hbs(handlebarOptions));
 
 transporter.verify((error: any, _success: any) => {
   if (error) {
-    console.error("SMTP connection error:", error);
+    logger.error({ err: error }, "SMTP connection error");
   } else {
-    console.log("SMTP server is ready to send messages");
+    logger.info("SMTP server is ready to send messages");
   }
 });
 

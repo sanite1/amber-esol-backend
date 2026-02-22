@@ -3,6 +3,7 @@ import User from "../models/User";
 import { creditTutorForCompletedLesson } from "./payment.service";
 import { createNotification } from "./notification.service";
 import { sendLessonCompletedMail } from "./nodemailer/mail.service";
+import logger from "../config/logger";
 
 /**
  * Auto-complete confirmed lessons whose end time has passed by
@@ -78,9 +79,9 @@ export const autoCompleteLessonsService = async () => {
           autoCompleted: true,
         },
       }).catch((err) =>
-        console.error(
-          `[cron] Error notifying student ${booking.studentId}:`,
-          err
+        logger.error(
+          { err, bookingId: booking._id },
+          "Error sending completion email"
         )
       );
 
@@ -97,7 +98,7 @@ export const autoCompleteLessonsService = async () => {
           autoCompleted: true,
         },
       }).catch((err) =>
-        console.error(`[cron] Error notifying tutor ${booking.tutorId}:`, err)
+        logger.error({ err, tutorId: booking.tutorId }, "Error notifying tutor")
       );
 
       // ── 8. Prompt student to leave a review ──
@@ -112,9 +113,9 @@ export const autoCompleteLessonsService = async () => {
           date: booking.date,
         },
       }).catch((err) =>
-        console.error(
-          `[cron] Error sending review prompt ${booking.studentId}:`,
-          err
+        logger.error(
+          { err, studentId: booking.studentId },
+          "Error notifying student"
         )
       );
       // ── 9. Send "Lesson Completed" email to student ──
@@ -144,9 +145,9 @@ export const autoCompleteLessonsService = async () => {
             lessonType: booking.type,
             reviewUrl: `${DOMAIN_NAME}/lessons`,
           }).catch((err) =>
-            console.error(
-              `[cron] Error sending completed email to ${booking.studentId}:`,
-              err
+            logger.error(
+              { err, studentId: booking.studentId },
+              "Error sending review prompt"
             )
           );
         }
@@ -155,13 +156,14 @@ export const autoCompleteLessonsService = async () => {
       completedCount++;
     } catch (err: any) {
       errors.push(`Booking ${booking._id}: ${err.message}`);
-      console.error(`[cron] Failed to complete booking ${booking._id}:`, err);
+      logger.error(
+        { err, bookingId: booking._id },
+        "Failed to complete booking"
+      );
     }
   }
 
-  console.log(
-    `[cron] Auto-complete finished: ${completedCount}/${candidates.length} bookings completed.`
-  );
+  logger.info({ errors: errors.length }, "Auto-complete finished");
 
   return {
     processed: candidates.length,

@@ -19,6 +19,7 @@ import {
   IDashboardPerformance,
   IDashboardRecentMessage,
 } from "../interfaces/tutorDashboard.interface";
+import { completeStaleBookings } from "../utils/completeStaleBookings";
 
 /* ══════════════════════════════════════════════
    Helper: count weekly slots from schedule
@@ -60,6 +61,7 @@ export const getTutorDashboardService = async (
   tutorId: string,
   query: ITutorDashboardQuery
 ): Promise<ITutorDashboardResponse> => {
+  await completeStaleBookings(tutorId, "tutor");
   const upcomingLimit = Math.min(parseInt(query.upcomingLimit || "10", 10), 20);
   const messagesLimit = Math.min(parseInt(query.messagesLimit || "4", 10), 10);
 

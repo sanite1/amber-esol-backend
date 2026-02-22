@@ -50,6 +50,12 @@ const transactionSchema = new Schema<ITransaction>(
   }
 );
 
+// Tutor earnings, payment summary
+transactionSchema.index({ tutorId: 1, status: 1 });
+
+// Lookup by booking (refunds, credit checks, duplicate guards)
+transactionSchema.index({ bookingId: 1, status: 1 });
+
 const Transaction = model<ITransaction>("Transaction", transactionSchema);
 
 export default Transaction;

@@ -8,6 +8,7 @@ import {
   IAdminUpdateStudentStatusRequest,
 } from "../interfaces/adminStudents.interface";
 import { createNotification } from "./notification.service";
+import logger from "../config/logger";
 
 /* ══════════════════════════════════════════════
    GET ADMIN STUDENTS (list + stats)
@@ -288,7 +289,7 @@ export const adminUpdateStudentStatusService = async (
           "Your account has been reactivated. Welcome back! You can now access all features.",
         data: { reactivatedAt: new Date().toISOString() },
       }).catch((err) =>
-        console.error("Error creating reactivation notification:", err)
+        logger.error({ err }, "Error creating reactivation notification")
       );
       break;
     }
@@ -320,7 +321,7 @@ export const adminUpdateStudentStatusService = async (
           suspendedAt: user.suspendedAt.toISOString(),
         },
       }).catch((err) =>
-        console.error("Error creating suspension notification:", err)
+        logger.error({ err }, "Error creating suspension notification")
       );
       break;
     }

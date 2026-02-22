@@ -9,6 +9,7 @@ import {
   IAdminUpdateTutorStatusRequest,
 } from "../interfaces/adminTutors.interface";
 import { createNotification } from "./notification.service";
+import logger from "../config/logger";
 
 /* ══════════════════════════════════════════════
    GET ADMIN TUTORS (list + stats)
@@ -326,7 +327,7 @@ export const adminUpdateTutorStatusService = async (
         data: {
           reactivatedAt: new Date().toISOString(),
         },
-      }).catch((err) => console.error("Error creating notification:", err));
+      }).catch((err) => logger.error({ err }, "Error creating notification"));
       break;
     }
 
@@ -352,7 +353,7 @@ export const adminUpdateTutorStatusService = async (
           deactivatedAt: new Date().toISOString(),
         },
       }).catch((err) =>
-        console.error("Error creating deactivation notification:", err)
+        logger.error({ err }, "Error creating deactivation notification")
       );
       break;
     }
@@ -375,7 +376,7 @@ export const adminUpdateTutorStatusService = async (
           rejectedAt: new Date().toISOString(),
         },
       }).catch((err) =>
-        console.error("Error creating rejection notification:", err)
+        logger.error({ err }, "Error creating rejection notification")
       );
       break;
     }
@@ -399,7 +400,9 @@ export const adminUpdateTutorStatusService = async (
           reason: data.reason || "Banned by admin",
           suspendedAt: user.suspendedAt.toISOString(),
         },
-      }).catch((err) => console.error("Error creating ban notification:", err));
+      }).catch((err) =>
+        logger.error({ err }, "Error creating ban notification")
+      );
       break;
     }
 

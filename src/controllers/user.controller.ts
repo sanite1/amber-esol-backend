@@ -202,8 +202,11 @@ export const updatePassword: ExpressFunction<IUpdatePasswordRequest> = async (
   next
 ) => {
   try {
-    const data = await updatePasswordService(req.params as IdParam, req.body);
-    return res.status(200).json(data);
+    const response = await updatePasswordService(
+      (req as any).user!.id,
+      req.body
+    );
+    return res.status(200).json(response);
   } catch (error) {
     next(error);
   }

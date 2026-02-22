@@ -21,6 +21,9 @@ import adminDashboardRoutes from "./routes/adminDashboard.routes";
 import cronRoutes from "./routes/cron.routes";
 import { stripeWebhook } from "./controllers/webhook.controller";
 import { initSocketIO } from "./services/websocket.service";
+import ALLOWED_ORIGINS from "./config/cors";
+import { generalLimiter, webhookLimiter } from "./config/rateLimiter";
+import logger from "./config/logger";
 
 const PORT = 4000;
 
@@ -28,15 +31,29 @@ const app = express();
 const server = createServer(app);
 
 const corsOption = {
-  origin: "*",
+  origin: (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void
+  ) => {
+    // Allow requests with no origin (mobile apps, Postman, cron jobs, webhooks)
+    if (!origin) return callback(null, true);
+
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+  },
   credentials: true,
 };
+
 app.use(cors(corsOption));
 
 (async () => {
   // ── Stripe webhook MUST be before express.json() ──
   app.post(
     "/api/webhooks/stripe",
+    webhookLimiter,
     raw({ type: "application/json" }),
     stripeWebhook
   );
@@ -47,6 +64,8 @@ app.use(cors(corsOption));
   await connectDb();
   // ── Initialise WebSocket ──
   initSocketIO(server);
+
+  app.use("/api", generalLimiter);
 
   app.use("/api/users", userRoutes);
   app.use("/api/availability", availabilityRoutes);
@@ -62,13 +81,13 @@ app.use(cors(corsOption));
   app.use("/api/admin-dashboard", adminDashboardRoutes);
   app.use("/api/cron", cronRoutes);
 
-  // ── Use server.listen instead of app.listen for Socket.IO ──
-  server.listen(PORT, () => {
-    console.log("Server Listening on port 4000...");
-  });
-
   app.all("*", (req, _res, next) => {
     next(new ApiError(404, `Can't find ${req.originalUrl} on the server!`));
   });
   app.use(globalErrorHandler);
+
+  // ── Use server.listen instead of app.listen for Socket.IO ──
+  server.listen(PORT, () => {
+    logger.info({ port: PORT }, "Server listening");
+  });
 })();

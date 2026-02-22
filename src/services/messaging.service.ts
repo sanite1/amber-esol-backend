@@ -12,6 +12,7 @@ import {
 import { sendNewMessageNotificationMail } from "./nodemailer/mail.service";
 import { cloudinaryImageUpload } from "./cloudinary.service";
 import { createNotification } from "./notification.service";
+import logger from "../config/logger";
 
 const DOMAIN_NAME = process.env.DOMAIN_NAME || "http://localhost:3000";
 
@@ -268,7 +269,7 @@ export const sendMessageService = async (
         preview,
         conversationId
       ).catch((err) =>
-        console.error("Error sending message notification:", err)
+        logger.error({ err }, "Error sending message notification")
       );
 
       // In-app notification
@@ -278,7 +279,7 @@ export const sendMessageService = async (
         preview,
         conversationId
       ).catch((err) =>
-        console.error("Error creating message notification:", err)
+        logger.error({ err }, "Error creating message notification")
       );
     }
   }
@@ -350,7 +351,7 @@ export const sendFileMessageService = async (
         preview,
         conversationId
       ).catch((err) =>
-        console.error("Error sending message notification:", err)
+        logger.error({ err }, "Error sending file message notification")
       );
 
       // In-app notification
@@ -360,7 +361,7 @@ export const sendFileMessageService = async (
         preview,
         conversationId
       ).catch((err) =>
-        console.error("Error creating file message notification:", err)
+        logger.error({ err }, "Error creating file message notification")
       );
     }
   }
@@ -478,7 +479,7 @@ async function _sendMessageNotification(
     senderName: `${sender.firstname} ${sender.lastname}`,
     messagePreview,
     conversationUrl: `${DOMAIN_NAME}/messages?conversation=${conversationId}`,
-  }).catch((err) => console.error("Error sending new message email:", err));
+  }).catch((err) => logger.error({ err }, "Error sending new message email"));
 }
 
 /* ══════════════════════════════════════════════

@@ -1,3 +1,4 @@
+import logger from "../config/logger";
 import ApiError from "../errors/apiError";
 
 const DAILY_API_KEY = process.env.DAILY_API_KEY;
@@ -29,7 +30,7 @@ export const createDailyRoom = async (
   endTime: string
 ): Promise<string | null> => {
   if (!DAILY_API_KEY) {
-    console.warn("[daily] DAILY_API_KEY not set — skipping auto room creation");
+    logger.warn("DAILY_API_KEY not set — skipping auto room creation");
     return null;
   }
 
@@ -67,18 +68,18 @@ export const createDailyRoom = async (
 
     if (!response.ok) {
       const errorBody = await response.text();
-      console.error(
-        "[daily] Room creation failed:",
-        response.status,
-        errorBody
+      logger.error(
+        { status: response.status, body: errorBody },
+        "Daily.co room creation failed"
       );
+
       return null;
     }
 
     const room: DailyRoomResponse = await response.json();
     return room.url;
   } catch (err: any) {
-    console.error("[daily] Error creating room:", err.message);
+    logger.error({ err }, "Error creating Daily.co room");
     return null;
   }
 };

@@ -24,6 +24,8 @@ import {
   createNotification,
   createBulkNotifications,
 } from "./notification.service";
+import { Types } from "mongoose";
+import logger from "../config/logger";
 
 /* ══════════════════════════════════════════════
    Helper: recalculate tutor average rating
@@ -33,7 +35,7 @@ const recalcTutorRating = async (tutorId: string) => {
   const result = await Review.aggregate([
     {
       $match: {
-        tutorId: new (require("mongoose").Types.ObjectId)(tutorId),
+        tutorId: new Types.ObjectId(tutorId),
         status: "published",
       },
     },
@@ -128,7 +130,7 @@ export const createReviewService = async (
       comment: data.comment,
       lessonTopic: booking.specialty,
       reviewUrl: `${DOMAIN_NAME}/tutor/reviews`,
-    }).catch((err) => console.error("Error sending new review email:", err));
+    }).catch((err) => logger.error({ err }, "Error sending new review email"));
   }
 
   // 8. Notify tutor of new review
@@ -145,7 +147,9 @@ export const createReviewService = async (
       studentId,
       lessonTopic: booking.specialty || null,
     },
-  }).catch((err) => console.error("Error creating review notification:", err));
+  }).catch((err) =>
+    logger.error({ err }, "Error creating review notification")
+  );
 
   return new ApiResponse(201, "Review submitted successfully", review.toJSON());
 };
@@ -358,7 +362,9 @@ export const addReplyService = async (
       tutorName: `${tutor.firstname} ${tutor.lastname}`,
       replyText: data.text,
       reviewUrl: `${DOMAIN_NAME}/lessons`,
-    }).catch((err) => console.error("Error sending review reply email:", err));
+    }).catch((err) =>
+      logger.error({ err }, "Error sending review reply email")
+    );
   }
 
   // Notify student that the tutor replied
@@ -376,7 +382,7 @@ export const addReplyService = async (
           : data.text,
     },
   }).catch((err) =>
-    console.error("Error creating review reply notification:", err)
+    logger.error({ err }, "Error creating review reply notification")
   );
 
   return new ApiResponse(200, "Reply added successfully", review.toJSON());
@@ -470,7 +476,7 @@ export const reportReviewService = async (
       reason: data.reason,
       adminUrl: `${DOMAIN_NAME}/admin/reviews`,
     }).catch((err) =>
-      console.error("Error sending report notification email:", err)
+      logger.error({ err }, "Error sending report notification email")
     );
   }
 
@@ -492,7 +498,7 @@ export const reportReviewService = async (
         totalReports: review.reports.length,
       },
     }).catch((err) =>
-      console.error("Error creating report notifications:", err)
+      logger.error({ err }, "Error creating report notifications")
     );
   }
 
@@ -542,7 +548,7 @@ export const reviewStatsService = async (tutorId: string) => {
     Review.aggregate([
       {
         $match: {
-          tutorId: new (require("mongoose").Types.ObjectId)(tutorId),
+          tutorId: new Types.ObjectId(tutorId),
           status: "published",
         },
       },
@@ -558,7 +564,7 @@ export const reviewStatsService = async (tutorId: string) => {
     Review.aggregate([
       {
         $match: {
-          tutorId: new (require("mongoose").Types.ObjectId)(tutorId),
+          tutorId: new Types.ObjectId(tutorId),
           status: "published",
         },
       },
@@ -712,7 +718,9 @@ export const adminHideReviewService = async (
       rating: review.rating,
       comment: review.comment,
       reviewUrl: `${DOMAIN_NAME}/lessons`,
-    }).catch((err) => console.error("Error sending review hidden email:", err));
+    }).catch((err) =>
+      logger.error({ err }, "Error sending review hidden email")
+    );
   }
 
   // Notify student via in-app notification
@@ -726,7 +734,7 @@ export const adminHideReviewService = async (
       rating: review.rating,
     },
   }).catch((err) =>
-    console.error("Error creating review hidden notification:", err)
+    logger.error({ err }, "Error creating review hidden notification")
   );
 
   return new ApiResponse(200, "Review hidden successfully", review.toJSON());
@@ -765,7 +773,7 @@ export const adminUnhideReviewService = async (
       comment: review.comment,
       reviewUrl: `${DOMAIN_NAME}/lessons`,
     }).catch((err) =>
-      console.error("Error sending review restored email:", err)
+      logger.error({ err }, "Error sending review restored email")
     );
   }
 
@@ -780,7 +788,7 @@ export const adminUnhideReviewService = async (
       rating: review.rating,
     },
   }).catch((err) =>
-    console.error("Error creating review restored notification:", err)
+    logger.error({ err }, "Error creating review restored notification")
   );
 
   return new ApiResponse(200, "Review unhidden successfully", review.toJSON());
@@ -818,7 +826,7 @@ export const adminRemoveReviewService = async (
       action: "removed",
     },
   }).catch((err) =>
-    console.error("Error creating review removed notification:", err)
+    logger.error({ err }, "Error creating review removed notification")
   );
 
   return new ApiResponse(200, "Review removed successfully", review.toJSON());
@@ -856,7 +864,7 @@ export const adminRestoreReviewService = async (
       action: "restored_from_removed",
     },
   }).catch((err) =>
-    console.error("Error creating review restored notification:", err)
+    logger.error({ err }, "Error creating review restored notification")
   );
 
   return new ApiResponse(200, "Review restored successfully", review.toJSON());

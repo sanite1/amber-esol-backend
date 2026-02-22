@@ -25,6 +25,8 @@ import {
 } from "./nodemailer/mail.service";
 import { IUserDecoded } from "../middlewares/authMiddleWare";
 import { createNotification } from "./notification.service";
+import { validatePassword } from "../utils/validatePassword";
+import logger from "../config/logger";
 
 const saltRounds = 13;
 
@@ -59,6 +61,8 @@ export const registerStudentService = async (data: ICreateStudentRequest) => {
     throw new ApiError(400, `User with ${data.email} already exists`);
   }
 
+  validatePassword(data.password);
+
   const hashedPassword = await bcrypt.hash(data.password, saltRounds);
   const verificationToken = randomBytes(32).toString("hex");
 
@@ -89,6 +93,7 @@ export const registerTutorService = async (data: ICreateTutorRequest) => {
   if (existingUser) {
     throw new ApiError(400, `User with ${data.email} already exists`);
   }
+  validatePassword(data.password);
 
   const hashedPassword = await bcrypt.hash(data.password, saltRounds);
   const verificationToken = randomBytes(32).toString("hex");
@@ -297,6 +302,8 @@ export const resetPasswordService = async (
     throw new ApiError(400, "Reset link has expired");
   }
 
+  validatePassword(data.password);
+
   const hashedPassword = await bcrypt.hash(data.password, saltRounds);
   user.password = hashedPassword;
   user.resetToken = undefined;
@@ -310,10 +317,10 @@ export const resetPasswordService = async (
 /* ── Update Password (authenticated) ── */
 
 export const updatePasswordService = async (
-  params: IdParam,
+  userId: string,
   data: IUpdatePasswordRequest
 ) => {
-  const user = await User.findById(params.id);
+  const user = await User.findById(userId);
   if (!user) {
     throw new ApiError(404, "User not found");
   }
@@ -322,6 +329,8 @@ export const updatePasswordService = async (
   if (!isValidPassword) {
     throw new ApiError(400, "Current password is incorrect");
   }
+
+  validatePassword(data.newPassword);
 
   const hashedPassword = await bcrypt.hash(data.newPassword, saltRounds);
   user.password = hashedPassword;
@@ -506,7 +515,7 @@ export const suspendUserService = async (
       suspendedAt: user.suspendedAt.toISOString(),
     },
   }).catch((err) =>
-    console.error("Error creating suspension notification:", err)
+    logger.error({ err }, "Error creating suspension notification")
   );
 
   return new ApiResponse(200, "User suspended successfully", user.toJSON());
@@ -541,7 +550,7 @@ export const reactivateUserService = async (userId: string) => {
       reactivatedAt: new Date().toISOString(),
     },
   }).catch((err) =>
-    console.error("Error creating reactivation notification:", err)
+    logger.error({ err }, "Error creating reactivation notification")
   );
 
   return new ApiResponse(200, "User reactivated successfully", user.toJSON());
@@ -568,6 +577,7 @@ export const deleteAccountService = async (
 
   // Optionally store deletion reason and feedback for analytics
   user.deletionReason = data.reason;
+  user.isActive = false;
   user.deletionFeedback = data.feedback || "";
   user.deletedAt = new Date();
 

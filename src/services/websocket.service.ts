@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import { IUserDecoded } from "../middlewares/authMiddleWare";
 import Message from "../models/Message";
 import Conversation from "../models/Conversation";
+import ALLOWED_ORIGINS from "../config/cors";
+import logger from "../config/logger";
 
 let io: Server;
 
@@ -17,7 +19,7 @@ const onlineUsers = new Map<string, Set<string>>();
 export const initSocketIO = (server: HttpServer) => {
   io = new Server(server, {
     cors: {
-      origin: "*",
+      origin: ALLOWED_ORIGINS,
       credentials: true,
     },
     path: "/ws/chat",
@@ -52,7 +54,7 @@ export const initSocketIO = (server: HttpServer) => {
     const user = (socket as any).user as IUserDecoded;
     const userId = user.id.toString();
 
-    console.log(`[WS] User connected: ${userId} (socket: ${socket.id})`);
+    logger.info({ userId, socketId: socket.id }, "User connected");
 
     // Track online status
     if (!onlineUsers.has(userId)) {
@@ -66,7 +68,7 @@ export const initSocketIO = (server: HttpServer) => {
     /* ── Join conversation rooms ── */
     socket.on("conversation:join", (conversationId: string) => {
       socket.join(`conversation:${conversationId}`);
-      console.log(`[WS] User ${userId} joined conversation:${conversationId}`);
+      logger.info({ userId, conversationId }, "User joined conversation");
     });
 
     /* ── Leave conversation room ── */
@@ -108,7 +110,7 @@ export const initSocketIO = (server: HttpServer) => {
           readAt: new Date().toISOString(),
         });
       } catch (err) {
-        console.error("[WS] Error marking messages read:", err);
+        logger.error({ err }, "Error marking messages read");
       }
     });
 
@@ -128,7 +130,7 @@ export const initSocketIO = (server: HttpServer) => {
 
     /* ── Disconnect ── */
     socket.on("disconnect", () => {
-      console.log(`[WS] User disconnected: ${userId} (socket: ${socket.id})`);
+      logger.info({ userId, socketId: socket.id }, "User disconnected");
 
       const userSockets = onlineUsers.get(userId);
       if (userSockets) {

@@ -7,6 +7,7 @@ import Conversation from "../models/Conversation";
 import Message from "../models/Message";
 import Review from "../models/Review";
 import { IStudentDashboardQuery } from "../interfaces/studentDashboard.interface";
+import { completeStaleBookings } from "../utils/completeStaleBookings";
 
 /* ══════════════════════════════════════════════
    GET STUDENT DASHBOARD
@@ -16,6 +17,8 @@ export const getStudentDashboardService = async (
   studentId: string,
   query: IStudentDashboardQuery
 ) => {
+  await completeStaleBookings(studentId, "student");
+
   /* ── Parse optional limits ── */
   const upcomingLimit = parseInt(query.upcomingLimit || "5", 10);
   const messagesLimit = parseInt(query.messagesLimit || "4", 10);

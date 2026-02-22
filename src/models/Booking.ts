@@ -90,6 +90,15 @@ const bookingSchema = new Schema<IBooking>(
   }
 );
 
+// Tutor queries: availability checks, tutor dashboard, cron
+bookingSchema.index({ tutorId: 1, status: 1, date: 1 });
+
+// Student queries: student dashboard, my lessons
+bookingSchema.index({ studentId: 1, status: 1, date: 1 });
+
+// Admin/cron queries: auto-complete, admin stats
+bookingSchema.index({ status: 1, date: 1 });
+
 const Booking = model<IBooking>("Booking", bookingSchema);
 
 export default Booking;

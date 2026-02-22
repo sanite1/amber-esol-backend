@@ -8,6 +8,7 @@ import {
   INotificationQuery,
   NotificationSocketPayload,
 } from "../interfaces/notification.interface";
+import logger from "../config/logger";
 
 /* ══════════════════════════════════════════════
    Internal: create & push notification
@@ -37,7 +38,7 @@ export const createNotification = async (
     });
   } catch (error) {
     // Notification creation should never break the calling flow
-    console.error("Failed to create notification:", error);
+    logger.error({ err: error }, "Failed to create notification");
   }
 };
 
@@ -68,7 +69,7 @@ export const createBulkNotifications = async (
       });
     }
   } catch (error) {
-    console.error("Failed to create bulk notifications:", error);
+    logger.error({ err: error }, "Failed to create bulk notifications");
   }
 };
 

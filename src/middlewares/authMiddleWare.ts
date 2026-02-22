@@ -2,7 +2,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import ApiError from "../errors/apiError";
 import { ExpressFunction } from "../interfaces/helper.interface";
 
-import { Request } from "express";
+import { NextFunction, Request, Response } from "express";
 import { Types } from "mongoose";
 import User from "../models/User";
 
@@ -15,7 +15,7 @@ export interface IUserDecoded extends JwtPayload {
   profilePicture: string;
 }
 
-export const isAuthenticated: ExpressFunction = (req, _res, next) => {
+export const isAuthenticated: ExpressFunction = async (req, _res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -38,6 +38,15 @@ export const isAuthenticated: ExpressFunction = (req, _res, next) => {
       throw new ApiError(401, "Token has expired");
     }
 
+    // ── Verify account is still active ──
+    const user = await User.findById(decoded.id)
+      .select("isActive status")
+      .lean();
+
+    if (!user || !user.isActive || user.status === "terminated") {
+      throw new ApiError(401, "Account is deactivated");
+    }
+
     (req as Request & { user?: IUserDecoded }).user = decoded;
     next();
   } catch (error) {
@@ -47,9 +56,8 @@ export const isAuthenticated: ExpressFunction = (req, _res, next) => {
 
 export const isAdmin: ExpressFunction = async (req, _res, next) => {
   try {
-    const user = await User.findById(req.user?.id);
-    if (!user || user.role !== "admin") {
-      throw new ApiError(403, "Forbidden: Admin access required");
+    if (req.user?.role !== "admin") {
+      return next(new ApiError(403, "Admin access required"));
     }
     next();
   } catch (error) {
@@ -59,9 +67,8 @@ export const isAdmin: ExpressFunction = async (req, _res, next) => {
 
 export const isTutor: ExpressFunction = async (req, _res, next) => {
   try {
-    const user = await User.findById(req.user?.id);
-    if (!user || user.role !== "tutor") {
-      throw new ApiError(403, "Forbidden: Tutor access required");
+    if (req.user?.role !== "tutor") {
+      return next(new ApiError(403, "Tutor access required"));
     }
     next();
   } catch (error) {
@@ -71,12 +78,31 @@ export const isTutor: ExpressFunction = async (req, _res, next) => {
 
 export const isStudent: ExpressFunction = async (req, _res, next) => {
   try {
-    const user = await User.findById(req.user?.id);
-    if (!user || user.role !== "student") {
-      throw new ApiError(403, "Forbidden: Student access required");
+    if (req.user?.role !== "student") {
+      return next(new ApiError(403, "Student access required"));
     }
     next();
   } catch (error) {
     next(error);
   }
+};
+
+export const isCronAuthorized = (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+) => {
+  const secret = process.env.CRON_SECRET;
+
+  if (!secret) {
+    return next(new ApiError(500, "CRON_SECRET is not configured"));
+  }
+
+  const authHeader = req.headers.authorization;
+
+  if (authHeader === `Bearer ${secret}`) {
+    return next();
+  }
+
+  return next(new ApiError(401, "Unauthorized"));
 };

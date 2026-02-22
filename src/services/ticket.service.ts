@@ -12,6 +12,7 @@ import {
   TicketStatus,
 } from "../interfaces/ticket.interface";
 import { createNotification } from "./notification.service";
+import logger from "../config/logger";
 
 /* ══════════════════════════════════════════════
    CREATE TICKET (student / tutor)
@@ -411,7 +412,9 @@ export const adminReplyTicketService = async (
       ticketId: ticket._id.toString(),
       subject: ticket.subject,
     },
-  }).catch((err) => console.error("Error creating ticket notification:", err));
+  }).catch((err) =>
+    logger.error({ err }, "Error creating ticket notification")
+  );
 
   return new ApiResponse(200, "Reply sent successfully", ticket.toJSON());
 };
@@ -459,7 +462,7 @@ export const adminUpdateTicketStatusService = async (
         newStatus: data.status,
       },
     }).catch((err) =>
-      console.error("Error creating status notification:", err)
+      logger.error({ err }, "Error creating status notification")
     );
   }
 

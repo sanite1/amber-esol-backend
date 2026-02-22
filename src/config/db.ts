@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import logger from "./logger";
 
 const MONGODB_URI = process.env.MONGODB_URI || "";
 
@@ -22,9 +23,9 @@ export const connectDb = async () => {
 
     isConnected = true;
 
-    console.log(`✅ MongoDB connected: ${conn.connection.host}`);
+    logger.info({ host: conn.connection.host }, "Database connected");
   } catch (error) {
-    console.error("❌ ERROR connecting to MongoDB:", error);
+    logger.error({ err: error }, "Error connecting to MongoDB");
     process.exit(1); // ✅ kill app if DB fails
   }
 };

@@ -27,6 +27,7 @@ import {
   sendRefundIssuedMail,
 } from "./nodemailer/mail.service";
 import { createNotification } from "./notification.service";
+import logger from "../config/logger";
 
 /* ── Stripe init ── */
 
@@ -379,7 +380,7 @@ export const requestPayoutService = async (
       currency: wallet.currency,
       status: "pending",
     }).catch((err) =>
-      console.error("Error sending payout requested email:", err)
+      logger.error({ err }, "Error sending payout requested email")
     );
   }
 
@@ -396,7 +397,7 @@ export const requestPayoutService = async (
       method: data.method,
     },
   }).catch((err) =>
-    console.error("Error creating payout requested notification:", err)
+    logger.error({ err }, "Error creating payout requested notification")
   );
 
   return new ApiResponse(
@@ -497,7 +498,7 @@ export const approvePayoutService = async (
       status: "processing",
     },
   }).catch((err) =>
-    console.error("Error creating payout approved notification:", err)
+    logger.error({ err }, "Error creating payout approved notification")
   );
 
   return new ApiResponse(
@@ -547,7 +548,7 @@ export const rejectPayoutService = async (
       status: "failed",
       reason: data.reason,
     }).catch((err) =>
-      console.error("Error sending payout rejected email:", err)
+      logger.error({ err }, "Error sending payout rejected email")
     );
   }
 
@@ -564,7 +565,7 @@ export const rejectPayoutService = async (
       reason: data.reason || null,
     },
   }).catch((err) =>
-    console.error("Error creating payout rejected notification:", err)
+    logger.error({ err }, "Error creating payout rejected notification")
   );
 
   return new ApiResponse(200, "Payout rejected", payout.toJSON());
@@ -610,7 +611,7 @@ export const completePayoutService = async (
       status: "completed",
       reference: data.reference,
     }).catch((err) =>
-      console.error("Error sending payout completed email:", err)
+      logger.error({ err }, "Error sending payout completed email")
     );
   }
 
@@ -627,7 +628,7 @@ export const completePayoutService = async (
       reference: data.reference || null,
     },
   }).catch((err) =>
-    console.error("Error creating payout completed notification:", err)
+    logger.error({ err }, "Error creating payout completed notification")
   );
 
   return new ApiResponse(200, "Payout completed successfully", payout.toJSON());
@@ -689,14 +690,63 @@ export const refundTransactionService = async (
   });
 
   // Deduct from tutor wallet
-  const wallet = await getOrCreateWallet(transaction.tutorId._id.toString());
-  if (wallet.pendingBalance >= transaction.tutorEarnings) {
-    wallet.pendingBalance -= transaction.tutorEarnings;
-  } else if (wallet.availableBalance >= transaction.tutorEarnings) {
-    wallet.availableBalance -= transaction.tutorEarnings;
+  const deduction = transaction.tutorEarnings;
+
+  // Try deducting from pendingBalance first (atomic, only if sufficient)
+  let updated = await Wallet.findOneAndUpdate(
+    { tutorId: transaction.tutorId, pendingBalance: { $gte: deduction } },
+    {
+      $inc: {
+        pendingBalance: -deduction,
+        totalEarned: -deduction,
+      },
+    },
+    { new: true }
+  );
+
+  // If pendingBalance was insufficient, deduct from availableBalance instead
+  if (!updated) {
+    updated = await Wallet.findOneAndUpdate(
+      { tutorId: transaction.tutorId, availableBalance: { $gte: deduction } },
+      {
+        $inc: {
+          availableBalance: -deduction,
+          totalEarned: -deduction,
+        },
+      },
+      { new: true }
+    );
   }
-  wallet.totalEarned -= transaction.tutorEarnings;
-  await wallet.save();
+
+  // If neither balance covers it, split across both
+  if (!updated) {
+    const wallet = await getOrCreateWallet(transaction.tutorId.toString());
+    const fromPending = Math.min(wallet.pendingBalance, deduction);
+    const fromAvailable = Math.min(
+      wallet.availableBalance,
+      deduction - fromPending
+    );
+    const totalDeducted = fromPending + fromAvailable;
+
+    updated = await Wallet.findOneAndUpdate(
+      { tutorId: transaction.tutorId },
+      {
+        $inc: {
+          pendingBalance: -fromPending,
+          availableBalance: -fromAvailable,
+          totalEarned: -totalDeducted,
+        },
+      },
+      { new: true }
+    );
+
+    if (fromPending + fromAvailable < deduction) {
+      logger.warn(
+        { tutorId: transaction.tutorId, deduction, totalDeducted },
+        "Refund exceeds total wallet balance"
+      );
+    }
+  }
 
   // Send refund email to student
   const student = transaction.studentId as any;
@@ -712,7 +762,7 @@ export const refundTransactionService = async (
       currency: transaction.currency,
       reason: data.reason,
       bookingDate: booking?.date || "",
-    }).catch((err) => console.error("Error sending refund email:", err));
+    }).catch((err) => logger.error({ err }, "Error sending refund email"));
   }
 
   // Notify student of refund via in-app notification
@@ -729,7 +779,7 @@ export const refundTransactionService = async (
       reason: data.reason || null,
     },
   }).catch((err) =>
-    console.error("Error creating refund notification for student:", err)
+    logger.error({ err }, "Error creating refund notification for student")
   );
 
   // Notify tutor that earnings were deducted due to refund
@@ -746,7 +796,7 @@ export const refundTransactionService = async (
       date: booking?.date || null,
     },
   }).catch((err) =>
-    console.error("Error creating refund notification for tutor:", err)
+    logger.error({ err }, "Error creating refund notification for tutor")
   );
 
   return new ApiResponse(
@@ -884,15 +934,57 @@ export const monthlyChartService = async (
   role: string,
   query: IMonthlyChartQuery
 ) => {
-  const year = parseInt(query.year || String(new Date().getFullYear()), 10);
   const monthsCount = parseInt(query.months || "12", 10);
+  const now = new Date();
 
-  const filter: any = { status: "paid" };
+  // Start date: beginning of the earliest month we need
+  const startDate = new Date(
+    now.getFullYear(),
+    now.getMonth() - (monthsCount - 1),
+    1
+  );
+
+  const filter: any = {
+    status: "paid",
+    createdAt: { $gte: startDate },
+  };
+
   if (role === "tutor") {
     filter.tutorId = userId;
   }
-  // Admin sees platform-wide
 
+  const results = await Transaction.aggregate([
+    { $match: filter },
+    {
+      $group: {
+        _id: {
+          year: { $year: "$createdAt" },
+          month: { $month: "$createdAt" },
+        },
+        earnings: {
+          $sum: role === "tutor" ? "$tutorEarnings" : "$amount",
+        },
+        transactions: { $sum: 1 },
+        commission: { $sum: "$platformCommission" },
+      },
+    },
+  ]);
+
+  // Build a lookup map from the aggregation results
+  const resultMap = new Map<
+    string,
+    { earnings: number; transactions: number; commission: number }
+  >();
+  for (const r of results) {
+    const key = `${r._id.year}-${r._id.month}`;
+    resultMap.set(key, {
+      earnings: r.earnings,
+      transactions: r.transactions,
+      commission: r.commission,
+    });
+  }
+
+  // Build the full array with zero-filled gaps
   const data: {
     month: string;
     earnings: number;
@@ -900,38 +992,20 @@ export const monthlyChartService = async (
     commission: number;
   }[] = [];
 
-  const now = new Date();
   for (let i = monthsCount - 1; i >= 0; i--) {
-    const d = new Date(year, now.getMonth() - i, 1);
-    const startOfMonth = new Date(d.getFullYear(), d.getMonth(), 1);
-    const endOfMonth = new Date(
-      d.getFullYear(),
-      d.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999
-    );
-
-    const monthTx = await Transaction.find({
-      ...filter,
-      createdAt: { $gte: startOfMonth, $lte: endOfMonth },
-    });
-
-    const monthLabel = startOfMonth.toLocaleDateString("en-GB", {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+    const label = d.toLocaleDateString("en-GB", {
       month: "short",
       year: "numeric",
     });
+    const entry = resultMap.get(key);
 
     data.push({
-      month: monthLabel,
-      earnings:
-        role === "tutor"
-          ? monthTx.reduce((sum, t) => sum + t.tutorEarnings, 0)
-          : monthTx.reduce((sum, t) => sum + t.amount, 0),
-      transactions: monthTx.length,
-      commission: monthTx.reduce((sum, t) => sum + t.platformCommission, 0),
+      month: label,
+      earnings: entry?.earnings || 0,
+      transactions: entry?.transactions || 0,
+      commission: entry?.commission || 0,
     });
   }
 

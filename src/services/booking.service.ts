@@ -29,6 +29,8 @@ import Transaction from "../models/Transaction";
 import Wallet from "../models/Wallet";
 import { createDailyRoom } from "./daily.service";
 import { createZoomMeeting } from "./zoom.service";
+import Review from "../models/Review";
+import logger from "../config/logger";
 
 /* ── Stripe init ── */
 
@@ -247,7 +249,9 @@ export const createBookingService = async (
       type: data.type,
       totalSlots: data.slots.length,
     },
-  }).catch((err) => console.error("Error creating booking notification:", err));
+  }).catch((err) =>
+    logger.error({ err }, "Error creating booking notification")
+  );
 
   if (isFree && autoConfirm) {
     createNotification({
@@ -263,7 +267,7 @@ export const createBookingService = async (
         startTime: firstSlot.startTime,
       },
     }).catch((err) =>
-      console.error("Error creating confirmed notification:", err)
+      logger.error({ err }, "Error creating confirmed notification")
     );
   }
 
@@ -364,7 +368,6 @@ export const listBookingsService = async (
     Booking.countDocuments(filter),
   ]);
   // ── Attach review data to each booking ──
-  const Review = require("../models/Review").default;
   const bookingIds = bookings.map((b) => b._id);
   const reviews = await Review.find({
     bookingId: { $in: bookingIds },
@@ -509,7 +512,7 @@ export const confirmBookingService = async (
       totalPrice: booking.price,
       isTrial: booking.type === "trial",
       bookingGroupId: booking.bookingGroupId,
-    }).catch((err) => console.error("Error sending confirmed email:", err));
+    }).catch((err) => logger.error({ err }, "Error sending confirmed email"));
   }
 
   // Only increment totalStudents if this is the first completed/confirmed booking
@@ -542,7 +545,7 @@ export const confirmBookingService = async (
       meetingUrl: booking.meetingUrl || null,
     },
   }).catch((err) =>
-    console.error("Error creating confirmed notification:", err)
+    logger.error({ err }, "Error creating confirmed notification")
   );
 
   return new ApiResponse(
@@ -589,7 +592,7 @@ export const declineBookingService = async (
       booking.paymentStatus = "refunded";
       await booking.save();
     } catch (err) {
-      console.error("Stripe refund error:", err);
+      logger.error({ err }, "Stripe refund error");
     }
   }
 
@@ -602,7 +605,7 @@ export const declineBookingService = async (
       tutor,
       booking,
       reason: data.reason,
-    }).catch((err) => console.error("Error sending declined email:", err));
+    }).catch((err) => logger.error({ err }, "Error sending declined email"));
   }
 
   createNotification({
@@ -619,7 +622,7 @@ export const declineBookingService = async (
       refunded: booking.paymentStatus === "refunded",
     },
   }).catch((err) =>
-    console.error("Error creating declined notification:", err)
+    logger.error({ err }, "Error creating declined notification")
   );
 
   if (booking.paymentStatus === "refunded") {
@@ -634,7 +637,7 @@ export const declineBookingService = async (
         date: booking.date,
       },
     }).catch((err) =>
-      console.error("Error creating refund notification:", err)
+      logger.error({ err }, "Error creating refund notification")
     );
   }
 
@@ -714,7 +717,7 @@ export const cancelBookingService = async (
         booking.paymentStatus = "refunded";
         await booking.save();
       } catch (err) {
-        console.error("Stripe refund error:", err);
+        logger.error({ err }, "Stripe refund error");
       }
     }
   }
@@ -730,7 +733,7 @@ export const cancelBookingService = async (
         booking,
         reason: data.reason,
       }).catch((err) =>
-        console.error("Error sending cancellation email to tutor:", err)
+        logger.error({ err }, "Error sending cancellation email to tutor")
       );
     } else {
       sendBookingCancelledByTutorMail({
@@ -740,7 +743,7 @@ export const cancelBookingService = async (
         reason: data.reason,
         refunded: booking.paymentStatus === "refunded",
       }).catch((err) =>
-        console.error("Error sending cancellation email to student:", err)
+        logger.error({ err }, "Error sending cancellation email to student")
       );
     }
   }
@@ -769,7 +772,7 @@ export const cancelBookingService = async (
       refunded: booking.paymentStatus === "refunded",
     },
   }).catch((err) =>
-    console.error("Error creating cancellation notification:", err)
+    logger.error({ err }, "Error creating cancellation notification")
   );
 
   if (booking.paymentStatus === "refunded" && cancelledBy !== "student") {
@@ -784,7 +787,7 @@ export const cancelBookingService = async (
         date: booking.date,
       },
     }).catch((err) =>
-      console.error("Error creating refund notification:", err)
+      logger.error({ err }, "Error creating refund notification")
     );
   }
 
@@ -853,7 +856,7 @@ export const completeBookingService = async (
       startTime: booking.startTime,
     },
   }).catch((err) =>
-    console.error("Error creating student completion notification:", err)
+    logger.error({ err }, "Error creating student completion notification")
   );
 
   createNotification({
@@ -868,7 +871,7 @@ export const completeBookingService = async (
       startTime: booking.startTime,
     },
   }).catch((err) =>
-    console.error("Error creating tutor completion notification:", err)
+    logger.error({ err }, "Error creating tutor completion notification")
   );
 
   // ── Send "Lesson Completed + Review Prompt" email to student ──
@@ -894,7 +897,7 @@ export const completeBookingService = async (
       lessonType: booking.type,
       reviewUrl: `${DOMAIN_NAME}/lessons`,
     }).catch((err) =>
-      console.error("Error sending lesson completed email:", err)
+      logger.error({ err }, "Error sending lesson completed email")
     );
   }
 
@@ -910,7 +913,7 @@ export const completeBookingService = async (
       date: booking.date,
     },
   }).catch((err) =>
-    console.error("Error sending review prompt notification:", err)
+    logger.error({ err }, "Error sending review prompt notification")
   );
 
   return new ApiResponse(200, "Booking marked as completed", booking.toJSON());
@@ -1003,47 +1006,75 @@ export const bookingStatsService = async (userId: string, role: string) => {
     roleFilter.tutorId = userId;
   }
 
-  const [total, pending, confirmed, completed, cancelled, noShows] =
-    await Promise.all([
-      Booking.countDocuments(roleFilter),
-      Booking.countDocuments({ ...roleFilter, status: "pending" }),
-      Booking.countDocuments({ ...roleFilter, status: "confirmed" }),
-      Booking.countDocuments({ ...roleFilter, status: "completed" }),
-      Booking.countDocuments({
-        ...roleFilter,
-        status: {
-          $in: ["cancelled_student", "cancelled_tutor", "cancelled_admin"],
-        },
-      }),
-      Booking.countDocuments({ ...roleFilter, status: "no_show" }),
-    ]);
-
   const today = new Date().toISOString().split("T")[0];
-  const upcoming = await Booking.countDocuments({
-    ...roleFilter,
-    status: { $in: ["pending", "confirmed"] },
-    date: { $gte: today },
-  });
 
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
   const monthStr = startOfMonth.toISOString().split("T")[0];
 
-  const monthBookings = await Booking.find({
-    ...roleFilter,
-    status: "completed",
-    date: { $gte: monthStr },
-  });
-
-  const hoursThisMonth = monthBookings.length;
-  const earningsThisMonth = monthBookings.reduce((sum, b) => sum + b.price, 0);
-  const totalSpent = (
-    await Booking.find({
+  const [
+    total,
+    pending,
+    confirmed,
+    completed,
+    cancelled,
+    noShows,
+    upcoming,
+    monthlyAgg,
+    spentAgg,
+  ] = await Promise.all([
+    Booking.countDocuments(roleFilter),
+    Booking.countDocuments({ ...roleFilter, status: "pending" }),
+    Booking.countDocuments({ ...roleFilter, status: "confirmed" }),
+    Booking.countDocuments({ ...roleFilter, status: "completed" }),
+    Booking.countDocuments({
       ...roleFilter,
-      paymentStatus: { $in: ["paid", "free"] },
-    })
-  ).reduce((sum, b) => sum + b.price, 0);
+      status: {
+        $in: ["cancelled_student", "cancelled_tutor", "cancelled_admin"],
+      },
+    }),
+    Booking.countDocuments({ ...roleFilter, status: "no_show" }),
+    Booking.countDocuments({
+      ...roleFilter,
+      status: { $in: ["pending", "confirmed"] },
+      date: { $gte: today },
+    }),
+
+    // Hours + earnings this month (in DB, not memory)
+    Booking.aggregate([
+      {
+        $match: {
+          ...roleFilter,
+          status: "completed",
+          date: { $gte: monthStr },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          hoursThisMonth: { $sum: 1 },
+          earningsThisMonth: { $sum: "$price" },
+        },
+      },
+    ]),
+
+    // Total spent (in DB, not memory)
+    Booking.aggregate([
+      {
+        $match: {
+          ...roleFilter,
+          paymentStatus: { $in: ["paid", "free"] },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalSpent: { $sum: "$price" },
+        },
+      },
+    ]),
+  ]);
 
   return new ApiResponse(200, "Booking stats retrieved successfully", {
     total,
@@ -1053,9 +1084,9 @@ export const bookingStatsService = async (userId: string, role: string) => {
     cancelled,
     noShows,
     upcoming,
-    hoursThisMonth,
-    earningsThisMonth,
-    totalSpent,
+    hoursThisMonth: monthlyAgg[0]?.hoursThisMonth || 0,
+    earningsThisMonth: monthlyAgg[0]?.earningsThisMonth || 0,
+    totalSpent: spentAgg[0]?.totalSpent || 0,
   });
 };
 
@@ -1142,7 +1173,6 @@ export const adminLessonStatsService = async () => {
       ? Math.round((finishedLessons / totalAttempted) * 1000) / 10
       : 0;
 
-  const Review = require("../models/Review").default;
   const ratingResult = await Review.aggregate([
     { $match: { status: "published" } },
     { $group: { _id: null, avg: { $avg: "$rating" } } },
@@ -1213,7 +1243,7 @@ export const updateMeetingUrlService = async (
       meetingUrl,
     },
   }).catch((err) =>
-    console.error("Error creating meeting URL update notification:", err)
+    logger.error({ err }, "Error creating meeting URL update notification")
   );
 
   return new ApiResponse(

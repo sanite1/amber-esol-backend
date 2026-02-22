@@ -10,6 +10,8 @@ import {
   sendPaymentSuccessMail,
 } from "./nodemailer/mail.service";
 import { createNotification } from "./notification.service";
+import { createZoomMeeting } from "./zoom.service";
+import logger from "../config/logger";
 
 /* ── Stripe init ── */
 
@@ -63,10 +65,7 @@ export const handleStripeWebhookService = async (
 
       if (bookingIds.length === 0) break;
 
-      // Update all bookings to paid
-      const bookings = await Booking.find({
-        _id: { $in: bookingIds },
-      });
+      const bookings = await Booking.find({ _id: { $in: bookingIds } });
 
       for (const booking of bookings) {
         booking.paymentStatus = "paid";
@@ -77,9 +76,7 @@ export const handleStripeWebhookService = async (
         await booking.save();
       }
 
-      // Create transaction records for each booking
       for (const booking of bookings) {
-        // Guard: skip if transaction already exists for this booking
         const existingTx = await Transaction.findOne({
           bookingId: booking._id,
           status: "paid",
@@ -109,7 +106,6 @@ export const handleStripeWebhookService = async (
           stripeCheckoutSessionId: session.id,
         });
 
-        // Credit tutor wallet (pending balance)
         const wallet = await getOrCreateWallet(booking.tutorId.toString());
         wallet.pendingBalance += tutorEarnings;
         wallet.totalEarned += tutorEarnings;
@@ -117,20 +113,18 @@ export const handleStripeWebhookService = async (
         await wallet.save();
       }
 
-      // Check if tutor has auto-accept enabled
       if (bookings.length > 0) {
+        // ── Fetch student and tutor ONCE ──
+        const student = await User.findById(bookings[0].studentId);
         const tutor = await User.findById(bookings[0].tutorId);
+
+        // ── Auto-confirm if tutor has it enabled ──
         if (tutor?.teachingPreferences?.autoAcceptBookings) {
           await Booking.updateMany(
             { _id: { $in: bookingIds }, status: "pending" },
             { $set: { status: "confirmed" } }
           );
 
-          // ── Auto-generate Zoom meetings for auto-accepted bookings ──
-          const { createZoomMeeting } = require("./zoom.service");
-          const student = await User.findById(bookings[0].studentId).select(
-            "firstname lastname"
-          );
           const confirmedBookings = await Booking.find({
             _id: { $in: bookingIds },
             status: "confirmed",
@@ -154,11 +148,9 @@ export const handleStripeWebhookService = async (
             }
           }
 
-          // Re-fetch and send confirmed emails
           const updatedBookings = await Booking.find({
             _id: { $in: bookingIds },
           });
-          //   const student = await User.findById(updatedBookings[0].studentId);
 
           if (student && tutor) {
             sendBookingConfirmedMail({
@@ -169,10 +161,9 @@ export const handleStripeWebhookService = async (
               isTrial: updatedBookings[0].type === "trial",
               bookingGroupId: updatedBookings[0].bookingGroupId,
             }).catch((err) =>
-              console.error("Error sending confirmed email:", err)
+              logger.error({ err }, "Error sending confirmed email")
             );
 
-            // Notify student of auto-confirmation after payment
             createNotification({
               userId: student._id,
               type: "booking_confirmed",
@@ -185,39 +176,36 @@ export const handleStripeWebhookService = async (
                 startTime: updatedBookings[0].startTime,
               },
             }).catch((err) =>
-              console.error("Error creating confirmed notification:", err)
+              logger.error({ err }, "Error creating confirmed notification")
             );
           }
         }
 
-        // Send payment success email
-        const student = await User.findById(bookings[0].studentId);
-        const tutor2 = await User.findById(bookings[0].tutorId);
-        if (student && tutor2) {
+        // ── Payment success email (uses same student & tutor) ──
+        if (student && tutor) {
           sendPaymentSuccessMail({
             student,
-            tutor: tutor2,
+            tutor,
             bookings,
             totalPrice: bookings.reduce((sum, b) => sum + b.price, 0),
           }).catch((err) =>
-            console.error("Error sending payment success email:", err)
+            logger.error({ err }, "Error sending payment success email")
           );
 
-          // Notify student of successful payment
           const totalPaid = bookings.reduce((sum, b) => sum + b.price, 0);
           createNotification({
             userId: student._id,
             type: "payment_processed",
             title: "Payment Successful",
-            message: `Payment of £${totalPaid.toFixed(2)} for your lesson${bookings.length > 1 ? "s" : ""} with ${tutor2.firstname} ${tutor2.lastname} on ${bookings[0].date} was processed successfully.`,
+            message: `Payment of £${totalPaid.toFixed(2)} for your lesson${bookings.length > 1 ? "s" : ""} with ${tutor.firstname} ${tutor.lastname} on ${bookings[0].date} was processed successfully.`,
             data: {
               bookingIds: bookings.map((b) => b._id.toString()),
               amount: totalPaid,
               date: bookings[0].date,
-              tutorId: tutor2._id.toString(),
+              tutorId: tutor._id.toString(),
             },
           }).catch((err) =>
-            console.error("Error creating payment notification:", err)
+            logger.error({ err }, "Error creating payment notification")
           );
         }
       }
@@ -266,7 +254,7 @@ export const handleStripeWebhookService = async (
               date: bookings[0].date,
             },
           }).catch((err) =>
-            console.error("Error creating payment expired notification:", err)
+            logger.error({ err }, "Error creating payment expired notification")
           );
         }
       }
@@ -327,7 +315,7 @@ export const handleStripeWebhookService = async (
             date: booking?.date || null,
           },
         }).catch((err) =>
-          console.error("Error creating payment success notification:", err)
+          logger.error({ err }, "Error creating payment success notification")
         );
       }
       break;
@@ -370,7 +358,7 @@ export const handleStripeWebhookService = async (
             date: booking?.date || null,
           },
         }).catch((err) =>
-          console.error("Error creating payment failed notification:", err)
+          logger.error({ err }, "Error creating payment failed notification")
         );
       }
       break;

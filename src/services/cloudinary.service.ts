@@ -1,5 +1,6 @@
 import { UploadApiResponse, v2 as cloudinary } from "cloudinary";
 import { Readable } from "stream";
+import logger from "../config/logger";
 
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
@@ -20,7 +21,7 @@ export const cloudinaryImageUpload = (
       },
       (error, result) => {
         if (error) {
-          console.error("Error uploading to Cloudinary:", error);
+          logger.error({ err: error }, "Error uploading to Cloudinary");
           reject(error);
         } else {
           if (result) resolve(result);

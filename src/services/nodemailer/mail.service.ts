@@ -61,7 +61,7 @@ export const sendWelcomeMail = async (userInfo: IUser) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending welcome email:", error);
+    logger.error({ err: error }, "Error sending welcome email");
     // Non-critical, don't throw
   }
 };
@@ -86,7 +86,7 @@ export const sendAccountSuspendedMail = async (
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending suspension email:", error);
+    logger.error({ err: error }, "Error sending suspension email");
   }
 };
 
@@ -104,7 +104,7 @@ export const sendAccountReactivatedMail = async (userInfo: IUser) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending reactivation email:", error);
+    logger.error({ err: error }, "Error sending reactivation email");
   }
 };
 
@@ -133,7 +133,7 @@ export const sendAccountDeletedMail = async (user: IUser) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending account deleted email:", error);
+    logger.error({ err: error }, "Error sending account deleted email");
   }
 };
 
@@ -165,7 +165,7 @@ export const sendBookingRequestMail = async (ctx: BookingEmailContext) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending booking request email:", error);
+    logger.error({ err: error }, "Error sending booking request email");
   }
 };
 
@@ -196,7 +196,7 @@ export const sendBookingPendingMail = async (ctx: BookingEmailContext) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending booking pending email:", error);
+    logger.error({ err: error }, "Error sending booking pending email");
   }
 };
 
@@ -227,7 +227,7 @@ export const sendBookingConfirmedMail = async (ctx: BookingEmailContext) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending booking confirmed email:", error);
+    logger.error({ err: error }, "Error sending booking confirmed email");
   }
 };
 
@@ -256,7 +256,7 @@ export const sendBookingDeclinedMail = async (
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending booking declined email:", error);
+    logger.error({ err: error }, "Error sending booking declined email");
   }
 };
 
@@ -284,7 +284,7 @@ export const sendBookingCancelledByStudentMail = async (
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending cancellation email to tutor:", error);
+    logger.error({ err: error }, "Error sending cancellation email to tutor");
   }
 };
 
@@ -313,7 +313,7 @@ export const sendBookingCancelledByTutorMail = async (
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending cancellation email to student:", error);
+    logger.error({ err: error }, "Error sending cancellation email to student");
   }
 };
 
@@ -343,7 +343,7 @@ export const sendPaymentSuccessMail = async (ctx: PaymentEmailContext) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending payment success email:", error);
+    logger.error({ err: error }, "Error sending payment success email");
   }
 };
 
@@ -357,6 +357,7 @@ import {
   ReviewReportEmailContext,
 } from "../../interfaces/review.interface";
 import { NewMessageEmailContext } from "../../interfaces/messaging.interface";
+import logger from "../../config/logger";
 
 /* ── Payout Requested (sent to TUTOR) ── */
 
@@ -378,7 +379,7 @@ export const sendPayoutRequestedMail = async (ctx: PayoutEmailContext) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending payout requested email:", error);
+    logger.error({ err: error }, "Error sending payout requested email");
   }
 };
 
@@ -402,7 +403,7 @@ export const sendPayoutCompletedMail = async (ctx: PayoutEmailContext) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending payout completed email:", error);
+    logger.error({ err: error }, "Error sending payout completed email");
   }
 };
 
@@ -426,7 +427,7 @@ export const sendPayoutRejectedMail = async (ctx: PayoutEmailContext) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending payout rejected email:", error);
+    logger.error({ err: error }, "Error sending payout rejected email");
   }
 };
 
@@ -452,7 +453,7 @@ export const sendRefundIssuedMail = async (ctx: RefundEmailContext) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending refund email:", error);
+    logger.error({ err: error }, "Error sending refund email");
   }
 };
 
@@ -479,7 +480,7 @@ export const sendNewReviewMail = async (ctx: ReviewEmailContext) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending new review email:", error);
+    logger.error({ err: error }, "Error sending new review email");
   }
 };
 
@@ -502,7 +503,7 @@ export const sendReviewReplyMail = async (ctx: ReviewReplyEmailContext) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending review reply email:", error);
+    logger.error({ err: error }, "Error sending review reply email");
   }
 };
 
@@ -527,7 +528,7 @@ export const sendReviewReportAdminMail = async (
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending review report admin email:", error);
+    logger.error({ err: error }, "Error sending review report admin email");
   }
 };
 
@@ -553,7 +554,7 @@ export const sendReviewHiddenMail = async (ctx: ReviewEmailContext) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending review hidden email:", error);
+    logger.error({ err: error }, "Error sending review hidden email");
   }
 };
 
@@ -574,7 +575,7 @@ export const sendReviewRestoredMail = async (ctx: ReviewEmailContext) => {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending review restored email:", error);
+    logger.error({ err: error }, "Error sending review restored email");
   }
 };
 
@@ -599,7 +600,10 @@ export const sendNewMessageNotificationMail = async (
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending new message notification email:", error);
+    logger.error(
+      { err: error },
+      "Error sending new message notification email"
+    );
   }
 };
 
@@ -632,6 +636,6 @@ export const sendLessonCompletedMail = async (ctx: {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error("Error sending lesson completed email:", error);
+    logger.error({ err: error }, "Error sending lesson completed email");
   }
 };
