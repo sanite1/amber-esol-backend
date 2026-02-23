@@ -30,20 +30,25 @@ const PORT = 4000;
 const app = express();
 const server = createServer(app);
 
+// const corsOption = {
+//   origin: (
+//     origin: string | undefined,
+//     callback: (err: Error | null, allow?: boolean) => void
+//   ) => {
+//     // Allow requests with no origin (mobile apps, Postman, cron jobs, webhooks)
+//     if (!origin) return callback(null, true);
+
+//     if (ALLOWED_ORIGINS.includes(origin)) {
+//       return callback(null, true);
+//     }
+
+//     return callback(new Error(`Origin ${origin} not allowed by CORS`));
+//   },
+//   credentials: true,
+// };
+
 const corsOption = {
-  origin: (
-    origin: string | undefined,
-    callback: (err: Error | null, allow?: boolean) => void
-  ) => {
-    // Allow requests with no origin (mobile apps, Postman, cron jobs, webhooks)
-    if (!origin) return callback(null, true);
-
-    if (ALLOWED_ORIGINS.includes(origin)) {
-      return callback(null, true);
-    }
-
-    return callback(new Error(`Origin ${origin} not allowed by CORS`));
-  },
+  origin: "*",
   credentials: true,
 };
 
