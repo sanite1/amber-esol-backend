@@ -90,7 +90,7 @@ export interface IUser extends Document {
   email: string;
   phoneNumber: string;
   password: string;
-  role: "admin" | "tutor" | "student";
+  role: "admin" | "tutor" | "student" | "org_admin";
   profilePicture?: string;
   dateOfBirth?: Date;
   gender?: "male" | "female" | "other" | "prefer-not-to-say";
@@ -153,6 +153,22 @@ export interface IUser extends Document {
   googleAccessToken?: string;
   googleRefreshToken?: string;
   tokenExpiryDate?: Date;
+
+  // ESOL learner fields (org-managed learners only)
+  orgId?: Types.ObjectId | null;
+  esolLevel?: string | null;
+  l1Language?: string | null;
+  uln?: string | null;
+  ulnStatus?: "pending" | "verified" | "not_required" | null;
+  fundingStatus?: "esfa_funded" | "self_funded" | "employer_funded" | null;
+  esolOnboardedAt?: Date | null;
+
+  // ESOL teacher fields (ESOL-approved tutors only)
+  esolTeacherApproved?: boolean | null;
+  esolQualificationType?: "CELTA" | "DELTA" | "CertTESOL" | "DipTESOL" | "PGCE" | "other" | null;
+  esolQualificationUrl?: string | null;
+  dbsCheckStatus?: "pending" | "clear" | "flagged" | "expired" | null;
+  esolTeacherNotes?: string | null;
 
   // Timestamps
   createdAt: Date;

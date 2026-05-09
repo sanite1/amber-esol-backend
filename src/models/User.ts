@@ -126,7 +126,7 @@ const userSchema = new Schema<IUser>(
     password: { type: String, required: true },
     role: {
       type: String,
-      enum: ["admin", "tutor", "student"],
+      enum: ["admin", "tutor", "student", "org_admin"],
       required: true,
     },
     profilePicture: { type: String },
@@ -227,6 +227,38 @@ const userSchema = new Schema<IUser>(
     googleAccessToken: { type: String },
     googleRefreshToken: { type: String },
     tokenExpiryDate: { type: Date },
+
+    // ESOL learner fields
+    orgId: { type: Schema.Types.ObjectId, ref: "Organisation", default: null },
+    esolLevel: { type: String, default: null },
+    l1Language: { type: String, default: null },
+    uln: { type: String, default: null },
+    ulnStatus: {
+      type: String,
+      enum: ["pending", "verified", "not_required", null],
+      default: null,
+    },
+    fundingStatus: {
+      type: String,
+      enum: ["esfa_funded", "self_funded", "employer_funded", null],
+      default: null,
+    },
+    esolOnboardedAt: { type: Date, default: null },
+
+    // ESOL teacher fields
+    esolTeacherApproved: { type: Boolean, default: null },
+    esolQualificationType: {
+      type: String,
+      enum: ["CELTA", "DELTA", "CertTESOL", "DipTESOL", "PGCE", "other", null],
+      default: null,
+    },
+    esolQualificationUrl: { type: String, default: null },
+    dbsCheckStatus: {
+      type: String,
+      enum: ["pending", "clear", "flagged", "expired", null],
+      default: null,
+    },
+    esolTeacherNotes: { type: String, default: null },
   },
   {
     timestamps: true,

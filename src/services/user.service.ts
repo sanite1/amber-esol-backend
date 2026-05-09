@@ -45,6 +45,9 @@ const generateTokens = (user: any) => {
     email: user.email,
     role: user.role,
     profilePicture: user.profilePicture,
+    orgId: user.orgId?.toString() ?? null,
+    esolLevel: user.esolLevel ?? null,
+    esolTeacherApproved: user.esolTeacherApproved ?? null,
   };
 
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "5h" });
@@ -218,6 +221,9 @@ export const refreshService = async (data: IRefreshTokenRequest) => {
     email: user.email,
     role: user.role,
     profilePicture: user.profilePicture,
+    orgId: user.orgId?.toString() ?? null,
+    esolLevel: user.esolLevel ?? null,
+    esolTeacherApproved: user.esolTeacherApproved ?? null,
   };
 
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "5h" });

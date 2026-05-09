@@ -3,7 +3,7 @@ import { IUser } from "./user.interface";
 
 /* ── Enums / Unions ── */
 
-export type BookingType = "trial" | "regular";
+export type BookingType = "trial" | "regular" | "esolConsolidation";
 
 export type BookingStatus =
   | "pending"
@@ -14,7 +14,7 @@ export type BookingStatus =
   | "cancelled_admin"
   | "no_show";
 
-export type PaymentStatus = "pending" | "paid" | "refunded" | "failed" | "free";
+export type PaymentStatus = "pending" | "paid" | "refunded" | "failed" | "free" | "orgInvoiced";
 
 export type CancelledBy = "student" | "tutor" | "admin";
 
@@ -65,6 +65,12 @@ export interface IBooking extends Document {
   paymentStatus: PaymentStatus;
 
   completedAt?: Date;
+
+  // ESOL fields (org-managed bookings only)
+  orgId?: Types.ObjectId | null;
+  aiSessionId?: Types.ObjectId | null;
+  teacherPrepViewed?: boolean;
+  teacherNotesPosted?: boolean;
 
   // Timestamps
   createdAt: Date;

@@ -13,6 +13,9 @@ export interface IUserDecoded extends JwtPayload {
   email: string;
   role: string;
   profilePicture: string;
+  orgId?: string | null;
+  esolLevel?: string | null;
+  esolTeacherApproved?: boolean | null;
 }
 
 export const isAuthenticated: ExpressFunction = async (req, _res, next) => {
@@ -38,16 +41,27 @@ export const isAuthenticated: ExpressFunction = async (req, _res, next) => {
       throw new ApiError(401, "Token has expired");
     }
 
-    // ── Verify account is still active ──
+    // ── Verify account is still active AND re-hydrate role / orgId /
+    // esolTeacherApproved from the database. The JWT carries these fields
+    // for convenience but they can be revoked between issue and expiry,
+    // so we never trust the JWT copy for authorisation decisions.
     const user = await User.findById(decoded.id)
-      .select("isActive status")
+      .select("isActive status role orgId esolLevel esolTeacherApproved")
       .lean();
 
     if (!user || !user.isActive || user.status === "terminated") {
       throw new ApiError(401, "Account is deactivated");
     }
 
-    (req as Request & { user?: IUserDecoded }).user = decoded;
+    const fresh: IUserDecoded = {
+      ...decoded,
+      role: user.role,
+      orgId: user.orgId ? user.orgId.toString() : null,
+      esolLevel: user.esolLevel ?? null,
+      esolTeacherApproved: user.esolTeacherApproved ?? null,
+    };
+
+    (req as Request & { user?: IUserDecoded }).user = fresh;
     next();
   } catch (error) {
     next(error);
@@ -56,8 +70,21 @@ export const isAuthenticated: ExpressFunction = async (req, _res, next) => {
 
 export const isAdmin: ExpressFunction = async (req, _res, next) => {
   try {
+    // org_admin is explicitly excluded — use isOrgAdmin for org-scoped admin routes
     if (req.user?.role !== "admin") {
       return next(new ApiError(403, "Admin access required"));
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const isOrgAdmin: ExpressFunction = async (req, _res, next) => {
+  try {
+    const role = req.user?.role;
+    if (role !== "org_admin" && role !== "admin") {
+      return next(new ApiError(403, "Organisation admin access required"));
     }
     next();
   } catch (error) {

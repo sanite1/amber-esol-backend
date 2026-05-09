@@ -607,6 +607,86 @@ export const sendNewMessageNotificationMail = async (
   }
 };
 
+/* ── Safeguarding Alert (sent to safeguarding officer) ── */
+
+export const sendSafeguardingAlertMail = async (ctx: {
+  alertLevel: "low" | "medium" | "high" | "critical";
+  learnerName: string;
+  orgName: string;
+  sessionId: string;
+  reasoning: string;
+  raisedAt: Date;
+}) => {
+  const recipient = process.env.SAFEGUARDING_ALERT_EMAIL;
+  if (!recipient) {
+    logger.error("SAFEGUARDING_ALERT_EMAIL is not configured — alert not sent");
+    return;
+  }
+
+  const formattedDate = ctx.raisedAt.toLocaleString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/London",
+  });
+
+  const mailOptions = {
+    from: `"Amber Training Safeguarding" <${process.env.AUTH_EMAIL}>`,
+    to: recipient,
+    template: "./safeguardingAlert",
+    subject: `[${ctx.alertLevel.toUpperCase()}] Safeguarding Alert — Amber Training`,
+    context: {
+      alertLevel: ctx.alertLevel,
+      learnerName: ctx.learnerName,
+      orgName: ctx.orgName,
+      sessionId: ctx.sessionId,
+      reasoning: ctx.reasoning,
+      raisedAt: formattedDate,
+      dashboardUrl: `${DOMAIN_NAME}/admin/safeguarding/${ctx.sessionId}`,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    logger.error({ err: error }, "Error sending safeguarding alert email");
+  }
+};
+
+/* ── Learner Invite (sent to prospective ESOL learner) ── */
+
+export const sendLearnerInviteMail = async (ctx: {
+  toEmail: string;
+  learnerName?: string;
+  orgName: string;
+  esolLevel: string;
+  inviteUrl: string;
+  expiryDate: string;
+}) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.toEmail,
+    template: "./learnerInvite",
+    subject: `You've Been Invited to Join ${ctx.orgName} — Amber Training`,
+    context: {
+      learnerName: ctx.learnerName || "",
+      orgName: ctx.orgName,
+      esolLevel: ctx.esolLevel,
+      inviteUrl: ctx.inviteUrl,
+      expiryDate: ctx.expiryDate,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    logger.error({ err: error }, "Error sending learner invite email");
+  }
+};
+
 /* ── Lesson Completed + Review Prompt (sent to STUDENT) ── */
 
 export const sendLessonCompletedMail = async (ctx: {

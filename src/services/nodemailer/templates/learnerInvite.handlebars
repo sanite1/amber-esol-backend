@@ -1,0 +1,127 @@
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .header {
+        background: #0b2343;
+        padding: 30px;
+        text-align: center;
+      }
+      .header h1 {
+        color: #ffffff;
+        margin: 0;
+        font-size: 24px;
+      }
+      .header p {
+        color: #94a3b8;
+        margin: 6px 0 0;
+        font-size: 14px;
+      }
+      .body {
+        padding: 30px;
+      }
+      .body p {
+        color: #333;
+        line-height: 1.6;
+      }
+      .level-badge {
+        display: inline-block;
+        background: #fef3c7;
+        color: #92400e;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 14px;
+        margin: 4px 0;
+      }
+      .info-box {
+        background: #f8fafc;
+        border-left: 4px solid #f59e0b;
+        padding: 16px 20px;
+        border-radius: 0 8px 8px 0;
+        margin: 20px 0;
+      }
+      .info-box p {
+        margin: 4px 0;
+        font-size: 14px;
+        color: #475569;
+      }
+      .btn {
+        display: inline-block;
+        background: #f59e0b;
+        color: #ffffff;
+        padding: 14px 32px;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: bold;
+        margin: 20px 0;
+      }
+      .expiry {
+        font-size: 13px;
+        color: #6b7280;
+        margin-top: 8px;
+      }
+      .footer {
+        padding: 20px 30px;
+        background: #f9fafb;
+        text-align: center;
+        color: #9ca3af;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>You've Been Invited</h1>
+        <p>ESOL English Programme — {{orgName}}</p>
+      </div>
+      <div class="body">
+        {{#if learnerName}}
+          <p>Hi {{learnerName}},</p>
+        {{else}}
+          <p>Hello,</p>
+        {{/if}}
+        <p>
+          <strong>{{orgName}}</strong> has invited you to join their ESOL English
+          learning programme on Amber Training.
+        </p>
+        <div class="info-box">
+          <p><strong>Organisation:</strong> {{orgName}}</p>
+          <p>
+            <strong>Your assigned level:</strong>
+            <span class="level-badge">{{esolLevel}}</span>
+          </p>
+        </div>
+        <p>
+          Click the button below to create your account and begin your English
+          learning journey. Your place is reserved — this link is unique to you.
+        </p>
+        <p style="text-align: center;">
+          <a href="{{inviteUrl}}" class="btn">Accept Invitation</a>
+        </p>
+        <p class="expiry">This invitation expires on {{expiryDate}}.</p>
+        <p>
+          If you were not expecting this invitation or believe it was sent in
+          error, you can safely ignore this email.
+        </p>
+        <p>Best regards,<br />The Amber Training Team</p>
+      </div>
+      <div class="footer">
+        <p>&copy; {{currentYear}} Amber Training. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>

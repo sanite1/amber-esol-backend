@@ -64,7 +64,7 @@ router.post(
 );
 
 // ── Auth ──
-router.post("/login", authLimiter, loginValidation(), login);
+router.post("/login", loginValidation(), login);
 router.post("/refresh", authLimiter, refreshTokenValidation(), refresh);
 router.post(
   "/forgot-password",

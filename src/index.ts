@@ -19,6 +19,17 @@ import tutorDashboardRoutes from "./routes/tutorDashboard.routes";
 import studentDashboardRoutes from "./routes/studentDashboard.routes";
 import adminDashboardRoutes from "./routes/adminDashboard.routes";
 import cronRoutes from "./routes/cron.routes";
+import esolOrgRoutes from "./routes/esolOrg.routes";
+import esolReferralRoutes from "./routes/esolReferral.routes";
+import esolLearnerRoutes from "./routes/esolLearner.routes";
+import esolTeacherRoutes from "./routes/esolTeacher.routes";
+import esolAISessionRoutes from "./routes/esolAISession.routes";
+import esolSafeguardingRoutes from "./routes/esolSafeguarding.routes";
+import esolInvoiceRoutes from "./routes/esolInvoice.routes";
+import esolReportRoutes from "./routes/esolReport.routes";
+import esolLevelChangeRoutes from "./routes/esolLevelChange.routes";
+import esolSessionFeedbackRoutes from "./routes/esolSessionFeedback.routes";
+import esolVocabRoutes from "./routes/esolVocab.routes";
 import { stripeWebhook } from "./controllers/webhook.controller";
 import { initSocketIO } from "./services/websocket.service";
 import ALLOWED_ORIGINS from "./config/cors";
@@ -30,25 +41,21 @@ const PORT = 4000;
 const app = express();
 const server = createServer(app);
 
-// const corsOption = {
-//   origin: (
-//     origin: string | undefined,
-//     callback: (err: Error | null, allow?: boolean) => void
-//   ) => {
-//     // Allow requests with no origin (mobile apps, Postman, cron jobs, webhooks)
-//     if (!origin) return callback(null, true);
-
-//     if (ALLOWED_ORIGINS.includes(origin)) {
-//       return callback(null, true);
-//     }
-
-//     return callback(new Error(`Origin ${origin} not allowed by CORS`));
-//   },
-//   credentials: true,
-// };
-
 const corsOption = {
-  origin: "*",
+  origin: (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void
+  ) => {
+    // Allow requests with no origin header — mobile apps, server-to-server,
+    // Stripe webhooks, Vercel cron jobs.
+    if (!origin) return callback(null, true);
+
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+  },
   credentials: true,
 };
 
@@ -85,6 +92,19 @@ app.use(cors(corsOption));
   app.use("/api/student-dashboard", studentDashboardRoutes);
   app.use("/api/admin-dashboard", adminDashboardRoutes);
   app.use("/api/cron", cronRoutes);
+
+  // ── ESOL / Project Silk ──
+  app.use("/api/esol/organisations", esolOrgRoutes);
+  app.use("/api/esol/referrals", esolReferralRoutes);
+  app.use("/api/esol/learners", esolLearnerRoutes);
+  app.use("/api/esol/teachers", esolTeacherRoutes);
+  app.use("/api/esol/sessions", esolAISessionRoutes);
+  app.use("/api/esol/safeguarding", esolSafeguardingRoutes);
+  app.use("/api/esol/invoices", esolInvoiceRoutes);
+  app.use("/api/esol/reports", esolReportRoutes);
+  app.use("/api/esol/level-changes", esolLevelChangeRoutes);
+  app.use("/api/esol/session-feedback", esolSessionFeedbackRoutes);
+  app.use("/api/esol/vocab", esolVocabRoutes);
 
   app.all("*", (req, _res, next) => {
     next(new ApiError(404, `Can't find ${req.originalUrl} on the server!`));

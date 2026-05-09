@@ -16,6 +16,14 @@
     {
       "path": "/api/cron/complete-lessons",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/generate-invoices",
+      "schedule": "0 9 1 * *"
+    },
+    {
+      "path": "/api/cron/check-progression",
+      "schedule": "0 6 * * *"
     }
   ]
 }

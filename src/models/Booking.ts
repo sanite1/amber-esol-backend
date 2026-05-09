@@ -15,7 +15,7 @@ const bookingSchema = new Schema<IBooking>(
     },
     type: {
       type: String,
-      enum: ["trial", "regular"],
+      enum: ["trial", "regular", "esolConsolidation"],
       required: true,
     },
     flagged: { type: Boolean, default: false },
@@ -75,10 +75,16 @@ const bookingSchema = new Schema<IBooking>(
     stripeCheckoutSessionId: { type: String },
     paymentStatus: {
       type: String,
-      enum: ["pending", "paid", "refunded", "failed", "free"],
+      enum: ["pending", "paid", "refunded", "failed", "free", "orgInvoiced"],
       default: "pending",
     },
     completedAt: { type: Date },
+
+    // ESOL fields
+    orgId: { type: Schema.Types.ObjectId, ref: "Organisation", default: null },
+    aiSessionId: { type: Schema.Types.ObjectId, ref: "AISession", default: null },
+    teacherPrepViewed: { type: Boolean, default: false },
+    teacherNotesPosted: { type: Boolean, default: false },
   },
   {
     timestamps: true,
@@ -98,6 +104,9 @@ bookingSchema.index({ studentId: 1, status: 1, date: 1 });
 
 // Admin/cron queries: auto-complete, admin stats
 bookingSchema.index({ status: 1, date: 1 });
+
+// ESOL org queries: org dashboard, invoice generation
+bookingSchema.index({ orgId: 1, status: 1, date: 1 });
 
 const Booking = model<IBooking>("Booking", bookingSchema);
 
