@@ -12,14 +12,14 @@ import {
   AISessionMode,
   IAISessionTurn,
 } from "../interfaces/aiSession.interface";
-import { scrubPII } from "./nerScrubber.service";
 import {
-  safeguardScreen,
-  assessTurn,
+  processTurn as geminiProcessTurn,
   generateTeacherPrepNote,
   generateSessionSummary,
-} from "./claudeAI.service";
-import { generateDialogue, DialogueHistoryEntry } from "./deepSeekAI.service";
+  DialogueHistoryEntry,
+  ScenarioContext,
+} from "./geminiAI.service";
+import { loadScenario } from "./scenarioLoader.service";
 import { sendSafeguardingAlertMail } from "./nodemailer/mail.service";
 import logger from "../config/logger";
 
@@ -198,58 +198,90 @@ export const processTurnService = async (params: {
     throw new ApiError(404, "Learner not found");
   }
 
-  // ── Stage 1: Claude safeguarding screen ── (fail-closed)
-  let safeguardResult;
+  // ── Build context for Gemini single-call ──
+
+  // Spaced repetition: 5 oldest/least-encountered vocab items for this learner
+  const vocabToReinforce = await VocabLedger.aggregate([
+    { $match: { learnerId: learner._id } },
+    {
+      $group: {
+        _id: "$word",
+        timesEncountered: { $sum: 1 },
+        lastSeen: { $max: "$revisedAt" },
+      },
+    },
+    { $sort: { timesEncountered: 1, lastSeen: 1 } },
+    { $limit: 5 },
+  ]);
+
+  // Recent session summaries (for learner profile context)
+  const recentSessions = await AISession.find({
+    learnerId: learner._id,
+    completedAt: { $ne: null },
+    _id: { $ne: session._id },
+  })
+    .sort({ completedAt: -1 })
+    .limit(3)
+    .select("assessmentSummary");
+
+  // Load scenario JSON if scenarioId is set on session.topic
+  const scenario: ScenarioContext | undefined = session.topic
+    ? loadScenario(session.topic, learner.l1Language || "en")
+    : undefined;
+
+  const history: DialogueHistoryEntry[] = session.turns.flatMap((t) => [
+    { role: "user", content: t.originalInput },
+    { role: "assistant", content: t.deepSeekResponse },
+  ]);
+
+  // ── Single Gemini call (replaces the old 5-stage pipeline) ──
+  let result;
   try {
-    safeguardResult = await safeguardScreen(params.input);
-  } catch (err) {
-    // Hard fail if the safeguarding screen is unavailable — never proceed
-    // unscreened. Audit the failure with an open alert so it surfaces in
-    // the dashboard for review.
-    logger.error(
-      { err, sessionId: session._id.toString() },
-      "Safeguarding screen unavailable — turn rejected"
-    );
-    await SafeguardingAlert.create({
-      learnerId: session.learnerId,
-      orgId: session.orgId,
-      sessionId: session._id,
-      alertLevel: "critical",
-      triggerTextHash: sha256(params.input),
-      claudeReasoning:
-        "Safeguarding screen could not be executed; turn was rejected to ensure no unscreened content was processed.",
-      status: "open",
+    result = await geminiProcessTurn({
+      learnerInput: params.input,
+      scenario,
+      learner: {
+        esolLevel: session.esolLevel,
+        l1Language: learner.l1Language ?? "",
+        vocabularyToReinforce: vocabToReinforce.map((v) => v._id),
+        recentSessionSummaries: recentSessions
+          .map((s) => s.assessmentSummary)
+          .filter((x): x is string => Boolean(x)),
+        skillWeaknessFlags: learner.skillWeaknessFlags ?? [],
+        currentMode: session.sessionMode,
+      },
+      history,
     });
-    throw new ApiError(
-      503,
-      "Tutor is temporarily unavailable. Please try again shortly."
-    );
+  } catch (err) {
+    // Fail-closed: any AI failure on a learner turn is treated as a
+    // safeguarding-relevant outage. Log and reject; pre-cached safeguarding
+    // signposting can be served by the frontend on 503.
+    logger.error({ err }, "Gemini turn failed — rejecting turn");
+    throw err; // ApiError already wrapped in geminiProcessTurn
   }
 
-  if (safeguardResult.flagged) {
+  // ── Safeguarding handling ──
+  if (result.safeguarding_flag) {
     const alert = await SafeguardingAlert.create({
       learnerId: session.learnerId,
       orgId: session.orgId,
       sessionId: session._id,
-      alertLevel: safeguardResult.level,
+      alertLevel: result.safeguarding_category === "self_harm" ? "critical" : "high",
       triggerTextHash: sha256(params.input),
-      claudeReasoning: safeguardResult.reasoning,
+      claudeReasoning: `Category: ${result.safeguarding_category ?? "unknown"}`,
       status: "open",
     });
 
     session.safeguardingFlagged = true;
     session.safeguardingAlertId = alert._id as Types.ObjectId;
 
-    // Send email alert (non-blocking). notificationSentAt is set ONLY
-    // after the dispatch succeeds — we don't want the audit log to
-    // claim a notification was sent when SMTP failed silently.
     const org = await Organisation.findById(session.orgId).select("name");
     sendSafeguardingAlertMail({
-      alertLevel: safeguardResult.level,
+      alertLevel: alert.alertLevel,
       learnerName: `${learner.firstname} ${learner.lastname}`,
       orgName: org?.name ?? "Unknown organisation",
       sessionId: session._id.toString(),
-      reasoning: safeguardResult.reasoning,
+      reasoning: `Category: ${result.safeguarding_category ?? "unknown"}`,
       raisedAt: new Date(),
     })
       .then(async () => {
@@ -262,66 +294,36 @@ export const processTurnService = async (params: {
           "Failed to dispatch safeguarding alert email"
         )
       );
-
-    // Critical concerns halt the session immediately
-    if (safeguardResult.score >= 0.9) {
-      await session.save();
-      throw new ApiError(
-        403,
-        "Session paused for safeguarding review. Support has been notified and will be in touch."
-      );
-    }
   }
 
-  // ── Stage 2: NER scrub ──
-  const scrubResult = scrubPII(params.input);
-  const scrubbedInput = scrubResult.scrubbed;
-
-  // ── Stage 3: DeepSeek dialogue ──
-  const history: DialogueHistoryEntry[] = session.turns.flatMap((t) => [
-    { role: "user", content: scrubPII(t.originalInput).scrubbed },
-    { role: "assistant", content: t.deepSeekResponse },
-  ]);
-
-  const dialogueResponse = await generateDialogue({
-    sessionMode: session.sessionMode,
-    esolLevel: session.esolLevel,
-    l1Language: learner.l1Language,
-    topic: session.topic,
-    history,
-    scrubbedInput,
-  });
-
-  // ── Stage 4: Claude assessment ──
-  const assessment = await assessTurn({
-    esolLevel: session.esolLevel,
-    learnerInput: scrubbedInput,
-    aiResponse: dialogueResponse,
-  });
-
-  // ── Stage 5: Persist turn + vocab ──
+  // ── Persist turn + vocab ──
   const turn: IAISessionTurn = {
     turnIndex: session.turns.length,
     originalInput: params.input,
-    scrubbed: scrubResult.scrubbedCount > 0,
-    deepSeekResponse: dialogueResponse,
-    claudeAssessment: assessment.assessment,
-    safeguardingScore: safeguardResult.score,
+    scrubbed: false, // No scrubbing — Vertex EU keeps data in EU
+    deepSeekResponse: result.reply, // field name retained for backward compatibility
+    claudeAssessment: result.grammar_feedback ?? "",
+    safeguardingScore: result.safeguarding_flag ? 0.9 : 0,
     timestamp: new Date(),
   };
 
   session.turns.push(turn);
-  if (assessment.vocabWords.length > 0) {
+  session.sessionMode = result.mode;
+  if (result.vocabulary_items_used.length > 0) {
     const existing = new Set(session.vocabIntroduced ?? []);
-    for (const word of assessment.vocabWords) existing.add(word);
+    for (const word of result.vocabulary_items_used) existing.add(word);
     session.vocabIntroduced = Array.from(existing);
+  }
+  if (result.session_complete) {
+    session.completedAt = new Date();
+    session.assessmentSummary = result.session_summary ?? undefined;
   }
 
   await session.save();
 
   // Bulk insert vocab to ledger (best-effort)
-  if (assessment.vocabWords.length > 0) {
-    const vocabDocs = assessment.vocabWords.map((word) => ({
+  if (result.vocabulary_items_used.length > 0) {
+    const vocabDocs = result.vocabulary_items_used.map((word) => ({
       learnerId: session.learnerId,
       orgId: session.orgId,
       sessionId: session._id,
@@ -336,13 +338,17 @@ export const processTurnService = async (params: {
   }
 
   return new ApiResponse(200, "Turn processed successfully", {
-    response: dialogueResponse,
-    assessment: assessment.assessment,
-    grammarFeedback: assessment.grammarFeedback,
-    comprehensionScore: assessment.comprehensionScore,
-    vocabIntroduced: assessment.vocabWords,
-    safeguardingFlagged: safeguardResult.flagged,
-    redactionsApplied: scrubResult.redactionsApplied,
+    response: result.reply,
+    mode: result.mode,
+    assessment: result.grammar_feedback ?? "",
+    grammarFeedback: result.grammar_feedback ?? "",
+    comprehensionScore: result.turn_score,
+    vocabIntroduced: result.vocabulary_items_used,
+    skillCodesUsed: result.skill_codes_used,
+    safeguardingFlagged: result.safeguarding_flag,
+    safeguardingCategory: result.safeguarding_category,
+    sessionComplete: result.session_complete,
+    sessionSummary: result.session_summary,
   });
 };
 
@@ -381,7 +387,7 @@ export const completeAISessionService = async (params: {
     const transcript = session.turns
       .map(
         (t) =>
-          `Turn ${t.turnIndex + 1}\nLearner: ${scrubPII(t.originalInput).scrubbed}\nTutor: ${t.deepSeekResponse}\nAssessment: ${t.claudeAssessment ?? "n/a"}`
+          `Turn ${t.turnIndex + 1}\nLearner: ${t.originalInput}\nTutor: ${t.deepSeekResponse}\nAssessment: ${t.claudeAssessment ?? "n/a"}`
       )
       .join("\n\n");
 
@@ -457,9 +463,8 @@ export const getTeacherPrepNoteService = async (params: {
 
   const content = await generateTeacherPrepNote({
     esolLevel: session.esolLevel,
-    l1Language: learner?.l1Language,
-    topic: session.topic,
-    sessionMode: session.sessionMode,
+    l1Language: learner?.l1Language ?? "",
+    topic: session.topic ?? undefined,
     recentSessionSummaries: summaries,
   });
 

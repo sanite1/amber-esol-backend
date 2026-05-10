@@ -159,9 +159,23 @@ export interface IUser extends Document {
   esolLevel?: string | null;
   l1Language?: string | null;
   uln?: string | null;
-  ulnStatus?: "pending" | "verified" | "not_required" | null;
-  fundingStatus?: "esfa_funded" | "self_funded" | "employer_funded" | null;
+  ulnStatus?: "pending" | "verified" | "not_required" | "confirmed" | null;
+  fundingStatus?: "esfa_funded" | "self_funded" | "employer_funded" | "fundable" | "self_pay" | "manual_review" | null;
   esolOnboardedAt?: Date | null;
+
+  // D1 onboarding additions (v2 spec)
+  nationality?: string | null;
+  ethnicity?: string | null;
+  lldd_health_prob?: 1 | 2 | 9 | null;
+  employment_status?: "unemployed" | "employed" | "in_training" | null;
+  residency_doc_ref?: string | null;
+  residency_date?: Date | null;
+  ocr_confidence?: number | null;
+  starting_level?: string | null;
+  current_level?: string | null;
+  assessment_score?: number | null;
+  placement_confidence?: number | null;
+  skillWeaknessFlags?: string[];
 
   // ESOL teacher fields (ESOL-approved tutors only)
   esolTeacherApproved?: boolean | null;

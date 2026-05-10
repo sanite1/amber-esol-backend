@@ -26,14 +26,18 @@ export const submitLearnerFeedbackValidation = () =>
     {
       params: Joi.object({ sessionId: objectId.required() }),
       body: Joi.object({
-        rating: Joi.number().integer().min(1).max(5).required().messages({
-          "any.required": "Rating is required",
-          "number.min": "Rating must be between 1 and 5",
-          "number.max": "Rating must be between 1 and 5",
-        }),
-        comment: Joi.string().trim().max(2000).optional().allow(""),
+        emojiRating: Joi.string()
+          .valid("struggling", "okay", "confident")
+          .optional(),
+        rating: Joi.number().integer().min(1).max(5).optional(),
+        comment: Joi.string().trim().max(200).optional().allow(""),
         topicsWorkedOn: Joi.array().items(Joi.string().trim()).optional(),
-      }),
+      })
+        .or("emojiRating", "rating")
+        .messages({
+          "object.missing":
+            "Either an emoji rating or numeric rating is required",
+        }),
     },
     { context: true },
     { abortEarly: false }

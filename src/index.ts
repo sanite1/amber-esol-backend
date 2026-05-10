@@ -21,6 +21,7 @@ import adminDashboardRoutes from "./routes/adminDashboard.routes";
 import cronRoutes from "./routes/cron.routes";
 import esolOrgRoutes from "./routes/esolOrg.routes";
 import esolReferralRoutes from "./routes/esolReferral.routes";
+import esolOnboardingRoutes from "./routes/esolOnboarding.routes";
 import esolLearnerRoutes from "./routes/esolLearner.routes";
 import esolTeacherRoutes from "./routes/esolTeacher.routes";
 import esolAISessionRoutes from "./routes/esolAISession.routes";
@@ -96,6 +97,7 @@ app.use(cors(corsOption));
   // ── ESOL / Project Silk ──
   app.use("/api/esol/organisations", esolOrgRoutes);
   app.use("/api/esol/referrals", esolReferralRoutes);
+  app.use("/api/esol/onboarding", esolOnboardingRoutes);
   app.use("/api/esol/learners", esolLearnerRoutes);
   app.use("/api/esol/teachers", esolTeacherRoutes);
   app.use("/api/esol/sessions", esolAISessionRoutes);

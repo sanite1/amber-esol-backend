@@ -9,6 +9,11 @@ const sessionFeedbackSchema = new Schema<ISessionFeedback>(
     teacherId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     orgId: { type: Schema.Types.ObjectId, ref: "Organisation", required: true },
     learnerRating: { type: Number, min: 1, max: 5 },
+    emojiRating: {
+      type: String,
+      enum: ["struggling", "okay", "confident", null],
+      default: null,
+    },
     learnerComment: { type: String },
     teacherRating: { type: Number, min: 1, max: 5 },
     teacherComment: { type: String },

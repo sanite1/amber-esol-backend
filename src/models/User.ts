@@ -235,15 +235,41 @@ const userSchema = new Schema<IUser>(
     uln: { type: String, default: null },
     ulnStatus: {
       type: String,
-      enum: ["pending", "verified", "not_required", null],
+      enum: ["pending", "verified", "not_required", "confirmed", null],
       default: null,
     },
     fundingStatus: {
       type: String,
-      enum: ["esfa_funded", "self_funded", "employer_funded", null],
+      enum: [
+        "esfa_funded",
+        "self_funded",
+        "employer_funded",
+        "fundable",
+        "self_pay",
+        "manual_review",
+        null,
+      ],
       default: null,
     },
     esolOnboardedAt: { type: Date, default: null },
+
+    // D1 onboarding additions (v2 spec)
+    nationality: { type: String, default: null },
+    ethnicity: { type: String, default: null },
+    lldd_health_prob: { type: Number, enum: [1, 2, 9, null], default: null },
+    employment_status: {
+      type: String,
+      enum: ["unemployed", "employed", "in_training", null],
+      default: null,
+    },
+    residency_doc_ref: { type: String, default: null },
+    residency_date: { type: Date, default: null },
+    ocr_confidence: { type: Number, default: null },
+    starting_level: { type: String, default: null },
+    current_level: { type: String, default: null },
+    assessment_score: { type: Number, default: null },
+    placement_confidence: { type: Number, default: null },
+    skillWeaknessFlags: { type: [String], default: [] },
 
     // ESOL teacher fields
     esolTeacherApproved: { type: Boolean, default: null },

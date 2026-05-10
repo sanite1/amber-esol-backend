@@ -6,7 +6,6 @@ import {
   listSessionsValidation,
   sessionIdParamValidation,
   submitTurnValidation,
-  joinSessionValidation,
 } from "../validations/esolAISession.validation";
 import {
   createSession,
@@ -15,14 +14,11 @@ import {
   submitTurn,
   completeSession,
   getTeacherPrep,
-  generateSessionToken,
-  joinSession,
 } from "../controllers/esolAISession.controller";
 import { NextFunction, Request, Response } from "express";
 import { IUserDecoded } from "../middlewares/authMiddleWare";
 import ApiError from "../errors/apiError";
 
-// Allows tutor, org_admin, or platform admin (anyone who can create / manage sessions)
 const isSessionManager = (
   req: Request & { user?: IUserDecoded },
   _res: Response,
@@ -39,53 +35,26 @@ const router = Router();
 
 router.use(isAuthenticated);
 
-// Create session (teacher | org_admin | admin)
 router.post("/", isSessionManager, createSessionValidation(), createSession);
-
-// List sessions — every authenticated role; service filters by role
 router.get("/", listSessionsValidation(), listSessions);
-
-// Learner joins a session via one-time access token
-router.post(
-  "/join",
-  requireEsolLearner,
-  joinSessionValidation(),
-  joinSession
-);
-
-// Get a single session (admin / teacher / org_admin / learner — service authorises)
 router.get("/:sessionId", sessionIdParamValidation(), getSession);
-
-// Submit a learner turn — runs the 5-stage pipeline
 router.post(
   "/:sessionId/turns",
   requireEsolLearner,
   submitTurnValidation(),
   submitTurn
 );
-
-// Complete a session
 router.patch(
   "/:sessionId/complete",
   isSessionManager,
   sessionIdParamValidation(),
   completeSession
 );
-
-// Teacher prep note (auto-generates on first request)
 router.get(
   "/:sessionId/prep",
   isSessionManager,
   sessionIdParamValidation(),
   getTeacherPrep
-);
-
-// Generate one-time session access token for the learner
-router.post(
-  "/:sessionId/access-token",
-  isSessionManager,
-  sessionIdParamValidation(),
-  generateSessionToken
 );
 
 export default router;

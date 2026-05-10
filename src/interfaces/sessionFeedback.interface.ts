@@ -8,6 +8,7 @@ export interface ISessionFeedback extends Document {
   teacherId?: Types.ObjectId;
   orgId: Types.ObjectId;
   learnerRating?: number;
+  emojiRating?: "struggling" | "okay" | "confident";
   learnerComment?: string;
   teacherRating?: number;
   teacherComment?: string;

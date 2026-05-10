@@ -2,36 +2,70 @@ import ApiError from "../errors/apiError";
 import User from "../models/User";
 import Organisation from "../models/Organisation";
 import Booking from "../models/Booking";
+import AISession from "../models/AISession";
+import LevelChange from "../models/LevelChange";
+import VocabLedger from "../models/VocabLedger";
+import SafeguardingAlert from "../models/SafeguardingAlert";
+import SessionFeedback from "../models/SessionFeedback";
+import {
+  buildIntegrationReadinessHtml,
+  IntegrationReadinessData,
+} from "./templates/integrationReadinessTemplate";
+import { generatePdfFromHtml } from "./pdfGenerator.service";
 
+/**
+ * ILR fields per spec D3.6 — official names so a college MIS can import directly.
+ * Critical fields cause learner record validation failure if missing.
+ */
 interface IlrRow {
-  uln: string;
-  surname: string;
-  givenNames: string;
-  dateOfBirth: string;
-  postcode: string;
-  esolLevel: string;
-  l1Language: string;
-  fundingStatus: string;
-  hoursDelivered: string;
-  sessionsCompleted: string;
-  esolOnboardedAt: string;
-  providerRef: string;
+  LearnRefNumber: string;
+  ULN: string;
+  GivenNames: string;
+  FamilyName: string;
+  DateOfBirth: string;
+  Ethnicity: string;
+  LLDDHealthProb: string;
+  LearnStartDate: string;
+  LearnPlanEndDate: string;
+  FundModel: string;
+  LearnAimRef: string;
+  PlannedHours: string;
+  ActualHours: string;
+  Outcome: string;
+  Postcode: string;
+  ProviderRef: string;
 }
 
 const ILR_HEADERS: { key: keyof IlrRow; label: string }[] = [
-  { key: "uln", label: "ULN" },
-  { key: "surname", label: "Family Name" },
-  { key: "givenNames", label: "Given Names" },
-  { key: "dateOfBirth", label: "Date of Birth" },
-  { key: "postcode", label: "Postcode" },
-  { key: "esolLevel", label: "ESOL Level" },
-  { key: "l1Language", label: "First Language" },
-  { key: "fundingStatus", label: "Funding Status" },
-  { key: "hoursDelivered", label: "Hours Delivered" },
-  { key: "sessionsCompleted", label: "Sessions Completed" },
-  { key: "esolOnboardedAt", label: "Learning Start Date" },
-  { key: "providerRef", label: "Provider Reference (UKPRN)" },
+  { key: "LearnRefNumber", label: "LearnRefNumber" },
+  { key: "ULN", label: "ULN" },
+  { key: "GivenNames", label: "GivenNames" },
+  { key: "FamilyName", label: "FamilyName" },
+  { key: "DateOfBirth", label: "DateOfBirth" },
+  { key: "Ethnicity", label: "Ethnicity" },
+  { key: "LLDDHealthProb", label: "LLDDHealthProb" },
+  { key: "LearnStartDate", label: "LearnStartDate" },
+  { key: "LearnPlanEndDate", label: "LearnPlanEndDate" },
+  { key: "FundModel", label: "FundModel" },
+  { key: "LearnAimRef", label: "LearnAimRef" },
+  { key: "PlannedHours", label: "PlannedHours" },
+  { key: "ActualHours", label: "ActualHours" },
+  { key: "Outcome", label: "Outcome" },
+  { key: "Postcode", label: "Postcode" },
+  { key: "ProviderRef", label: "ProviderRef" },
 ];
+
+/**
+ * Map ESOL NQF level to ILR LearnAimRef code (FALA — ESFA placeholder codes).
+ * Real codes maintained by Amber admin in the LearnAimRef mapping table.
+ */
+const LEARN_AIM_REF_MAP: Record<string, string> = {
+  "Entry 1": "60185751",
+  "Entry 2": "60185763",
+  "Entry 3": "60185775",
+  "Level 1": "60185787",
+  "Level 2": "60185799",
+};
 
 const csvEscape = (value: string): string => {
   if (value == null) return "";
@@ -87,12 +121,12 @@ export const generateIlrCsvService = async (params: {
     throw new ApiError(400, "Period end must be after period start");
   }
 
-  // Find all learners in this org
+  // Find all learners in this org (excluding demo data)
   const learners = await User.find({
     role: "student",
     orgId: org._id,
   }).select(
-    "firstname lastname email uln dateOfBirth address esolLevel l1Language fundingStatus esolOnboardedAt"
+    "firstname lastname email uln dateOfBirth address esolLevel l1Language fundingStatus esolOnboardedAt ethnicity lldd_health_prob current_level"
   );
 
   // Aggregate hours per learner from completed orgInvoiced bookings in the period
@@ -111,24 +145,35 @@ export const generateIlrCsvService = async (params: {
     hoursByLearner[id].sessions += 1;
   }
 
+  const planEndDate = org.contractEnd
+    ? formatIsoDate(org.contractEnd)
+    : formatIsoDate(
+        new Date(periodEnd.getFullYear() + 1, periodEnd.getMonth(), periodEnd.getDate())
+      );
+
   const rows: IlrRow[] = learners.map((l: any) => {
     const stats = hoursByLearner[l._id.toString()] ?? {
       hours: 0,
       sessions: 0,
     };
+    const level = l.current_level ?? l.esolLevel ?? "Entry 1";
     return {
-      uln: l.uln ?? "",
-      surname: l.lastname ?? "",
-      givenNames: l.firstname ?? "",
-      dateOfBirth: formatIsoDate(l.dateOfBirth),
-      postcode: l.address?.postcode ?? "",
-      esolLevel: l.esolLevel ?? "",
-      l1Language: l.l1Language ?? "",
-      fundingStatus: l.fundingStatus ?? "",
-      hoursDelivered: stats.hours.toFixed(2),
-      sessionsCompleted: String(stats.sessions),
-      esolOnboardedAt: formatIsoDate(l.esolOnboardedAt),
-      providerRef: org.ilrProviderRef ?? "",
+      LearnRefNumber: String(l._id).slice(-12),
+      ULN: l.uln ?? "",
+      GivenNames: l.firstname ?? "",
+      FamilyName: l.lastname ?? "",
+      DateOfBirth: formatIsoDate(l.dateOfBirth),
+      Ethnicity: l.ethnicity ?? "",
+      LLDDHealthProb: String(l.lldd_health_prob ?? 9),
+      LearnStartDate: formatIsoDate(l.esolOnboardedAt),
+      LearnPlanEndDate: planEndDate,
+      FundModel: "38", // FM38 — Adult Skills formula-funded
+      LearnAimRef: LEARN_AIM_REF_MAP[level] ?? "",
+      PlannedHours: stats.hours.toFixed(0),
+      ActualHours: stats.hours.toFixed(0),
+      Outcome: "2", // 2 = Continuing (default until learner withdraws or achieves)
+      Postcode: l.address?.postcode ?? "",
+      ProviderRef: org.ilrProviderRef ?? "",
     };
   });
 
@@ -148,4 +193,183 @@ export const generateIlrCsvService = async (params: {
     filename,
     rowCount: rows.length,
   };
+};
+
+/* ── Integration Readiness Report (8-section monthly PDF) ── */
+
+export const generateIntegrationReadinessPdf = async (params: {
+  orgId: string;
+  periodStart: string;
+  periodEnd: string;
+}): Promise<{ pdf: Buffer; filename: string }> => {
+  const org = await Organisation.findById(params.orgId);
+  if (!org) throw new ApiError(404, "Organisation not found");
+
+  const periodStart = new Date(params.periodStart);
+  const periodEnd = new Date(params.periodEnd);
+
+  // Cohort
+  const learners = await User.find({ role: "student", orgId: org._id }).select(
+    "firstname lastname uln esolOnboardedAt current_level esolLevel last_active_at"
+  );
+
+  const sessionsThisPeriod = await AISession.find({
+    orgId: org._id,
+    createdAt: { $gte: periodStart, $lte: periodEnd },
+  }).select("learnerId completedAt turns vocabIntroduced");
+
+  const totalHours = sessionsThisPeriod.reduce((sum, s) => {
+    if (s.completedAt) {
+      const dur =
+        (s.completedAt.getTime() - new Date((s as any).createdAt).getTime()) /
+        (1000 * 60 * 60);
+      return sum + Math.max(0, dur);
+    }
+    return sum;
+  }, 0);
+  const avgHours = learners.length ? totalHours / learners.length : 0;
+
+  const activeLearnerIds = new Set(
+    sessionsThisPeriod.map((s) => s.learnerId.toString())
+  );
+
+  // Level progression
+  const levelChanges = await LevelChange.find({
+    orgId: org._id,
+    createdAt: { $gte: periodStart, $lte: periodEnd },
+  }).populate("learnerId", "firstname lastname");
+
+  const progressionMap: Record<string, number> = {};
+  for (const lc of levelChanges) {
+    const key = `${lc.fromLevel || "(unset)"}→${lc.toLevel}`;
+    progressionMap[key] = (progressionMap[key] || 0) + 1;
+  }
+  const levelProgression = Object.entries(progressionMap).map(([key, count]) => {
+    const [fromLevel, toLevel] = key.split("→");
+    return { fromLevel, toLevel, count };
+  });
+
+  // Individual learner records
+  const learnerStatsMap: Record<
+    string,
+    { hours: number; scenarios: Set<string>; vocab: Set<string> }
+  > = {};
+  for (const s of sessionsThisPeriod) {
+    const id = s.learnerId.toString();
+    if (!learnerStatsMap[id]) {
+      learnerStatsMap[id] = { hours: 0, scenarios: new Set(), vocab: new Set() };
+    }
+    if (s.completedAt) {
+      const dur =
+        (s.completedAt.getTime() - new Date((s as any).createdAt).getTime()) /
+        (1000 * 60 * 60);
+      learnerStatsMap[id].hours += Math.max(0, dur);
+      if ((s as any).topic) learnerStatsMap[id].scenarios.add((s as any).topic);
+    }
+    for (const v of s.vocabIntroduced ?? []) {
+      learnerStatsMap[id].vocab.add(v);
+    }
+  }
+
+  const individualLearners = learners.map((l: any) => {
+    const stats = learnerStatsMap[l._id.toString()] ?? {
+      hours: 0,
+      scenarios: new Set(),
+      vocab: new Set(),
+    };
+    return {
+      name: `${l.firstname} ${l.lastname}`,
+      uln: l.uln ?? "",
+      startDate: l.esolOnboardedAt ?? null,
+      currentLevel: l.current_level ?? l.esolLevel ?? "—",
+      hours: stats.hours,
+      scenarios: stats.scenarios.size,
+      vocabRetained: stats.vocab.size,
+      lastActive: l.last_active_at ?? null,
+    };
+  });
+
+  // Curriculum coverage
+  const curriculumCoverage = await Promise.all(
+    learners.slice(0, 12).map(async (l: any) => {
+      const ls = sessionsThisPeriod.filter(
+        (s) => s.learnerId.toString() === l._id.toString()
+      );
+      const codes = new Set<string>();
+      for (const s of ls) {
+        for (const t of s.turns ?? []) {
+          // skill codes embedded in turn, if available
+          const tt = t as any;
+          if (tt.skill_codes_used) {
+            for (const c of tt.skill_codes_used) codes.add(c);
+          }
+        }
+      }
+      return {
+        learnerName: `${l.firstname} ${l.lastname}`,
+        skillCodes: Array.from(codes),
+      };
+    })
+  );
+
+  // Safeguarding
+  const alerts = await SafeguardingAlert.find({
+    orgId: org._id,
+    createdAt: { $gte: periodStart, $lte: periodEnd },
+  });
+
+  // Learner voice (only positive ratings)
+  const feedback = await SessionFeedback.find({
+    orgId: org._id,
+    createdAt: { $gte: periodStart, $lte: periodEnd },
+    $or: [{ emojiRating: "okay" }, { emojiRating: "confident" }],
+  })
+    .limit(5)
+    .select("learnerComment emojiRating");
+
+  const data: IntegrationReadinessData = {
+    orgName: org.name,
+    periodStart,
+    periodEnd,
+    cohort: {
+      activeLearners: activeLearnerIds.size,
+      avgHours,
+      retentionRate: learners.length
+        ? activeLearnerIds.size / learners.length
+        : 0,
+      momChange: 0, // would need previous month — placeholder
+    },
+    levelProgression,
+    individualLearners,
+    curriculumCoverage,
+    transitionReady: [], // populated by progression matrix in a future iteration
+    certificates: levelChanges.map((lc: any) => ({
+      name:
+        typeof lc.learnerId === "object"
+          ? `${lc.learnerId.firstname} ${lc.learnerId.lastname}`
+          : "Learner",
+      fromLevel: lc.fromLevel || "(unset)",
+      toLevel: lc.toLevel,
+      date: lc.createdAt,
+    })),
+    safeguarding: {
+      totalAlerts: alerts.length,
+      open: alerts.filter((a) => a.status === "open").length,
+      reviewed: alerts.filter((a) => a.status === "reviewed").length,
+      escalated: alerts.filter((a) => a.status === "escalated").length,
+      resolved: alerts.filter((a) => a.status === "resolved").length,
+      dismissed: alerts.filter((a) => a.status === "dismissed").length,
+    },
+    learnerVoice: feedback
+      .filter((f) => f.learnerComment)
+      .map((f) => ({
+        quote: f.learnerComment!,
+        rating: (f as any).emojiRating as "okay" | "confident",
+      })),
+  };
+
+  const html = buildIntegrationReadinessHtml(data);
+  const pdf = await generatePdfFromHtml(html);
+  const filename = `integration-readiness-${org.slug}-${formatIsoDate(periodEnd)}.pdf`;
+  return { pdf, filename };
 };

@@ -1,13 +1,27 @@
 import { Router } from "express";
-import { isAuthenticated, isAdmin } from "../middlewares/authMiddleWare";
+import {
+  isAuthenticated,
+  isAdmin,
+  isOrgAdmin,
+} from "../middlewares/authMiddleWare";
 import { ilrReportValidation } from "../validations/esolReport.validation";
-import { downloadIlrCsv } from "../controllers/esolReport.controller";
+import {
+  downloadIlrCsv,
+  downloadIntegrationReadinessReport,
+} from "../controllers/esolReport.controller";
 
 const router = Router();
 
-router.use(isAuthenticated, isAdmin);
+router.use(isAuthenticated);
 
-// Download ILR CSV (admin only)
-router.get("/ilr", ilrReportValidation(), downloadIlrCsv);
+// ILR CSV — admin only
+router.get("/ilr", isAdmin, ilrReportValidation(), downloadIlrCsv);
+
+// Integration Readiness Report — admin or org_admin (own org)
+router.get(
+  "/integration-readiness",
+  isOrgAdmin,
+  downloadIntegrationReadinessReport
+);
 
 export default router;

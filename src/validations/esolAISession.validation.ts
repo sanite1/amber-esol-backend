@@ -68,15 +68,4 @@ export const submitTurnValidation = () =>
     { abortEarly: false }
   );
 
-export const joinSessionValidation = () =>
-  validate(
-    {
-      body: Joi.object({
-        token: Joi.string().trim().required().messages({
-          "any.required": "Session token is required",
-        }),
-      }),
-    },
-    { context: true },
-    { abortEarly: false }
-  );
+// joinSessionValidation removed in pivot

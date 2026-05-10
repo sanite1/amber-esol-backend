@@ -21,7 +21,12 @@ const loadSessionForFeedback = async (sessionId: string) => {
 
 export const submitLearnerFeedbackService = async (
   sessionId: string,
-  data: { rating: number; comment?: string; topicsWorkedOn?: string[] },
+  data: {
+    rating?: number;
+    emojiRating?: "struggling" | "okay" | "confident";
+    comment?: string;
+    topicsWorkedOn?: string[];
+  },
   caller: CallerContext
 ) => {
   const session = await loadSessionForFeedback(sessionId);
@@ -44,8 +49,9 @@ export const submitLearnerFeedbackService = async (
         orgId: session.orgId,
       },
       $set: {
-        learnerRating: data.rating,
-        learnerComment: data.comment,
+        ...(data.rating !== undefined ? { learnerRating: data.rating } : {}),
+        ...(data.emojiRating ? { emojiRating: data.emojiRating } : {}),
+        ...(data.comment !== undefined ? { learnerComment: data.comment } : {}),
         ...(data.topicsWorkedOn && data.topicsWorkedOn.length > 0
           ? { topicsWorkedOn: data.topicsWorkedOn }
           : {}),
