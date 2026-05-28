@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ExpressFunction } from "../interfaces/helper.interface";
+import ApiError from "../errors/apiError";
+import Booking from "../models/Booking";
 import {
   ICreateReviewRequest,
   IUpdateReviewRequest,
@@ -41,6 +43,30 @@ export const createReview: ExpressFunction<ICreateReviewRequest> = async (
   try {
     const studentId = (req as any).user?.id?.toString();
     if (!studentId) return res.status(401).json({ message: "Unauthorized" });
+
+    // Brief §2 Change 5 — block public reviews for ESOL consolidation
+    // bookings. ESOL learners are a vulnerable cohort and the existing
+    // marketplace review pattern (public, tutor-visible, ratings affect
+    // ranking) creates a power-dynamic risk that does not belong in the
+    // org-managed flow. Quality signals for ESOL sessions are surfaced
+    // internally only (session completion rate, teacher prep notes,
+    // post-session progression).
+    //
+    // Marketplace reviews (trial / regular bookings) are completely
+    // unaffected — the service-layer validation continues unchanged.
+    const bookingId = (req.body as ICreateReviewRequest | undefined)?.bookingId;
+    if (bookingId) {
+      const booking = await Booking.findById(bookingId).select("type").lean();
+      if (booking?.type === "esol_consolidation") {
+        return next(
+          new ApiError(
+            403,
+            "Public reviews are not enabled for ESOL consolidation sessions"
+          )
+        );
+      }
+    }
+
     const data = await createReviewService(studentId, req.body);
     return res.status(data.statusCode).json(data);
   } catch (error) {

@@ -38,6 +38,12 @@ const generateTokens = (user: any) => {
     throw new ApiError(500, "JWT secret is not configured");
   }
 
+  // Snake_case aliases (`org_id`, `esol_level`) are emitted alongside the
+  // existing camelCase fields per brief §1 Task 10. Older code that reads
+  // `decoded.orgId` keeps working; new code can use the brief's names.
+  const orgIdStr = user.orgId?.toString() ?? null;
+  const esolLevelStr = user.esolLevel ?? null;
+
   const payload = {
     id: user._id,
     firstname: user.firstname,
@@ -45,9 +51,11 @@ const generateTokens = (user: any) => {
     email: user.email,
     role: user.role,
     profilePicture: user.profilePicture,
-    orgId: user.orgId?.toString() ?? null,
-    esolLevel: user.esolLevel ?? null,
+    orgId: orgIdStr,
+    esolLevel: esolLevelStr,
     esolTeacherApproved: user.esolTeacherApproved ?? null,
+    org_id: orgIdStr,
+    esol_level: esolLevelStr,
   };
 
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "5h" });
@@ -214,6 +222,11 @@ export const refreshService = async (data: IRefreshTokenRequest) => {
     throw new ApiError(403, "Account is suspended");
   }
 
+  // Refresh path mirrors generateTokens — emits both camelCase and
+  // snake_case forms per brief §1 Task 10.
+  const orgIdStr = user.orgId?.toString() ?? null;
+  const esolLevelStr = user.esolLevel ?? null;
+
   const payload = {
     id: user._id,
     firstname: user.firstname,
@@ -221,9 +234,11 @@ export const refreshService = async (data: IRefreshTokenRequest) => {
     email: user.email,
     role: user.role,
     profilePicture: user.profilePicture,
-    orgId: user.orgId?.toString() ?? null,
-    esolLevel: user.esolLevel ?? null,
+    orgId: orgIdStr,
+    esolLevel: esolLevelStr,
     esolTeacherApproved: user.esolTeacherApproved ?? null,
+    org_id: orgIdStr,
+    esol_level: esolLevelStr,
   };
 
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "5h" });

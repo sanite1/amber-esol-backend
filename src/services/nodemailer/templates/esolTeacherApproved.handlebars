@@ -1,0 +1,135 @@
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .header {
+        background: #0b2343;
+        padding: 30px;
+        text-align: center;
+      }
+      .header h1 {
+        color: #ffffff;
+        margin: 0;
+        font-size: 24px;
+      }
+      .header p {
+        color: #94a3b8;
+        margin: 6px 0 0;
+        font-size: 14px;
+      }
+      .body {
+        padding: 30px;
+      }
+      .body p {
+        color: #333;
+        line-height: 1.6;
+      }
+      .badge {
+        display: inline-block;
+        background: #ff7c22;
+        color: #ffffff;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+        margin: 8px 0;
+      }
+      .panel {
+        background: #fafbfc;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 18px;
+        margin: 18px 0;
+      }
+      .panel strong {
+        color: #0b2343;
+      }
+      .cta {
+        display: inline-block;
+        background: #ff7c22;
+        color: #ffffff !important;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 700;
+        text-decoration: none;
+        margin: 12px 0;
+      }
+      .footer {
+        background: #fafbfc;
+        padding: 18px 30px;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>You're approved to teach ESOL on Amber Training</h1>
+        <p>Welcome to the ESOL teaching pool</p>
+      </div>
+      <div class="body">
+        <p>Hi {{teacherName}},</p>
+
+        <p>
+          Your application to teach ESOL on the Amber Training platform has been
+          approved. Your DBS check has been verified and your qualification
+          ({{qualificationType}}) has been recorded.
+        </p>
+
+        <span class="badge">Status: Approved</span>
+
+        <div class="panel">
+          <p style="margin: 0 0 8px 0;">
+            <strong>What this means</strong>
+          </p>
+          <p style="margin: 0;">
+            You will now appear in the matching pool for ESOL learners in their
+            organisations. When a learner is matched to you, you will receive a
+            booking notification and email here.
+          </p>
+        </div>
+
+        {{#if notes}}
+          <div class="panel">
+            <p style="margin: 0 0 6px 0;"><strong>Notes from the admin team</strong></p>
+            <p style="margin: 0;">{{notes}}</p>
+          </div>
+        {{/if}}
+
+        <p>
+          You can update your qualifications and availability any time from
+          your dashboard.
+        </p>
+
+        <p style="text-align: center;">
+          <a class="cta" href="{{dashboardUrl}}">Open your dashboard</a>
+        </p>
+
+        <p>
+          If anything looks wrong on your record (qualification, DBS expiry,
+          name), reply to this email and we'll fix it.
+        </p>
+
+        <p>— The Amber Training team</p>
+      </div>
+      <div class="footer">
+        Amber Training Ltd · ambertraining.co.uk<br />
+        &copy; {{currentYear}} Amber Training Ltd. All rights reserved.
+      </div>
+    </div>
+  </body>
+</html>

@@ -129,10 +129,10 @@ export const generateIlrCsvService = async (params: {
     "firstname lastname email uln dateOfBirth address esolLevel l1Language fundingStatus esolOnboardedAt ethnicity lldd_health_prob current_level"
   );
 
-  // Aggregate hours per learner from completed orgInvoiced bookings in the period
+  // Aggregate hours per learner from completed org-invoiced bookings in the period
   const bookings = await Booking.find({
     orgId: org._id,
-    paymentStatus: "orgInvoiced",
+    paymentStatus: "org_invoiced",
     status: "completed",
     completedAt: { $gte: periodStart, $lte: periodEnd },
   }).select("studentId startTime endTime");

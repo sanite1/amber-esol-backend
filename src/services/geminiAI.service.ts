@@ -1,33 +1,21 @@
-import { VertexAI, GenerativeModel, SchemaType } from "@google-cloud/vertexai";
+import { SchemaType } from "@google-cloud/vertexai";
 import ApiError from "../errors/apiError";
 import logger from "../config/logger";
 import { AISessionMode } from "../interfaces/aiSession.interface";
+import { geminiClient, MODEL_NAME } from "../lib/gemini";
 
 /**
  * Single-call Gemini 2.5 Flash on Vertex AI (EU region).
  * Replaces the previous Claude + DeepSeek + NER pipeline.
  *
- * Data sovereignty: GCP_LOCATION must be a EU region. The prompt and
- * response stay inside the EU; no PII scrubbing is necessary because
- * the data never leaves a UK/EU adequacy zone. This is the legal basis
- * documented in DPIA 2.
+ * The Vertex AI client is the singleton from src/lib/gemini.ts, initialised
+ * once at server boot. Per-request `new VertexAI()` calls are forbidden —
+ * every call routes through `geminiClient`.
+ *
+ * Data sovereignty: the singleton enforces europe-west4 by default; never
+ * change it without legal review. This is the legal basis documented in
+ * DPIA 2.
  */
-
-const PROJECT_ID = process.env.GCP_PROJECT_ID;
-const LOCATION = process.env.GCP_LOCATION || "europe-west1";
-const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-
-let vertexAI: VertexAI | null = null;
-let cachedModel: GenerativeModel | null = null;
-
-const getVertex = (): VertexAI => {
-  if (vertexAI) return vertexAI;
-  if (!PROJECT_ID) {
-    throw new ApiError(500, "GCP_PROJECT_ID is not configured");
-  }
-  vertexAI = new VertexAI({ project: PROJECT_ID, location: LOCATION });
-  return vertexAI;
-};
 
 /* ── The Amber tutor system prompt — six layers ── */
 
@@ -198,7 +186,6 @@ export const processTurn = async (params: {
   learner: LearnerContext;
   history: DialogueHistoryEntry[];
 }): Promise<TurnResponse> => {
-  const vertex = getVertex();
 
   const systemInstruction = [
     LAYER_1_IDENTITY,
@@ -209,7 +196,7 @@ export const processTurn = async (params: {
     LAYER_6_OUTPUT_FORMAT,
   ].join("\n\n---\n\n");
 
-  const model = vertex.preview.getGenerativeModel({
+  const model = geminiClient.preview.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
     generationConfig: {
@@ -304,7 +291,6 @@ const PLACEMENT_SCHEMA = {
 export const scorePlacementAssessment = async (
   responses: AssessmentResponse[]
 ): Promise<PlacementScore> => {
-  const vertex = getVertex();
 
   const systemInstruction = `You are an experienced ESOL placement assessor working with the UK Adult ESOL Core Curriculum (DfES 2001) and the NQF level descriptors (Entry 1 through Level 2).
 
@@ -319,7 +305,7 @@ Use these descriptors:
 
 Return JSON: nqfLevel, confidence (0-1), skillWeaknessFlags (array of skill codes from {Sc, Sd, Lr, Rt, Rs, Rw, Wt, Ws, Ww} where the learner showed weakness), rationale (2-3 sentence explanation).`;
 
-  const model = vertex.preview.getGenerativeModel({
+  const model = geminiClient.preview.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
     generationConfig: {
@@ -358,8 +344,7 @@ export const generateTeacherPrepNote = async (input: {
   topic?: string;
   recentSessionSummaries: string[];
 }): Promise<string> => {
-  const vertex = getVertex();
-  const model = vertex.preview.getGenerativeModel({
+  const model = geminiClient.preview.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction: {
       role: "system",
@@ -401,8 +386,7 @@ export const generateTeacherPrepNote = async (input: {
 export const generateSessionSummary = async (
   transcript: string
 ): Promise<string> => {
-  const vertex = getVertex();
-  const model = vertex.preview.getGenerativeModel({
+  const model = geminiClient.preview.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction: {
       role: "system",

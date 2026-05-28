@@ -110,6 +110,22 @@ const LearningPreferencesSchema = new Schema(
   { _id: false }
 );
 
+// ── RARPA Stage 3 objective subdocument ─────────────────────────────────
+// One per learning objective set at Stage 3 (typically 2–3 per learner per
+// RARPA cycle). `id` is a stable client-supplied UUID so Stage 4 evidence
+// items can reference it across edits to the objective text.
+const Stage3ObjectiveSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    skill_domain: { type: String, required: true }, // Sc, Sd, Lr, Rt, Rs, Rw, Wt, Ws, Ww
+    description: { type: String, required: true },
+    set_at: { type: Date, default: Date.now },
+    set_from: { type: String, default: null }, // e.g. "placement_assessment", "teacher_override"
+    target_level: { type: String, default: null }, // e1/e2/e3/l1/l2
+  },
+  { _id: false }
+);
+
 const userSchema = new Schema<IUser>(
   {
     // Core fields
@@ -228,14 +244,18 @@ const userSchema = new Schema<IUser>(
     googleRefreshToken: { type: String },
     tokenExpiryDate: { type: Date },
 
-    // ESOL learner fields
+    // ── ESOL learner fields (existing camelCase) ──────────────────────
+    // These were added before the Project Silk brief locked in snake_case
+    // as the convention. They're preserved as-is to avoid breaking the
+    // auth middleware, JWT payload, and the services already reading them.
+    // New ESOL fields below this block use the brief's snake_case names.
     orgId: { type: Schema.Types.ObjectId, ref: "Organisation", default: null },
     esolLevel: { type: String, default: null },
     l1Language: { type: String, default: null },
     uln: { type: String, default: null },
     ulnStatus: {
       type: String,
-      enum: ["pending", "verified", "not_required", "confirmed", null],
+      enum: ["pending", "verified", "not_required", "confirmed", "not_applicable", null],
       default: null,
     },
     fundingStatus: {
@@ -253,7 +273,7 @@ const userSchema = new Schema<IUser>(
     },
     esolOnboardedAt: { type: Date, default: null },
 
-    // D1 onboarding additions (v2 spec)
+    // D1 onboarding additions (v2 spec, snake_case)
     nationality: { type: String, default: null },
     ethnicity: { type: String, default: null },
     lldd_health_prob: { type: Number, enum: [1, 2, 9, null], default: null },
@@ -271,8 +291,27 @@ const userSchema = new Schema<IUser>(
     placement_confidence: { type: Number, default: null },
     skillWeaknessFlags: { type: [String], default: [] },
 
-    // ESOL teacher fields
-    esolTeacherApproved: { type: Boolean, default: null },
+    // ── NEW Phase 1.6 ESOL learner fields (snake_case per brief) ──────
+    postcode_prior: { type: String, default: null },
+    sof_code: { type: String, default: null },
+    esol_aim_type: {
+      type: String,
+      enum: ["regulated", "non_regulated", null],
+      default: null,
+    },
+    esol_eligibility_declared_at: { type: Date, default: null },
+    stage3_objectives: { type: [Stage3ObjectiveSchema], default: [] },
+    cohort_status: {
+      type: String,
+      enum: ["new", "active", "inactive_mild", "inactive_moderate", "dormant"],
+      default: "new",
+    },
+    progression_notification_sent_at: { type: Date, default: null },
+
+    // ── ESOL teacher fields (existing camelCase preserved) ────────────
+    // Default for esolTeacherApproved changed null → false per brief: a
+    // brand-new tutor explicitly is NOT approved until admin reviews them.
+    esolTeacherApproved: { type: Boolean, default: false },
     esolQualificationType: {
       type: String,
       enum: ["CELTA", "DELTA", "CertTESOL", "DipTESOL", "PGCE", "other", null],
@@ -281,10 +320,51 @@ const userSchema = new Schema<IUser>(
     esolQualificationUrl: { type: String, default: null },
     dbsCheckStatus: {
       type: String,
-      enum: ["pending", "clear", "flagged", "expired", null],
+      enum: [
+        "pending",
+        "clear",
+        "flagged",
+        "expired",
+        "not_submitted",
+        "cleared",
+        null,
+      ],
       default: null,
     },
     esolTeacherNotes: { type: String, default: null },
+
+    // ── ESOL teacher application (brief §2 Change 2) ──────────────────
+    // Captured when a tutor submits their ESOL application via
+    // POST /api/esol/teachers/apply. Admin reads these to make the
+    // approve/reject decision.
+    dbs_check_reference: { type: String, default: null },
+    esol_experience_description: { type: String, default: null },
+    esol_application_submitted_at: { type: Date, default: null },
+    esol_rejection_reason: { type: String, default: null },
+    esol_rejected_at: { type: Date, default: null },
+
+    // ── Addendum §4.1 teacher-multiplier fields (Phase 22) ────────────
+    // Lets one ESOL teacher cover many learners with platform-computed
+    // priority signals telling them where to spend their attention.
+    assigned_teacher_id: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    teacher_last_reviewed_at: { type: Date, default: null },
+    pathway_override: {
+      // { scenario_ids: string[], set_by: ObjectId, set_at: Date }
+      type: Schema.Types.Mixed,
+      default: null,
+    },
+    glh_teacher_contact: { type: Number, default: 0 },
+    teacher_priority_level: {
+      type: String,
+      enum: ["p1", "p2", "p3", "p4"],
+      default: "p4",
+    },
+    teacher_recommended_action: { type: String, default: null },
+    teacher_priority_updated_at: { type: Date, default: null },
   },
   {
     timestamps: true,
@@ -302,6 +382,21 @@ const userSchema = new Schema<IUser>(
     },
   }
 );
+
+// ── Compound indexes ────────────────────────────────────────────────────
+// Field names match the actual Mongo field names. The codebase mixes
+// camelCase (orgId, esolLevel) with snake_case (cohort_status,
+// assigned_teacher_id, teacher_priority_level) — the indexes reference
+// each field as it's actually stored.
+
+// Cohort dashboard: list learners filtered by status within an org.
+userSchema.index({ orgId: 1, cohort_status: 1 });
+
+// Level-filtered cohort views.
+userSchema.index({ orgId: 1, esolLevel: 1 });
+
+// Teacher dashboard: "what should this teacher work on next?"
+userSchema.index({ assigned_teacher_id: 1, teacher_priority_level: 1 });
 
 const User = model<IUser>("User", userSchema);
 

@@ -1,6 +1,22 @@
 import { Schema, model } from "mongoose";
 import { IBooking } from "../interfaces/booking.interface";
 
+/**
+ * Booking — marketplace lessons + ESOL consolidation sessions.
+ *
+ * Two booking types share this collection:
+ *   - "trial"               — marketplace, free first lesson
+ *   - "regular"             — marketplace, paid via Stripe
+ *   - "esol_consolidation"  — ESOL learner with org-managed teacher,
+ *                              invoiced to the org (paymentStatus = org_invoiced)
+ *
+ * Field-name note: the ESOL fields (orgId, aiSessionId, teacherPrepViewed,
+ * teacherNotesPosted) are camelCase because they predate the Project Silk
+ * brief's snake_case convention. They're preserved as-is so the existing
+ * services that read them keep working. New ESOL fields elsewhere in the
+ * codebase use the brief's snake_case names.
+ */
+
 const bookingSchema = new Schema<IBooking>(
   {
     studentId: {
@@ -15,7 +31,10 @@ const bookingSchema = new Schema<IBooking>(
     },
     type: {
       type: String,
-      enum: ["trial", "regular", "esolConsolidation"],
+      // Brief specifies "esol_consolidation" (snake_case). The codebase
+      // previously used "esolConsolidation" — any existing data must be
+      // renamed via one-off updateMany BEFORE deploying this change.
+      enum: ["trial", "regular", "esol_consolidation"],
       required: true,
     },
     flagged: { type: Boolean, default: false },
@@ -75,12 +94,14 @@ const bookingSchema = new Schema<IBooking>(
     stripeCheckoutSessionId: { type: String },
     paymentStatus: {
       type: String,
-      enum: ["pending", "paid", "refunded", "failed", "free", "orgInvoiced"],
+      // Brief specifies "org_invoiced" (snake_case). Previously
+      // "orgInvoiced" — same migration concern as the type field above.
+      enum: ["pending", "paid", "refunded", "failed", "free", "org_invoiced"],
       default: "pending",
     },
     completedAt: { type: Date },
 
-    // ESOL fields
+    // ── ESOL fields (camelCase preserved from prior work) ────────────
     orgId: { type: Schema.Types.ObjectId, ref: "Organisation", default: null },
     aiSessionId: { type: Schema.Types.ObjectId, ref: "AISession", default: null },
     teacherPrepViewed: { type: Boolean, default: false },
@@ -96,6 +117,8 @@ const bookingSchema = new Schema<IBooking>(
   }
 );
 
+// ── Indexes ────────────────────────────────────────────────────────────
+
 // Tutor queries: availability checks, tutor dashboard, cron
 bookingSchema.index({ tutorId: 1, status: 1, date: 1 });
 
@@ -107,6 +130,11 @@ bookingSchema.index({ status: 1, date: 1 });
 
 // ESOL org queries: org dashboard, invoice generation
 bookingSchema.index({ orgId: 1, status: 1, date: 1 });
+
+// NEW: org admin dashboard "show me ESOL consolidation bookings in date
+// range" query. Field name in Mongo is orgId (camelCase) even though the
+// brief writes it as org_id — the index uses the actual stored name.
+bookingSchema.index({ orgId: 1, type: 1, date: 1 });
 
 const Booking = model<IBooking>("Booking", bookingSchema);
 

@@ -31,11 +31,27 @@ import esolReportRoutes from "./routes/esolReport.routes";
 import esolLevelChangeRoutes from "./routes/esolLevelChange.routes";
 import esolSessionFeedbackRoutes from "./routes/esolSessionFeedback.routes";
 import esolVocabRoutes from "./routes/esolVocab.routes";
+import esolMatchingRoutes from "./routes/esolMatching.routes";
+import healthRoutes from "./routes/health.routes";
+import jobsRoutes from "./routes/jobs.routes";
+import adminCacheRoutes from "./routes/adminCache.routes";
+import adminUsersRoutes from "./routes/adminUsers.routes";
+import orgRoutes from "./routes/org.routes";
 import { stripeWebhook } from "./controllers/webhook.controller";
 import { initSocketIO } from "./services/websocket.service";
 import ALLOWED_ORIGINS from "./config/cors";
 import { generalLimiter, webhookLimiter } from "./config/rateLimiter";
 import logger from "./config/logger";
+import { initGeminiClient } from "./lib/gemini";
+import { initRedis } from "./lib/redis";
+import { createBullBoardAdapter } from "./lib/bullBoard";
+import { isAuthenticated, isAdmin } from "./middlewares/authMiddleWare";
+import { requireBullBoardToken } from "./middlewares/bullBoardToken";
+import ComplianceConfigService from "./services/ComplianceConfigService";
+import SafeguardingDetector from "./services/safeguardingDetector.service";
+import PostcodeRouter from "./services/postcodeRouter.service";
+import FALACache from "./services/falaCache.service";
+import { cacheRefreshQueue } from "./queues";
 
 const PORT = 4000;
 
@@ -75,11 +91,119 @@ app.use(cors(corsOption));
 
   // ✅ Wait for DB before registering routes
   await connectDb();
+
+  // ── Prime compliance rules cache from Mongo ──
+  // ILR / RARPA / ASF-routing constants are config, not code. Every
+  // downstream service reads from the in-memory cache via
+  // ComplianceConfigService.getConfig(). If the seed hasn't been run yet
+  // the cache will be empty and downstream services will see null —
+  // fail-closed by design.
+  try {
+    await ComplianceConfigService.loadAll();
+  } catch (err) {
+    logger.fatal(
+      { err: (err as Error).message },
+      "ComplianceConfig loadAll failed at boot. Refusing to start."
+    );
+    process.exit(1);
+  }
+
+  // ── Initialise Vertex AI Gemini singleton at boot ──
+  // If this throws, fail loudly: do NOT degrade silently to per-request errors.
+  try {
+    initGeminiClient();
+  } catch (err) {
+    logger.fatal(
+      { err: (err as Error).message },
+      "Vertex AI client failed to initialise at boot. Refusing to start."
+    );
+    process.exit(1);
+  }
+
+  // ── Initialise Redis singleton at boot ──
+  // BullMQ queues, the rate limiter, and pre-cache services all share this
+  // connection. If Redis is unreachable, we refuse to start rather than
+  // silently failing to enqueue jobs later.
+  try {
+    await initRedis();
+  } catch (err) {
+    logger.fatal(
+      { err: (err as Error).message },
+      "Redis failed to initialise at boot. Refusing to start."
+    );
+    process.exit(1);
+  }
+
+  // ── Prime the safeguarding detector cache ──
+  // Loads keyword/regex patterns from Mongo. Empty collection is logged
+  // but not fatal — better to start with no patterns and surface a warning
+  // than to refuse to serve at all. Joey backfills via the seed script.
+  try {
+    await SafeguardingDetector.loadAll();
+  } catch (err) {
+    logger.error(
+      { err: (err as Error).message },
+      "SafeguardingDetector.loadAll failed — continuing with empty cache"
+    );
+  }
+
+  // ── Postcode dataset: enqueue startup load if marker is stale ────────
+  // Non-fatal — production may legitimately defer the heavy load. Redis
+  // unreachable would have crashed initRedis above; if we get here Redis
+  // is fine and we can safely query the marker.
+  try {
+    const loaded = await PostcodeRouter.isLoaded();
+    if (!loaded) {
+      const job = await cacheRefreshQueue.add("postcode-load", {
+        task: "postcode-load",
+        academicYear: PostcodeRouter.TARGET_ACADEMIC_YEAR,
+      });
+      logger.info(
+        { jobId: job.id },
+        "Postcode dataset not loaded — enqueued startup load job"
+      );
+    } else {
+      logger.info("Postcode dataset already loaded — skipping startup load");
+    }
+  } catch (err) {
+    logger.error(
+      { err: (err as Error).message },
+      "Postcode startup-load check failed"
+    );
+  }
+
+  // ── FALA whitelist: enqueue startup seed if empty ────────────────────
+  try {
+    const populated = await FALACache.isPopulated();
+    if (!populated) {
+      const job = await cacheRefreshQueue.add("fala-refresh", {
+        task: "fala-refresh",
+        academicYear: FALACache.TARGET_ACADEMIC_YEAR,
+      });
+      logger.info(
+        { jobId: job.id },
+        "FALA whitelist empty — enqueued startup refresh job"
+      );
+    } else {
+      logger.info("FALA whitelist already populated — skipping startup refresh");
+    }
+  } catch (err) {
+    logger.error(
+      { err: (err as Error).message },
+      "FALA startup-load check failed"
+    );
+  }
+
   // ── Initialise WebSocket ──
   initSocketIO(server);
 
   app.use("/api", generalLimiter);
 
+  app.use("/api/health", healthRoutes);
+  app.use("/api/jobs", jobsRoutes);
+  app.use("/api/admin/cache", adminCacheRoutes);
+  app.use("/api/admin/users", adminUsersRoutes);
+  app.use("/api/orgs", orgRoutes);
   app.use("/api/users", userRoutes);
   app.use("/api/availability", availabilityRoutes);
   app.use("/api/bookings", bookingRoutes);
@@ -107,11 +231,40 @@ app.use(cors(corsOption));
   app.use("/api/esol/level-changes", esolLevelChangeRoutes);
   app.use("/api/esol/session-feedback", esolSessionFeedbackRoutes);
   app.use("/api/esol/vocab", esolVocabRoutes);
+  app.use("/api/esol/teacher-matches", esolMatchingRoutes);
+
+  // ── Bull Board admin UI ──────────────────────────────────────────────
+  // Three gates in order: JWT, admin role, defence-in-depth token header.
+  // Mounted outside /api on purpose — it's an admin tool, not a public API.
+  const bullBoardAdapter = createBullBoardAdapter();
+  app.use(
+    "/admin/queues",
+    isAuthenticated,
+    isAdmin,
+    requireBullBoardToken,
+    bullBoardAdapter.getRouter()
+  );
 
   app.all("*", (req, _res, next) => {
     next(new ApiError(404, `Can't find ${req.originalUrl} on the server!`));
   });
   app.use(globalErrorHandler);
+
+  // ── Inline BullMQ workers in dev ────────────────────────────────────
+  // In production, workers run as a separate process via `npm run workers`.
+  // For local development, attach them to this process so a single
+  // `npm run dev` starts everything. Disable with INLINE_WORKERS=false.
+  if (process.env.INLINE_WORKERS !== "false") {
+    try {
+      const { startWorkers } = await import("./workers");
+      startWorkers();
+    } catch (err) {
+      logger.error(
+        { err: (err as Error).message },
+        "Inline worker startup failed — server will continue without workers"
+      );
+    }
+  }
 
   // ── Use server.listen instead of app.listen for Socket.IO ──
   server.listen(PORT, () => {

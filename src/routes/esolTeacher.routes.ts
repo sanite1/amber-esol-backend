@@ -10,12 +10,14 @@ import {
   tutorIdParamValidation,
   approveTeacherValidation,
   updateQualificationsValidation,
+  applyEsolValidation,
 } from "../validations/esolTeacher.validation";
 import {
   listEsolTeachers,
   approveTeacher,
   updateTeacherQualifications,
   revokeTeacherApproval,
+  applyEsolTeacher,
 } from "../controllers/esolTeacher.controller";
 import { NextFunction, Request, Response } from "express";
 import { IUserDecoded } from "../middlewares/authMiddleWare";
@@ -40,6 +42,9 @@ const isAdminOrgAdminOrSelf = (
 const router = Router();
 
 router.use(isAuthenticated);
+
+// Tutor self-applies as an ESOL teacher (brief §2 Change 2)
+router.post("/apply", isTutor, applyEsolValidation(), applyEsolTeacher);
 
 // List ESOL teachers (admin | org_admin)
 router.get("/", isOrgAdmin, listTeachersValidation(), listEsolTeachers);

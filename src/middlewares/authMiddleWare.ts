@@ -13,9 +13,16 @@ export interface IUserDecoded extends JwtPayload {
   email: string;
   role: string;
   profilePicture: string;
+  // Existing camelCase fields (preserved for back-compat with services
+  // that read req.user.orgId / req.user.esolLevel).
   orgId?: string | null;
   esolLevel?: string | null;
   esolTeacherApproved?: boolean | null;
+  // Snake_case aliases per Project Silk brief Section 1 Task 10. Emitted
+  // by generateTokens alongside the camelCase forms; populated here by
+  // the DB re-hydration. Either form is safe to read.
+  org_id?: string | null;
+  esol_level?: string | null;
 }
 
 export const isAuthenticated: ExpressFunction = async (req, _res, next) => {
@@ -53,12 +60,30 @@ export const isAuthenticated: ExpressFunction = async (req, _res, next) => {
       throw new ApiError(401, "Account is deactivated");
     }
 
+    // ── Org-context drift check (brief §1 Task 10) ─────────────────
+    // If the user's organisation assignment has changed since the JWT
+    // was issued (org_admin moved them between orgs, or they were
+    // removed from an org), force a re-login. Continuing with a stale
+    // org context would let the request operate on the wrong cohort.
+    //
+    // Compare DB value against EITHER naming form on the JWT (older
+    // tokens issued before snake_case was added carry only `orgId`).
+    const dbOrgId = user.orgId ? user.orgId.toString() : null;
+    const jwtOrgId =
+      (decoded.org_id ?? decoded.orgId ?? null) as string | null;
+    if (dbOrgId !== jwtOrgId) {
+      throw new ApiError(401, "Org context changed, please log in again");
+    }
+
     const fresh: IUserDecoded = {
       ...decoded,
       role: user.role,
-      orgId: user.orgId ? user.orgId.toString() : null,
+      orgId: dbOrgId,
       esolLevel: user.esolLevel ?? null,
       esolTeacherApproved: user.esolTeacherApproved ?? null,
+      // Mirror snake_case forms so downstream code can read either.
+      org_id: dbOrgId,
+      esol_level: user.esolLevel ?? null,
     };
 
     (req as Request & { user?: IUserDecoded }).user = fresh;

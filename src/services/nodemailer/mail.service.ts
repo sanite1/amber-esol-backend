@@ -719,3 +719,85 @@ export const sendLessonCompletedMail = async (ctx: {
     logger.error({ err: error }, "Error sending lesson completed email");
   }
 };
+
+/* ── ESOL Teacher Approval (brief §2 Change 2) ── */
+
+export const sendEsolTeacherApprovalMail = async (ctx: {
+  toEmail: string;
+  teacherName: string;
+  qualificationType: string;
+  dashboardUrl: string;
+  notes?: string | null;
+}) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.toEmail,
+    template: "./esolTeacherApproved",
+    subject: "You're approved to teach ESOL — Amber Training",
+    context: {
+      teacherName: ctx.teacherName,
+      qualificationType: ctx.qualificationType,
+      dashboardUrl: ctx.dashboardUrl,
+      notes: ctx.notes || "",
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    logger.error({ err: error }, "Error sending ESOL approval email");
+  }
+};
+
+/* ── ESOL Teacher Rejection (brief §2 Change 2) ── */
+
+export const sendEsolTeacherRejectionMail = async (ctx: {
+  toEmail: string;
+  teacherName: string;
+  reason: string;
+}) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.toEmail,
+    template: "./esolTeacherRejected",
+    subject: "Update on your ESOL teaching application — Amber Training",
+    context: {
+      teacherName: ctx.teacherName,
+      reason: ctx.reason,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    logger.error({ err: error }, "Error sending ESOL rejection email");
+  }
+};
+
+/* ── Org admin welcome (brief Function 1) ── */
+
+export const sendOrgAdminWelcomeMail = async (ctx: {
+  toEmail: string;
+  firstname: string;
+  orgName: string;
+  loginUrl: string;
+}) => {
+  const mailOptions = {
+    from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
+    to: ctx.toEmail,
+    template: "./orgAdminWelcome",
+    subject: `Welcome to Amber Training — Your ${ctx.orgName} admin account is ready`,
+    context: {
+      firstname: ctx.firstname,
+      email: ctx.toEmail,
+      orgName: ctx.orgName,
+      loginUrl: ctx.loginUrl,
+      currentYear: new Date().getFullYear(),
+    },
+  };
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    logger.error({ err: error }, "Error sending org admin welcome email");
+  }
+};

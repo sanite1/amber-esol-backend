@@ -71,10 +71,14 @@ const createBookingSchema = {
       "any.invalid": "Tutor ID must be a valid ID",
       "any.required": "Tutor ID is required",
     }),
-    type: Joi.string().valid("trial", "regular").required().messages({
-      "any.only": 'Booking type must be either "trial" or "regular"',
-      "any.required": "Booking type is required",
-    }),
+    type: Joi.string()
+      .valid("trial", "regular", "esol_consolidation")
+      .required()
+      .messages({
+        "any.only":
+          'Booking type must be one of "trial", "regular", or "esol_consolidation"',
+        "any.required": "Booking type is required",
+      }),
     slots: Joi.array().items(slotSchema).min(1).required().messages({
       "array.base": "Slots must be an array",
       "array.min": "At least one time slot is required",

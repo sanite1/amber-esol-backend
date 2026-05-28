@@ -6,6 +6,8 @@ import Booking from "../models/Booking";
 import User from "../models/User";
 import Availability from "../models/Availability";
 import DateOverride from "../models/DateOverride";
+import Organisation from "../models/Organisation";
+import OrgInvoice from "../models/OrgInvoice";
 import {
   ICreateBookingRequest,
   ICancelBookingRequest,
@@ -57,6 +59,13 @@ export const createBookingService = async (
   studentId: string,
   data: ICreateBookingRequest
 ) => {
+  // ── ESOL consolidation branch (brief §2 Change 1) ──────────────────
+  // org-invoiced, no Stripe. Routed to a dedicated function so the
+  // Stripe-heavy marketplace path stays untouched for trial/regular.
+  if (data.type === "esol_consolidation") {
+    return createEsolConsolidationBooking(studentId, data);
+  }
+
   // 1. Validate student exists
   const student = await User.findById(studentId);
   if (!student || student.role !== "student") {
@@ -279,6 +288,368 @@ export const createBookingService = async (
     checkoutUrl,
     totalPrice,
     paymentRequired: !isFree,
+  });
+};
+
+/* ══════════════════════════════════════════════════════════════════
+   ESOL consolidation booking — org-invoiced, no Stripe
+   Brief §2 Change 1
+   ══════════════════════════════════════════════════════════════════ */
+
+/**
+ * Create one or more esol_consolidation bookings, charged to the learner's
+ * organisation via monthly OrgInvoice. Stripe is skipped entirely.
+ *
+ * Lifecycle:
+ *   1. Validate learner has an orgId.
+ *   2. Validate teacher is esolTeacherApproved.
+ *   3. Validate organisation exists, has esol_session_rate, billing_active.
+ *   4. Validate each slot (date in future, no conflicts, no overrides).
+ *   5. Insert booking docs (status "confirmed" — org-arranged, no
+ *      separate tutor-approval step).
+ *   6. Create Zoom meetings.
+ *   7. Create a paid Transaction + credit teacher pendingBalance (20%
+ *      platform commission per brief §21).
+ *   8. Append to this month's draft OrgInvoice (create one if needed).
+ *   9. Send confirmation emails + notifications.
+ */
+const createEsolConsolidationBooking = async (
+  studentId: string,
+  data: ICreateBookingRequest
+) => {
+  // 1. Learner validation — must be a student with an assigned org
+  const learner = await User.findById(studentId);
+  if (!learner || learner.role !== "student") {
+    throw new ApiError(404, "Student not found");
+  }
+  if (!learner.orgId) {
+    throw new ApiError(
+      400,
+      "Learner is not assigned to an organisation — esol_consolidation requires an org context"
+    );
+  }
+
+  // 2. Teacher validation — must be an approved ESOL teacher
+  const teacher = await User.findById(data.tutorId);
+  if (!teacher || teacher.role !== "tutor") {
+    throw new ApiError(404, "Tutor not found");
+  }
+  if (!teacher.isActive) {
+    throw new ApiError(400, "This tutor is currently unavailable");
+  }
+  if (teacher.esolTeacherApproved !== true) {
+    throw new ApiError(
+      400,
+      "Tutor is not approved for ESOL sessions. Amber admin must set esol_teacher_approved before this booking can be made."
+    );
+  }
+
+  // 3. Organisation lookup — read the standardised session rate
+  const org = await Organisation.findById(learner.orgId);
+  if (!org) {
+    throw new ApiError(404, "Learner's organisation not found");
+  }
+  if (org.billing_active === false) {
+    throw new ApiError(
+      400,
+      "Organisation billing is not active — cannot create invoiced bookings"
+    );
+  }
+  if (!org.esol_session_rate || org.esol_session_rate <= 0) {
+    throw new ApiError(
+      400,
+      "Organisation has no esol_session_rate configured. Amber admin must set this before booking ESOL sessions for this org."
+    );
+  }
+  const pricePerSlot = org.esol_session_rate;
+
+  // 4. Slot validation — same shape as marketplace path, inline so this
+  //    function is self-contained and the marketplace path stays unchanged.
+  const availability = await Availability.findOne({ tutorId: data.tutorId });
+  if (!availability) {
+    throw new ApiError(400, "This tutor has not configured their availability");
+  }
+
+  for (const slot of data.slots) {
+    const today = todayInTz(availability.timezone || "Europe/London");
+    if (slot.date < today) {
+      throw new ApiError(400, `Cannot book a slot in the past (${slot.date})`);
+    }
+
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + availability.maxBookingAdvance);
+    const reqDate = new Date(slot.date + "T00:00:00Z");
+    if (reqDate > maxDate) {
+      throw new ApiError(
+        400,
+        `Date ${slot.date} is beyond the maximum booking advance of ${availability.maxBookingAdvance} days`
+      );
+    }
+
+    const conflict = await Booking.findOne({
+      tutorId: data.tutorId,
+      date: slot.date,
+      startTime: slot.startTime,
+      status: { $in: ["pending", "confirmed"] },
+    });
+    if (conflict) {
+      throw new ApiError(
+        400,
+        `Slot ${slot.startTime} on ${slot.date} is already booked`
+      );
+    }
+
+    const override = await DateOverride.findOne({
+      tutorId: data.tutorId,
+      date: slot.date,
+      type: "unavailable",
+    });
+    if (override) {
+      throw new ApiError(
+        400,
+        `Tutor is unavailable on ${slot.date}${override.reason ? `: ${override.reason}` : ""}`
+      );
+    }
+  }
+
+  // 5. Create the booking documents — auto-confirmed, org-invoiced.
+  const bookingGroupId = data.slots.length > 1 ? randomUUID() : undefined;
+  const bookingDocs = data.slots.map((slot) => ({
+    studentId,
+    tutorId: data.tutorId,
+    type: "esol_consolidation" as const,
+    status: "confirmed" as const,
+    bookingGroupId,
+    date: slot.date,
+    startTime: slot.startTime,
+    endTime: slot.endTime,
+    timezone: availability.timezone,
+    price: pricePerSlot,
+    currency: "GBP",
+    specialty: data.specialty,
+    notes: data.notes,
+    message: data.message,
+    paymentStatus: "org_invoiced" as const,
+    orgId: learner.orgId,
+  }));
+
+  const bookings = await Booking.insertMany(bookingDocs);
+
+  // 6. Create Zoom meetings (one per booking). Failure on Zoom is logged
+  //    but does NOT fail the booking — matches marketplace behaviour;
+  //    teacher can still set a meeting URL manually via PATCH /:id/meeting-url.
+  await Promise.all(
+    bookings.map(async (booking, i) => {
+      const slot = data.slots[i];
+      try {
+        const zoomUrl = await createZoomMeeting(
+          booking._id.toString(),
+          slot.date,
+          slot.startTime,
+          slot.endTime,
+          `${teacher.firstname} ${teacher.lastname}`,
+          `${learner.firstname} ${learner.lastname}`,
+          "esol_consolidation",
+          data.specialty
+        );
+        if (zoomUrl) {
+          await Booking.findByIdAndUpdate(booking._id, { meetingUrl: zoomUrl });
+        }
+      } catch (err) {
+        logger.error(
+          { err, bookingId: booking._id },
+          "Zoom meeting creation failed for esol_consolidation booking"
+        );
+      }
+    })
+  );
+
+  // 7. Wallet credit + Transaction record.
+  //    Platform takes 20% commission per brief §21. The Transaction is
+  //    created with status "paid" so completion-time crediting via
+  //    creditTutorForCompletedLesson can find it and move the funds from
+  //    pendingBalance → availableBalance using the existing flow.
+  const totalAmount = pricePerSlot * data.slots.length;
+  const platformCommission = totalAmount * 0.2;
+  const tutorEarnings = totalAmount - platformCommission;
+
+  await Transaction.create({
+    bookingId: bookings[0]._id,
+    studentId,
+    tutorId: data.tutorId,
+    amount: totalAmount,
+    platformCommission,
+    tutorEarnings,
+    currency: "GBP",
+    status: "paid",
+    type: "lesson",
+    paymentMethod: "org_invoiced",
+  });
+
+  // Credit teacher's wallet — pending until lesson completion.
+  let wallet = await Wallet.findOne({ tutorId: data.tutorId });
+  if (!wallet) {
+    wallet = await Wallet.create({ tutorId: data.tutorId });
+  }
+  wallet.pendingBalance += tutorEarnings;
+  wallet.totalEarned += tutorEarnings;
+  wallet.lifetimeEarnings += tutorEarnings;
+  await wallet.save();
+
+  // 8. Append the bookings to this month's draft OrgInvoice.
+  await appendBookingsToMonthlyDraftInvoice(
+    learner.orgId.toString(),
+    bookings as unknown as Array<{
+      _id: typeof bookings[number]["_id"];
+      date: string;
+      price: number;
+    }>,
+    pricePerSlot
+  );
+
+  // 9. Emails + notifications. Auto-confirmed → send the "confirmed"
+  //    template, not the "pending request" template.
+  const firstSlot = data.slots[0];
+  const slotSummary =
+    data.slots.length > 1
+      ? `${data.slots.length} sessions starting ${firstSlot.date}`
+      : `${firstSlot.date} at ${firstSlot.startTime}`;
+
+  sendBookingConfirmedMail({
+    student: learner,
+    tutor: teacher,
+    bookings: bookings as any,
+    totalPrice: totalAmount,
+  }).catch((err) =>
+    logger.error({ err }, "ESOL consolidation confirmation email failed")
+  );
+
+  createNotification({
+    userId: teacher._id,
+    type: "booking_confirmed",
+    title: "New ESOL Session Booked",
+    message: `${learner.firstname} ${learner.lastname} has been booked for an ESOL session on ${slotSummary}.`,
+    data: {
+      bookingIds: bookings.map((b) => b._id.toString()),
+      bookingGroupId: bookingGroupId || null,
+      studentId,
+      type: "esol_consolidation",
+      totalSlots: data.slots.length,
+    },
+  }).catch((err) =>
+    logger.error({ err }, "ESOL consolidation tutor notification failed")
+  );
+
+  createNotification({
+    userId: studentId,
+    type: "booking_confirmed",
+    title: "ESOL Session Confirmed",
+    message: `Your ESOL session with ${teacher.firstname} ${teacher.lastname} on ${slotSummary} is confirmed.`,
+    data: {
+      bookingIds: bookings.map((b) => b._id.toString()),
+      bookingGroupId: bookingGroupId || null,
+      tutorId: data.tutorId,
+      type: "esol_consolidation",
+    },
+  }).catch((err) =>
+    logger.error({ err }, "ESOL consolidation learner notification failed")
+  );
+
+  return new ApiResponse(201, "ESOL consolidation booking created", {
+    bookings: bookings.map((b) => b.toJSON()),
+    bookingGroupId: bookingGroupId || null,
+    checkoutUrl: null,           // explicitly null — no Stripe flow
+    totalPrice: totalAmount,
+    paymentRequired: false,      // organisation will be invoiced
+    invoicedToOrg: true,
+  });
+};
+
+/**
+ * Find-or-create this calendar month's draft OrgInvoice for an org, then
+ * append a single line item for the supplied bookings.
+ *
+ * Concurrency: two simultaneous bookings could race to create the first
+ * draft invoice of the month. The OrgInvoice schema has a unique index on
+ * invoiceNumber — if a collision occurs the create() throws and the
+ * caller can retry. For MVP we accept that, since the cron at
+ * /api/cron/generate-invoices is the authoritative monthly aggregator —
+ * draft rows created here are a convenience surface for the org admin.
+ */
+const appendBookingsToMonthlyDraftInvoice = async (
+  orgId: string,
+  bookings: Array<{
+    _id: { toString(): string } | string;
+    date: string;
+    price: number;
+  }>,
+  unitPrice: number
+): Promise<void> => {
+  const now = new Date();
+  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const periodEnd = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+    23,
+    59,
+    59
+  );
+
+  const lineAmount = unitPrice * bookings.length;
+  const bookingIds = bookings.map((b) =>
+    typeof b._id === "string" ? b._id : b._id.toString()
+  );
+  const dateSpan =
+    bookings.length === 1
+      ? bookings[0].date
+      : `${bookings[0].date} – ${bookings[bookings.length - 1].date}`;
+
+  const lineItem = {
+    description: `ESOL consolidation session × ${bookings.length} (${dateSpan})`,
+    quantity: bookings.length,
+    unitPrice,
+    amount: lineAmount,
+    bookingIds,
+  };
+
+  const existing = await OrgInvoice.findOne({
+    orgId,
+    status: "draft",
+    periodStart,
+  });
+
+  if (existing) {
+    existing.lineItems.push(lineItem as any);
+    existing.subtotal += lineAmount;
+    existing.vatAmount = existing.subtotal * existing.vatRate;
+    existing.totalAmount = existing.subtotal + existing.vatAmount;
+    await existing.save();
+    return;
+  }
+
+  const yyyymm = `${periodStart.getFullYear()}${String(
+    periodStart.getMonth() + 1
+  ).padStart(2, "0")}`;
+  const orgSuffix = orgId.slice(-6);
+  const random = randomUUID().slice(0, 8);
+  const invoiceNumber = `INV-${yyyymm}-${orgSuffix}-${random}`;
+
+  const vatRate = 0.2;
+  const vatAmount = lineAmount * vatRate;
+
+  await OrgInvoice.create({
+    orgId,
+    invoiceNumber,
+    periodStart,
+    periodEnd,
+    lineItems: [lineItem],
+    subtotal: lineAmount,
+    vatAmount,
+    vatRate,
+    totalAmount: lineAmount + vatAmount,
+    currency: "GBP",
+    status: "draft",
   });
 };
 

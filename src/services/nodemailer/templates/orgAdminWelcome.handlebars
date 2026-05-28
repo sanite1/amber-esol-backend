@@ -1,0 +1,143 @@
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .header {
+        background: #0b2343;
+        padding: 30px;
+        text-align: center;
+      }
+      .header h1 {
+        color: #ffffff;
+        margin: 0;
+        font-size: 24px;
+      }
+      .header p {
+        color: #94a3b8;
+        margin: 6px 0 0;
+        font-size: 14px;
+      }
+      .body {
+        padding: 30px;
+      }
+      .body p {
+        color: #333;
+        line-height: 1.6;
+      }
+      .panel {
+        background: #fafbfc;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 18px;
+        margin: 18px 0;
+      }
+      .panel strong {
+        color: #0b2343;
+      }
+      .credentials {
+        background: #fef3c7;
+        border: 1px solid #fbbf24;
+        border-radius: 10px;
+        padding: 18px;
+        margin: 18px 0;
+        color: #78350f;
+        font-size: 14px;
+      }
+      .credentials code {
+        background: rgba(255, 255, 255, 0.6);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: Consolas, Menlo, monospace;
+      }
+      .cta {
+        display: inline-block;
+        background: #ff7c22;
+        color: #ffffff !important;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 700;
+        text-decoration: none;
+        margin: 12px 0;
+      }
+      .footer {
+        background: #fafbfc;
+        padding: 18px 30px;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 12px;
+      }
+      ol {
+        padding-left: 22px;
+        color: #333;
+        line-height: 1.7;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Welcome to Amber Training, {{firstname}}</h1>
+        <p>Your organisation admin account is ready</p>
+      </div>
+      <div class="body">
+        <p>Hi {{firstname}},</p>
+
+        <p>
+          You've been added as the organisation administrator for
+          <strong>{{orgName}}</strong> on the Amber Training ESOL platform.
+        </p>
+
+        <div class="panel">
+          <p style="margin: 0 0 8px 0;">
+            <strong>What you can do as an org admin</strong>
+          </p>
+          <ol style="margin: 6px 0 0 0;">
+            <li>Generate and share referral links to invite learners</li>
+            <li>Review your cohort's progress and AI-tutor session data</li>
+            <li>Approve teacher matches and review session evidence</li>
+            <li>Download ILR and RARPA compliance reports for your provision</li>
+          </ol>
+        </div>
+
+        <div class="credentials">
+          <p style="margin: 0 0 8px 0;"><strong>Your login</strong></p>
+          <p style="margin: 0;">
+            Email: <code>{{email}}</code><br />
+            Password: the temporary password Joey shared with you.
+          </p>
+          <p style="margin: 8px 0 0 0; font-size: 13px;">
+            We recommend changing your password from your account settings
+            after your first sign-in.
+          </p>
+        </div>
+
+        <p style="text-align: center;">
+          <a class="cta" href="{{loginUrl}}">Sign in to your dashboard</a>
+        </p>
+
+        <p>
+          If you didn't expect this account, please reply to this email so we
+          can disable it.
+        </p>
+
+        <p>— The Amber Training team</p>
+      </div>
+      <div class="footer">
+        Amber Training Ltd · ambertraining.co.uk<br />
+        &copy; {{currentYear}} Amber Training Ltd. All rights reserved.
+      </div>
+    </div>
+  </body>
+</html>

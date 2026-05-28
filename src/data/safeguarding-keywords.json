@@ -1,0 +1,151 @@
+[
+  {
+    "language": "en",
+    "pattern": "want to die",
+    "category": "self_harm",
+    "severity": "high",
+    "notes": "Direct ideation. Trigger immediate signposting."
+  },
+  {
+    "language": "en",
+    "pattern": "kill myself",
+    "category": "self_harm",
+    "severity": "high",
+    "notes": "Direct ideation."
+  },
+  {
+    "language": "en",
+    "pattern": "end it all",
+    "category": "self_harm",
+    "severity": "high"
+  },
+  {
+    "language": "en",
+    "pattern": "/\\b(?:cut|hurt|harm)\\s+myself\\b/i",
+    "category": "self_harm",
+    "severity": "high",
+    "notes": "Regex example — matches 'cut myself', 'hurt myself', 'harm myself'."
+  },
+  {
+    "language": "en",
+    "pattern": "no point",
+    "category": "self_harm",
+    "severity": "low",
+    "notes": "Hopelessness signal — low severity, may co-occur with other markers."
+  },
+
+  {
+    "language": "en",
+    "pattern": "he hits me",
+    "category": "domestic_abuse",
+    "severity": "high"
+  },
+  {
+    "language": "en",
+    "pattern": "she hits me",
+    "category": "domestic_abuse",
+    "severity": "high"
+  },
+  {
+    "language": "en",
+    "pattern": "he beats me",
+    "category": "domestic_abuse",
+    "severity": "high"
+  },
+  {
+    "language": "en",
+    "pattern": "/\\bafraid\\s+(?:of|to\\s+go\\s+home)\\b/i",
+    "category": "domestic_abuse",
+    "severity": "medium"
+  },
+  {
+    "language": "en",
+    "pattern": "he controls everything",
+    "category": "domestic_abuse",
+    "severity": "medium"
+  },
+
+  {
+    "language": "en",
+    "pattern": "/\\b(?:jihad|martyrdom|kuffar)\\b/i",
+    "category": "radicalisation",
+    "severity": "high",
+    "notes": "Single-token markers — must be reviewed in context, but flag-and-escalate."
+  },
+  {
+    "language": "en",
+    "pattern": "fight for the cause",
+    "category": "radicalisation",
+    "severity": "medium"
+  },
+
+  {
+    "language": "en",
+    "pattern": "my child is hurt",
+    "category": "child_concern",
+    "severity": "high"
+  },
+  {
+    "language": "en",
+    "pattern": "/\\bsomeone\\s+(?:hurts|hits|touches)\\s+(?:my|the)\\s+child\\b/i",
+    "category": "child_concern",
+    "severity": "high"
+  },
+  {
+    "language": "en",
+    "pattern": "child is afraid",
+    "category": "child_concern",
+    "severity": "medium"
+  },
+
+  {
+    "language": "en",
+    "pattern": "they took my passport",
+    "category": "exploitation",
+    "severity": "high",
+    "notes": "Classic modern slavery indicator."
+  },
+  {
+    "language": "en",
+    "pattern": "they keep my documents",
+    "category": "exploitation",
+    "severity": "high"
+  },
+  {
+    "language": "en",
+    "pattern": "/\\bnot\\s+allowed\\s+to\\s+leave\\b/i",
+    "category": "exploitation",
+    "severity": "high"
+  },
+  {
+    "language": "en",
+    "pattern": "owe them money",
+    "category": "exploitation",
+    "severity": "medium"
+  },
+
+  {
+    "language": "en",
+    "pattern": "voices in my head",
+    "category": "mental_health_crisis",
+    "severity": "high"
+  },
+  {
+    "language": "en",
+    "pattern": "can't stop crying",
+    "category": "mental_health_crisis",
+    "severity": "medium"
+  },
+  {
+    "language": "en",
+    "pattern": "panic attack",
+    "category": "mental_health_crisis",
+    "severity": "medium"
+  },
+  {
+    "language": "en",
+    "pattern": "/\\bbreak(?:ing)?\\s+down\\b/i",
+    "category": "mental_health_crisis",
+    "severity": "low"
+  }
+]

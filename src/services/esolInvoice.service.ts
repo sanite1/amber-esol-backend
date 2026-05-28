@@ -46,7 +46,7 @@ export const generateInvoiceService = async (data: {
   // Aggregate completed bookings with org_invoiced payment status
   const bookings = await Booking.find({
     orgId: data.orgId,
-    paymentStatus: "orgInvoiced",
+    paymentStatus: "org_invoiced",
     status: "completed",
     completedAt: { $gte: periodStart, $lte: periodEnd },
   })

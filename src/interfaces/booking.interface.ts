@@ -3,7 +3,7 @@ import { IUser } from "./user.interface";
 
 /* ── Enums / Unions ── */
 
-export type BookingType = "trial" | "regular" | "esolConsolidation";
+export type BookingType = "trial" | "regular" | "esol_consolidation";
 
 export type BookingStatus =
   | "pending"
@@ -14,7 +14,13 @@ export type BookingStatus =
   | "cancelled_admin"
   | "no_show";
 
-export type PaymentStatus = "pending" | "paid" | "refunded" | "failed" | "free" | "orgInvoiced";
+export type PaymentStatus =
+  | "pending"
+  | "paid"
+  | "refunded"
+  | "failed"
+  | "free"
+  | "org_invoiced";
 
 export type CancelledBy = "student" | "tutor" | "admin";
 

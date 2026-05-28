@@ -6,10 +6,13 @@ export interface IReferralToken extends Document {
   token: string;
   email?: string;
   esolLevel?: string;
-  usedBy?: Types.ObjectId;
-  usedAt?: Date;
+  usedBy?: Types.ObjectId | null;
+  usedAt?: Date | null;
   expiresAt: Date;
   isActive: boolean;
+  // Brief Function 1 fields
+  created_by?: Types.ObjectId | null;
+  usage_count?: number;
   createdAt: Date;
   updatedAt: Date;
 }
