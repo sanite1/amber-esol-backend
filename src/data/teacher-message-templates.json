@@ -1,0 +1,17 @@
+{
+  "$schema_version": 1,
+  "$meta": {
+    "description": "System-templated tutor messages — Final Addendum §11. Used by the daily re-engagement cron when auto-sending dormant-learner nudges on a teacher's behalf. Each top-level key is a stable template id; the value is a per-language slot keyed by ISO-ish language code.",
+    "interpolation": "Templates use {{firstname}} for the learner's first name; the runtime renderer substitutes verbatim with no other interpolations. New variables MUST be added to renderTeacherMessageTemplate and called out in the comment alongside this meta block.",
+    "authoring": "Joey + ESOL practitioner co-author each English template. Translations are deferred to Phase 19 — placeholder strings are intentionally empty so the renderer's fallback rule (empty ⇒ untranslated ⇒ fall back to en) reads unambiguously.",
+    "fallback_rule": "Renderers MUST fall back to `en` when the requested language slot is empty or missing. Never display a partial template."
+  },
+  "dormant_re_engagement": {
+    "$description": "Sent by the daily re-engagement cron to dormant learners (no session in 15+ days, no system re-engagement in 14+ days). Brief, warm, action-oriented — the goal is to nudge a login, not to teach.",
+    "en": "Hi {{firstname}}, it's been a couple of weeks since your last session. Just checking in — could we book a short session this week to pick up where we left off?",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  }
+}

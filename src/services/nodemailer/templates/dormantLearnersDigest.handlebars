@@ -1,0 +1,64 @@
+<html>
+  <head>
+    <style>
+      body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+      .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; }
+      .header { background: #b45309; padding: 28px; text-align: center; }
+      .header h1 { color: #ffffff; margin: 0; font-size: 22px; }
+      .header p { color: #fde68a; margin: 6px 0 0; font-size: 14px; }
+      .body { padding: 30px; }
+      .body p { color: #333; line-height: 1.6; }
+      .count {
+        display: block; font-size: 48px; font-weight: 700; color: #b45309;
+        text-align: center; margin: 20px 0 4px;
+      }
+      .count-label { text-align: center; color: #6b7280; font-size: 13px;
+                     letter-spacing: 0.4px; text-transform: uppercase; margin-bottom: 24px; }
+      .button {
+        display: inline-block; background: #0b2343; color: #ffffff !important;
+        padding: 12px 22px; border-radius: 8px; text-decoration: none;
+        font-weight: 600; margin-top: 16px;
+      }
+      .footer { background: #f3f4f6; padding: 18px; text-align: center;
+                color: #6b7280; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>{{#if isPlural}}{{dormantCount}} learners need a check-in{{else}}1 learner needs a check-in{{/if}}</h1>
+        <p>{{orgName}}</p>
+      </div>
+      <div class="body">
+        <p>Hello,</p>
+
+        <span class="count">{{dormantCount}}</span>
+        <p class="count-label">
+          {{#if isPlural}}learners haven't{{else}}learner hasn't{{/if}}
+          had a session in over {{windowDays}} days
+        </p>
+
+        <p>
+          {{#if isPlural}}They{{else}}This learner{{/if}}
+          may need a short check-in to bring them back into the rhythm.
+          You can see the full list — filtered to "dormant" — on your
+          cohort dashboard, and send a one-tap nudge email directly from
+          each learner's record.
+        </p>
+
+        <p>
+          <a href="{{dashboardUrl}}" class="button">View dormant learners</a>
+        </p>
+
+        <p style="color: #6b7280; font-size: 13px; margin-top: 24px;">
+          This summary is generated daily. You will receive another email
+          tomorrow if any learners are still dormant.
+        </p>
+      </div>
+      <div class="footer">
+        © {{currentYear}} Amber Training. Automated message — please do not
+        reply directly.
+      </div>
+    </div>
+  </body>
+</html>

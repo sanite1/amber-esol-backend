@@ -36,6 +36,18 @@
     {
       "path": "/api/cron/postcode-refresh-alert",
       "schedule": "0 8 1 8 *"
+    },
+    {
+      "path": "/api/cron/reset-demo-environment",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/delta-sync",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/re-engagement",
+      "schedule": "0 9 * * 1-5"
     }
   ]
 }

@@ -1,5 +1,10 @@
 import { Types, Document } from "mongoose";
 
+export type LevelChangeTriggerEvent =
+  | "progression_criteria_met"
+  | "teacher_override"
+  | "manual_admin";
+
 export interface ILevelChange extends Document {
   _id: Types.ObjectId;
   learnerId: Types.ObjectId;
@@ -11,6 +16,7 @@ export interface ILevelChange extends Document {
   evidenceSummary?: string;
   sessionId?: Types.ObjectId;
   effectiveDate: Date;
+  triggerEvent?: LevelChangeTriggerEvent | null;
   createdAt: Date;
 }
 

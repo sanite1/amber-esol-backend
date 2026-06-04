@@ -77,7 +77,11 @@ export const submitTeacherFeedbackService = async (
 ) => {
   const session = await loadSessionForFeedback(sessionId);
 
-  if (session.teacherId.toString() !== caller.callerId) {
+  // Pre-platform sessions have no teacher and can't be feedback targets.
+  if (
+    !session.teacherId ||
+    session.teacherId.toString() !== caller.callerId
+  ) {
     throw new ApiError(403, "Only the assigned teacher can submit feedback");
   }
   if (!session.completedAt) {
@@ -121,9 +125,13 @@ export const getSessionFeedbackService = async (
 ) => {
   const session = await loadSessionForFeedback(sessionId);
 
-  // Authorisation: session participants + admins
+  // Authorisation: session participants + admins.
+  // teacherId is null on pre-platform imports, so non-teacher callers
+  // simply don't trigger the isTeacher branch.
   const isLearner = session.learnerId.toString() === caller.callerId;
-  const isTeacher = session.teacherId.toString() === caller.callerId;
+  const isTeacher =
+    !!session.teacherId &&
+    session.teacherId.toString() === caller.callerId;
   const isSameOrg =
     caller.callerRole === "org_admin" &&
     session.orgId.toString() === caller.callerOrgId;

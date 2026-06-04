@@ -20,6 +20,23 @@ export interface IFailedJob extends Document {
   error: string;
   attempts: number;
   created_at: Date;
+  /**
+   * Set when an admin re-enqueues this failed job via the review
+   * dashboard. Non-null `retried_at` means "this row has been
+   * actioned" — useful filter for the unresolved-failures count.
+   */
+  retried_at: Date | null;
+  /**
+   * Soft-delete flag. Final Addendum §1 — dismissing a failure
+   * doesn't remove the row (audit needs it), it just hides it from
+   * the default listing and the sidebar badge.
+   */
+  dismissed: boolean;
+  /**
+   * Who dismissed it (Amber admin id). Null until dismissed.
+   */
+  dismissed_by: mongoose.Types.ObjectId | null;
+  dismissed_at: Date | null;
 }
 
 const failedJobSchema = new Schema<IFailedJob>(
@@ -30,12 +47,19 @@ const failedJobSchema = new Schema<IFailedJob>(
     error: { type: String, required: true },
     attempts: { type: Number, required: true, default: 0 },
     created_at: { type: Date, default: Date.now, index: true },
+    retried_at: { type: Date, default: null },
+    dismissed: { type: Boolean, default: false, index: true },
+    dismissed_by: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    dismissed_at: { type: Date, default: null },
   },
   { collection: "failed_jobs", versionKey: false }
 );
 
 // Compound index for the dashboard's "failures in queue X this week" query.
 failedJobSchema.index({ queue_name: 1, created_at: -1 });
+// "Unresolved failures" — used by the count endpoint that powers the
+// sidebar badge. Covers `{ dismissed: false }` queries fast.
+failedJobSchema.index({ dismissed: 1, created_at: -1 });
 
 const FailedJob = mongoose.model<IFailedJob>("FailedJob", failedJobSchema);
 export default FailedJob;

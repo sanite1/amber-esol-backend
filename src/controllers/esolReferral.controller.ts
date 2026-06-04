@@ -1,10 +1,12 @@
 import { ExpressFunction } from "../interfaces/helper.interface";
+import ApiError from "../errors/apiError";
 import { IUseReferralTokenRequest } from "../interfaces/referralToken.interface";
 import {
   createReferralTokenService,
   listReferralTokensService,
   validateReferralTokenService,
   registerViaReferralService,
+  verifyReferralTokenService,
 } from "../services/esolReferralToken.service";
 
 export const createReferralToken: ExpressFunction = async (req, res, next) => {
@@ -56,3 +58,18 @@ export const registerViaReferral: ExpressFunction<IUseReferralTokenRequest> =
       next(error);
     }
   };
+
+/* ── POST /api/esol/verify-token (brief Function 2 To-Do 1) ───────── */
+
+export const verifyReferralToken: ExpressFunction = async (req, res, next) => {
+  try {
+    const { token } = (req.body || {}) as { token?: string };
+    if (!token || typeof token !== "string") {
+      return next(new ApiError(401, "Invalid or expired link"));
+    }
+    const data = await verifyReferralTokenService(token);
+    return res.status(200).json(data);
+  } catch (err) {
+    next(err);
+  }
+};

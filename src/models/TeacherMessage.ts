@@ -39,6 +39,24 @@ const teacherMessageSchema = new Schema<ITeacherMessage>(
     message_text: {
       type: String,
       required: true,
+      // Input is validated to 1-300 at the route layer. The schema
+      // cap is set at 600 to leave headroom for L1 translations,
+      // which can expand 1.5-2x in Arabic / Persian / Pashto. The
+      // ORIGINAL text stays inside the 300-char input budget; only
+      // the translated `message_text` ever uses the headroom.
+      maxlength: 600,
+      trim: true,
+    },
+    /**
+     * Final Addendum §11 — preserves the teacher's English input
+     * when `message_text` carries an L1 translation. Null when the
+     * message was sent untranslated. The pair lets the audit-log
+     * UI render "Teacher wrote (en): … / Learner received (ar): …"
+     * without re-derivation.
+     */
+    original_text: {
+      type: String,
+      default: null,
       maxlength: 300,
       trim: true,
     },

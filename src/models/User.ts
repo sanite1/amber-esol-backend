@@ -151,6 +151,11 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["male", "female", "other", "prefer-not-to-say"],
     },
+    // ILR Sex field — numeric per ESFA spec: 1 = Male, 2 = Female. Distinct
+    // from the marketplace `gender` string (which includes "other" and
+    // "prefer-not-to-say") because ILR submissions accept only 1 or 2.
+    // Nullable so non-ESOL users don't fail validation.
+    sex: { type: Number, enum: [1, 2, null], default: null },
     address: { type: AddressSchema },
     timezone: { type: String },
     bio: { type: String },
@@ -279,7 +284,18 @@ const userSchema = new Schema<IUser>(
     lldd_health_prob: { type: Number, enum: [1, 2, 9, null], default: null },
     employment_status: {
       type: String,
-      enum: ["unemployed", "employed", "in_training", null],
+      // Brief Function 2 + ILR EmpStat values. `in_training` retained
+      // for back-compat with the legacy esolOnboarding flow; the new
+      // wizard and the bulk importer use the four brief-mandated
+      // values.
+      enum: [
+        "unemployed",
+        "employed",
+        "self_employed",
+        "not_in_labour_market",
+        "in_training",
+        null,
+      ],
       default: null,
     },
     residency_doc_ref: { type: String, default: null },
@@ -299,6 +315,16 @@ const userSchema = new Schema<IUser>(
       enum: ["regulated", "non_regulated", null],
       default: null,
     },
+    /**
+     * EnglishProgType code per ESFA 2025/26 ILR guidance — brief
+     * Function 13 To-Do 2 §2. Used to be derivable from aim_type;
+     * the 2025/26 spec made it an explicit per-learner field. Set
+     * to "25" (standard ESOL provision) at import time by the bulk
+     * importer + the registration wizard; ILR export reads from
+     * here directly. String not number because future codes may be
+     * alphanumeric (e.g. "25A").
+     */
+    english_prog_type: { type: String, default: null },
     esol_eligibility_declared_at: { type: Date, default: null },
     stage3_objectives: { type: [Stage3ObjectiveSchema], default: [] },
     cohort_status: {
@@ -307,6 +333,24 @@ const userSchema = new Schema<IUser>(
       default: "new",
     },
     progression_notification_sent_at: { type: Date, default: null },
+    /**
+     * The esolLevel the most recent progression-ready notification was
+     * fired for. Function 11 dedupes notifications per (learner, level)
+     * with a 7-day window — without this field, a learner who is
+     * promoted to e3, struggles, and is re-flagged ready at the new
+     * level would be silently skipped because the 7-day timer set at e2
+     * would still be running. Storing the level alongside the timestamp
+     * means a level transition resets the dedupe.
+     */
+    progression_notification_level: { type: String, default: null },
+    /**
+     * Wall-clock timestamp of the learner's last completed AI tutor
+     * session. Cached on the User so the daily cohort-status sweep
+     * doesn't have to project every AISession for every learner.
+     * Written by the daily progression worker; the source of truth
+     * stays AISession.completedAt.
+     */
+    last_session_at: { type: Date, default: null },
 
     // ── ESOL teacher fields (existing camelCase preserved) ────────────
     // Default for esolTeacherApproved changed null → false per brief: a
@@ -364,7 +408,21 @@ const userSchema = new Schema<IUser>(
       default: "p4",
     },
     teacher_recommended_action: { type: String, default: null },
+    // Final Addendum §10, Todo 23.5 — stable identifier for the
+    // trigger that fired. Lets the teacher UI dispatch the right
+    // click handler without parsing the localised template text.
+    // Same string as the top-level keys in
+    // src/data/recommended-actions.json; null on legacy rows that
+    // pre-date the recalc worker.
+    teacher_priority_trigger_key: { type: String, default: null },
     teacher_priority_updated_at: { type: Date, default: null },
+    // Final Addendum §11 — TEACHER-ONLY preference. When true (the
+    // default), the re-engagement cron may auto-send a dormant-
+    // learner nudge message on this teacher's behalf. Teachers
+    // who prefer to write their own re-engagement notes set this
+    // to false via PATCH /api/teacher/preferences/auto-re-engagement.
+    // No-op for non-tutor roles.
+    auto_re_engagement_enabled: { type: Boolean, default: true },
   },
   {
     timestamps: true,

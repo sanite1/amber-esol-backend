@@ -121,6 +121,8 @@ export interface IUser extends Document {
   profilePicture?: string;
   dateOfBirth?: Date;
   gender?: "male" | "female" | "other" | "prefer-not-to-say";
+  // ILR-compatible numeric sex (1 = Male, 2 = Female). See User.ts comment.
+  sex?: 1 | 2 | null;
   address?: IAddress;
   timezone?: string;
   bio?: string;
@@ -207,7 +209,13 @@ export interface IUser extends Document {
   nationality?: string | null;
   ethnicity?: string | null;
   lldd_health_prob?: 1 | 2 | 9 | null;
-  employment_status?: "unemployed" | "employed" | "in_training" | null;
+  employment_status?:
+    | "unemployed"
+    | "employed"
+    | "self_employed"
+    | "not_in_labour_market"
+    | "in_training"
+    | null;
   residency_doc_ref?: string | null;
   residency_date?: Date | null;
   ocr_confidence?: number | null;
@@ -221,10 +229,14 @@ export interface IUser extends Document {
   postcode_prior?: string | null;
   sof_code?: string | null;
   esol_aim_type?: EsolAimType | null;
+  /** ESFA 2025/26 ILR EnglishProgType code (typically "25"). */
+  english_prog_type?: string | null;
   esol_eligibility_declared_at?: Date | null;
   stage3_objectives?: IStage3Objective[];
   cohort_status?: CohortStatus;
   progression_notification_sent_at?: Date | null;
+  progression_notification_level?: string | null;
+  last_session_at?: Date | null;
 
   // ESOL teacher fields (ESOL-approved tutors only — existing camelCase)
   esolTeacherApproved?: boolean;
@@ -261,7 +273,23 @@ export interface IUser extends Document {
   glh_teacher_contact?: number;
   teacher_priority_level?: TeacherPriorityLevel;
   teacher_recommended_action?: string | null;
+  /**
+   * Final Addendum §10, Todo 23.5 — stable trigger identifier so
+   * the teacher UI can dispatch the right click handler without
+   * parsing the localised text. Mirrors `PriorityTriggerKey` from
+   * priorityQueue.service.ts. Null on rows written before the
+   * recalc worker shipped.
+   */
+  teacher_priority_trigger_key?: string | null;
   teacher_priority_updated_at?: Date | null;
+  /**
+   * Final Addendum §11 — teacher-only preference. When true (the
+   * default), the daily re-engagement cron may auto-send dormant-
+   * learner messages from this teacher. Surfaced as a toggle on
+   * the teacher dashboard; PATCH'd via
+   * `/api/teacher/preferences/auto-re-engagement`.
+   */
+  auto_re_engagement_enabled?: boolean;
 
   // Timestamps
   createdAt: Date;

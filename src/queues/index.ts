@@ -1,5 +1,6 @@
 import { Queue, JobsOptions, ConnectionOptions } from "bullmq";
 import { createBullmqConnection } from "../lib/redis";
+import logger from "../config/logger";
 
 /**
  * BullMQ queues for Project Silk.
@@ -44,7 +45,62 @@ const baseDefaults: JobsOptions = {
 // One dedicated ioredis connection shared by all 8 Queue producers. Queues
 // (unlike workers) can safely share a connection because they don't issue
 // blocking commands. Workers get their own per createBaseWorker.
-const connection = createBullmqConnection() as unknown as ConnectionOptions;
+//
+// Soft-fail path: when REDIS_URL isn't set (dev iteration without an
+// Upstash instance), `createBullmqConnection` returns null. We replace
+// every exported `Queue<T>` with a no-op stub via `stubQueueOnNull` —
+// callers' `.add()` calls log + drop instead of crashing.
+const rawConnection = createBullmqConnection();
+const connection = rawConnection as unknown as ConnectionOptions;
+
+/**
+ * Build a real Queue when Redis is configured; a no-op stub when it
+ * isn't. The stub shares the public Queue surface that producer code
+ * actually uses (`.add()`, `.name`, `.close()`) — anything else throws
+ * a clear message rather than silently misbehaving.
+ *
+ * Why a stub instead of letting `.add()` fail at runtime:
+ *   • Dev experience — `npm run dev` without Redis still serves the
+ *     API. Frontend work doesn't block on Upstash being up.
+ *   • Cron pipelines — daily fan-out jobs are idempotent; a missed
+ *     run catches up on the next day. Better than a 500 cascade.
+ */
+const makeQueue = <T>(name: string, opts: { defaultJobOptions: JobsOptions }) => {
+  if (rawConnection) {
+    return new Queue<T>(name, { connection, ...opts });
+  }
+  // Eslint-disable: we mimic enough of the Queue surface for typical
+  // call sites; producer code only touches .add() / .name / .close().
+  const stub = {
+    name,
+    add: async (jobName: string, _data: T, _options?: JobsOptions) => {
+      logger.warn(
+        { queue: name, jobName },
+        "Queue stub: enqueue ignored (Redis unavailable). Job dropped."
+      );
+      return { id: null, name: jobName, data: _data } as unknown as never;
+    },
+    addBulk: async (jobs: { name: string; data: T }[]) => {
+      logger.warn(
+        { queue: name, count: jobs.length },
+        "Queue stub: bulk enqueue ignored (Redis unavailable). Jobs dropped."
+      );
+      return [] as unknown as never;
+    },
+    close: async () => undefined,
+    getJob: async () => null,
+    getJobs: async () => [],
+    getJobCounts: async () => ({
+      waiting: 0,
+      active: 0,
+      completed: 0,
+      failed: 0,
+      delayed: 0,
+      paused: 0,
+    }),
+  };
+  return stub as unknown as Queue<T>;
+};
 
 // ── Job payload types ───────────────────────────────────────────────────
 // Payload shapes are the contract between producers (services that enqueue)
@@ -66,7 +122,14 @@ export interface EsolSessionJob {
   payload?: Record<string, unknown>;
 }
 
-export interface RarpaEvidenceJob {
+/**
+ * Per-learner RARPA stage-compile job (the original `rarpa-evidence`
+ * payload). Used by Phase 11 to advance a single learner through a
+ * RARPA stage on the back of a session completion / level progression /
+ * manual recompile trigger.
+ */
+export interface RarpaStageCompileJob {
+  kind: "stage_compile";
   learnerId: string;
   orgId: string;
   /** RARPA stage being compiled or advanced (1–5). */
@@ -74,40 +137,195 @@ export interface RarpaEvidenceJob {
   triggerEvent: "session_completed" | "level_progression" | "manual_recompile";
 }
 
+/**
+ * Consolidated evidence-report job — brief Function 14 To-Do 4.
+ *
+ * Org-wide, period-scoped. The route layer computes the idempotency
+ * key (sha256(org_id + period_start + period_end)) and passes it
+ * through as `reportId`; the worker echoes it back so the status
+ * endpoint can surface the download URL deterministically.
+ */
+export interface RarpaEvidenceReportJob {
+  kind: "evidence_report";
+  orgId: string;
+  /** ISO YYYY-MM-DD. Bounds the cohort window. */
+  periodStart: string;
+  periodEnd: string;
+  requestedBy: string;
+  /** sha256(org_id + period_start + period_end). Deterministic id used both
+   *  as the IdempotencyKey lock and as the PDF cache filename. */
+  reportId: string;
+}
+
+/**
+ * Stage 5 AI tutor summary — brief Function 17.
+ *
+ * Enqueued by triggerStage5Review after a level-change confirmation.
+ * The worker loads the Stage5Review by id, aggregates the learner's
+ * just-completed-level sessions, calls Gemini, writes the structured
+ * summary back to `ai_tutor_summary`, and notifies the org admin(s).
+ *
+ * Minimal payload — orgId / learnerId are derived from the
+ * Stage5Review row at worker time. Keeping the payload narrow means
+ * the worker can never be tricked by a stale enqueue snapshot
+ * (e.g. learner moved orgs after the job was enqueued).
+ */
+export interface RarpaStage5SummaryJob {
+  kind: "stage5_summary";
+  stage5_review_id: string;
+}
+
+/**
+ * Discriminated union on `kind`. Old enqueue sites must add the
+ * `kind: "stage_compile"` literal (back-compat handled by the
+ * processor, which defaults missing kind to "stage_compile").
+ */
+export type RarpaEvidenceJob =
+  | RarpaStageCompileJob
+  | RarpaEvidenceReportJob
+  | RarpaStage5SummaryJob;
+
 export interface IlrExportJob {
   orgId: string;
+  /** Academic year code (e.g. "2025/26") — picks the compliance config. */
+  academicYear: string;
   /** ISO-8601 dates. Defines the ILR claim window. */
   periodStart: string;
   periodEnd: string;
   requestedBy: string;
+  /** The idempotency key — computed by the caller; the worker echoes it back as export_id. */
+  exportId: string;
   includeWarnings?: boolean;
 }
 
+/**
+ * Compliance-validation job — Phase 21 + Final Addendum §7.
+ *
+ * Two flavours, discriminated on `target`:
+ *
+ *   - `target: "ilr" | "rarpa"` — references an existing artefact
+ *     (export_id) that's already been built and needs green-lighting
+ *     before its downstream push.
+ *   - `target: "mis"` — references one or many ULNs on an org. The
+ *     worker builds the MISRecord(s) and validates each against the
+ *     active ComplianceConfig. Used as a standalone pre-check entry
+ *     point; the mis-push worker itself ALSO runs validation inline
+ *     so a direct push doesn't bypass the gate.
+ */
 export interface ComplianceValidationJob {
-  /** Reference to the artefact being green-lit before push. */
-  exportId: string;
   target: "ilr" | "rarpa" | "mis";
   orgId: string;
+  /** Set when validating an existing exported artefact (ilr / rarpa). */
+  exportId?: string;
+  /** Set when validating MIS records directly (single ULN). */
+  uln?: string;
+  /** Set when validating MIS records directly (batch). */
+  ulns?: string[];
 }
 
-export interface MisPushJob {
-  exportId: string;
-  misProvider: "ProSolution" | "Maytas" | "EBS";
-  orgId: string;
-  /** Where the validated artefact lives (e.g. S3 key, file path, blob URL). */
-  artefactRef: string;
-}
+/**
+ * MIS push job — Final Addendum §7.
+ *
+ * Per-learner pushes via the per-vendor adapter registered in
+ * `services/mis/AdapterFactory.ts`. Discriminated on `kind`:
+ *
+ *   - `push-learner` — single ULN, one adapter.pushLearner() call.
+ *   - `push-batch`   — many ULNs, one adapter.pushBatch() call
+ *                      (chunked at the adapter layer per vendor cap).
+ *
+ * The IdempotencyKey wrapping the job uses:
+ *   - single: sha256(`${org_id}|${uln}|mis_push`)
+ *   - batch:  sha256(`${org_id}|${sorted_ulns_joined}|mis_push_batch`)
+ *
+ * Sorting the batch ULNs before hashing keeps two callers that
+ * happen to enqueue the same set in different orders idempotent
+ * against each other.
+ */
+export type MisPushJob =
+  | {
+      kind: "push-learner";
+      org_id: string;
+      uln: string;
+      /** Authenticated caller — for audit log + admin notification routing. */
+      requested_by?: string;
+    }
+  | {
+      kind: "push-batch";
+      org_id: string;
+      ulns: string[];
+      requested_by?: string;
+    };
 
 export interface PriorityQueueJob {
   /** ISO date the scoring run is for. */
   date: string;
   orgId?: string; // optional scope; absent = platform-wide
+  /**
+   * Per-learner check trigger. When set, the consumer (Phase 12) runs
+   * a level-progression check for ONE learner instead of the
+   * platform-wide batch. Used by /api/esol/session/end to defer the
+   * check off the request path.
+   */
+  learnerId?: string;
+  /**
+   * Why the job was enqueued — read by the consumer to branch.
+   * `review_logged` (Final Addendum §9, Todo 22.5) lets the Phase 23
+   * scoring algorithm weight the recency signal differently when a
+   * teacher has just reviewed the learner vs a passive session end.
+   * `pathway_override_set` and `rarpa_stage5_signed_off` (Todo 23.4)
+   * carry the same role for the other two teacher-action triggers.
+   */
+  triggerEvent?:
+    | "scheduled"
+    | "session_completed"
+    | "manual"
+    | "review_logged"
+    | "pathway_override_set"
+    | "rarpa_stage5_signed_off";
+  /**
+   * Function 11 — what the job is FOR. The priority-queue is shared
+   * between several daily jobs; the processor dispatches on `action`.
+   *   - "check-progression"      → daily cron fans out per-org
+   *                                progression sweep
+   *   - "teacher-priority-score" → legacy default; teacher-prep scoring
+   *                                run (Phase 23). Absent action falls
+   *                                back to this for back-compat.
+   *   - "recalc-org-priorities"  → Final Addendum §10, Todo 23.3.
+   *                                Per-org teacher-priority recalc:
+   *                                evaluatePriority for every learner,
+   *                                write back the verdict, audit any
+   *                                level changes + a summary.
+   *   - "recalc-learner-priority" → Final Addendum §10, Todo 23.4.
+   *                                Single-learner recalc fired off
+   *                                teacher actions (review log,
+   *                                pathway override, RARPA sign-off).
+   *                                Dedupe via per-minute jobId so
+   *                                rapid actions collapse onto one
+   *                                recalc.
+   */
+  action?:
+    | "check-progression"
+    | "teacher-priority-score"
+    | "recalc-org-priorities"
+    | "recalc-learner-priority";
 }
 
+/**
+ * Delta-sync job — Final Addendum §7.
+ *
+ * One job per org per cron firing. The cron handler fans out at
+ * 04:00 UTC daily; each job pulls per-learner status from the
+ * org's MIS via `adapter.pullLearnerStatus(uln)` and records
+ * discrepancies against Project Silk's view.
+ *
+ * `orgId` is required (per-org enqueueing — no platform-wide
+ * sweep). `date` is the ISO date the cron fired (for the audit
+ * trail). `windowHours` is reserved for future per-org cadence
+ * overrides; default 24h matches the daily cron.
+ */
 export interface DeltaSyncJob {
   date: string;
-  orgId?: string;
-  /** Optional override for the lookback window in hours; default 24. */
+  orgId: string;
   windowHours?: number;
 }
 
@@ -124,6 +342,32 @@ export interface NotificationJob {
    */
   type: string;
   payload: Record<string, unknown>;
+}
+
+/**
+ * Safeguarding-alert email payload — brief Function 10.
+ *
+ * The DELIBERATELY minimal shape: category + org_id only. The worker
+ * looks up the org by id (one Mongo round-trip) so the email can show
+ * the org name without ever carrying learner identity or message
+ * content through the queue. If Redis ever leaks, the worst this
+ * payload reveals is "org X had a safeguarding event of category Y at
+ * time T" — no PII, no disclosure content.
+ *
+ * `alert_id` lets the worker stamp `notificationSentAt` back on the
+ * SafeguardingAlert document. `alert_created_at` is the dispatch-
+ * latency clock start — the p95 < 5s SLA in the brief is measured from
+ * SafeguardingAlert.create to email-sent.
+ *
+ * Enqueued via `notificationsQueue.add("safeguarding-alert", payload)`;
+ * dispatched by name inside processNotifications.
+ */
+export interface SafeguardingAlertEmailJob {
+  category: string;
+  org_id: string;
+  alert_id: string;
+  /** ISO timestamp of SafeguardingAlert.create — used to compute dispatch latency. */
+  alert_created_at: string;
 }
 
 /**
@@ -144,51 +388,55 @@ export interface CacheRefreshJob {
 
 // ── Queue exports ───────────────────────────────────────────────────────
 
-export const esolSessionQueue = new Queue<EsolSessionJob>("esol-session", {
-  connection,
+export const esolSessionQueue = makeQueue<EsolSessionJob>("esol-session", {
   defaultJobOptions: { ...baseDefaults, priority: PRIORITY_HIGH },
 });
 
-export const rarpaEvidenceQueue = new Queue<RarpaEvidenceJob>("rarpa-evidence", {
-  connection,
+export const rarpaEvidenceQueue = makeQueue<RarpaEvidenceJob>("rarpa-evidence", {
   defaultJobOptions: { ...baseDefaults, priority: PRIORITY_STANDARD },
 });
 
-export const ilrExportQueue = new Queue<IlrExportJob>("ilr-export", {
-  connection,
+export const ilrExportQueue = makeQueue<IlrExportJob>("ilr-export", {
   defaultJobOptions: { ...baseDefaults, priority: PRIORITY_STANDARD },
 });
 
-export const complianceValidationQueue = new Queue<ComplianceValidationJob>(
+export const complianceValidationQueue = makeQueue<ComplianceValidationJob>(
   "compliance-validation",
   {
-    connection,
     defaultJobOptions: { ...baseDefaults, priority: PRIORITY_HIGH },
   }
 );
 
-export const misPushQueue = new Queue<MisPushJob>("mis-push", {
-  connection,
+export const misPushQueue = makeQueue<MisPushJob>("mis-push", {
   defaultJobOptions: { ...baseDefaults, priority: PRIORITY_STANDARD },
 });
 
-export const priorityQueueQueue = new Queue<PriorityQueueJob>("priority-queue", {
-  connection,
+export const priorityQueueQueue = makeQueue<PriorityQueueJob>("priority-queue", {
   defaultJobOptions: { ...baseDefaults, priority: PRIORITY_LOW },
 });
 
-export const deltaSyncQueue = new Queue<DeltaSyncJob>("delta-sync", {
-  connection,
+export const deltaSyncQueue = makeQueue<DeltaSyncJob>("delta-sync", {
   defaultJobOptions: { ...baseDefaults, priority: PRIORITY_LOW },
 });
 
-export const notificationsQueue = new Queue<NotificationJob>("notifications", {
-  connection,
-  defaultJobOptions: { ...baseDefaults, priority: PRIORITY_HIGH },
-});
+/**
+ * Notifications queue accepts two payload shapes (discriminated by job name):
+ *   - "safeguarding-alert" → SafeguardingAlertEmailJob (minimal, no PII)
+ *   - everything else      → NotificationJob (generic email/sms/in-app)
+ *
+ * The processor narrows by `job.name`. New typed payloads should be added
+ * to this union rather than smuggled inside NotificationJob.payload.
+ */
+export type NotificationsQueuePayload = NotificationJob | SafeguardingAlertEmailJob;
 
-export const cacheRefreshQueue = new Queue<CacheRefreshJob>("cache-refresh", {
-  connection,
+export const notificationsQueue = makeQueue<NotificationsQueuePayload>(
+  "notifications",
+  {
+    defaultJobOptions: { ...baseDefaults, priority: PRIORITY_HIGH },
+  }
+);
+
+export const cacheRefreshQueue = makeQueue<CacheRefreshJob>("cache-refresh", {
   defaultJobOptions: {
     ...baseDefaults,
     priority: PRIORITY_LOW,

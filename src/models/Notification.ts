@@ -31,6 +31,18 @@ const notificationSchema = new Schema<INotification>(
         "payout_rejected",
         "account_suspended",
         "account_reactivated",
+        // Function 11 — org-admin notification when a learner meets
+        // all five level-progression criteria.
+        "progression_ready",
+        // Function 11 To-Do 2 — learner-facing celebration when Amber
+        // admin confirms a level change; org-admin-facing explanation
+        // when Amber admin rejects.
+        "progression_confirmed",
+        "progression_rejected",
+        // Function 17 — org-admin alert that a Stage 5 review has been
+        // opened on a level-change confirmation; learner submits the
+        // self-assessment later and the org admin signs it off.
+        "stage5_review_initiated",
         "system",
       ],
       required: true,

@@ -23,6 +23,25 @@ export interface IUserDecoded extends JwtPayload {
   // the DB re-hydration. Either form is safe to read.
   org_id?: string | null;
   esol_level?: string | null;
+  /**
+   * Final Addendum §9 — teacher-role gating. Snake_case aliases of
+   * `esolTeacherApproved` and `dbsCheckStatus`, populated on every
+   * authenticated request by the DB re-hydration below. Read by
+   * `requireTeacherRole` (src/middlewares/teacherMiddleware.ts);
+   * never trust the JWT-issued value for authorisation decisions —
+   * both fields can be revoked between issue and expiry.
+   */
+  esol_teacher_approved?: boolean | null;
+  dbs_check_status?: string | null;
+  /**
+   * Function 15 — present on JWTs issued via the
+   * /api/admin/impersonate route. Carries the original Amber admin's
+   * user id; the rest of the token's claims (id, role, orgId) reflect
+   * the impersonated user. The audit-log helper reads this claim off
+   * `req.user` to stamp `impersonated_by` on every row written during
+   * the impersonation session.
+   */
+  impersonated_by?: string | null;
 }
 
 export const isAuthenticated: ExpressFunction = async (req, _res, next) => {
@@ -53,7 +72,9 @@ export const isAuthenticated: ExpressFunction = async (req, _res, next) => {
     // for convenience but they can be revoked between issue and expiry,
     // so we never trust the JWT copy for authorisation decisions.
     const user = await User.findById(decoded.id)
-      .select("isActive status role orgId esolLevel esolTeacherApproved")
+      .select(
+        "isActive status role orgId esolLevel esolTeacherApproved dbsCheckStatus",
+      )
       .lean();
 
     if (!user || !user.isActive || user.status === "terminated") {
@@ -84,6 +105,12 @@ export const isAuthenticated: ExpressFunction = async (req, _res, next) => {
       // Mirror snake_case forms so downstream code can read either.
       org_id: dbOrgId,
       esol_level: user.esolLevel ?? null,
+      // Final Addendum §9 — re-hydrated snake_case teacher fields read
+      // by `requireTeacherRole`. NEVER trust the JWT-issued values for
+      // authorisation; both fields can be revoked between issue + expiry.
+      esol_teacher_approved: user.esolTeacherApproved ?? null,
+      dbs_check_status:
+        (user as { dbsCheckStatus?: string | null }).dbsCheckStatus ?? null,
     };
 
     (req as Request & { user?: IUserDecoded }).user = fresh;

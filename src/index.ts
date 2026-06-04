@@ -31,11 +31,42 @@ import esolReportRoutes from "./routes/esolReport.routes";
 import esolLevelChangeRoutes from "./routes/esolLevelChange.routes";
 import esolSessionFeedbackRoutes from "./routes/esolSessionFeedback.routes";
 import esolVocabRoutes from "./routes/esolVocab.routes";
+import esolMessagesRoutes from "./routes/esolMessages.routes";
 import esolMatchingRoutes from "./routes/esolMatching.routes";
+import esolVerifyTokenRoutes from "./routes/esolVerifyToken.routes";
+import esolRegisterRoutes from "./routes/esolRegister.routes";
+import esolEligibilityRoutes from "./routes/esolEligibility.routes";
+import esolUlnRoutes from "./routes/esolUln.routes";
+import publicRoiCalculatorRoutes from "./routes/publicRoiCalculator.routes";
+import orgAdminImportRoutes from "./routes/orgAdminImport.routes";
+import placementRoutes from "./routes/placement.routes";
+import calibrationRoutes from "./routes/calibration.routes";
+import aiSessionRoutes from "./routes/aiSession.routes";
 import healthRoutes from "./routes/health.routes";
 import jobsRoutes from "./routes/jobs.routes";
 import adminCacheRoutes from "./routes/adminCache.routes";
 import adminUsersRoutes from "./routes/adminUsers.routes";
+import adminSafeguardingRoutes from "./routes/adminSafeguarding.routes";
+import orgAdminSafeguardingRoutes from "./routes/orgAdminSafeguarding.routes";
+import adminLevelChangeRoutes from "./routes/adminLevelChange.routes";
+import orgAdminLearnersRoutes from "./routes/orgAdminLearners.routes";
+import orgAdminNarrativeRoutes from "./routes/orgAdminNarrative.routes";
+import orgAdminAuditLogRoutes from "./routes/orgAdminAuditLog.routes";
+import ilrExportRoutes from "./routes/ilrExport.routes";
+import orgAdminEvidenceReportRoutes from "./routes/orgAdminEvidenceReport.routes";
+import adminEvidenceReportRoutes from "./routes/adminEvidenceReport.routes";
+import adminOrgsRoutes from "./routes/adminOrgs.routes";
+import adminImpersonationRoutes from "./routes/adminImpersonation.routes";
+import adminComplianceConfigRoutes from "./routes/adminComplianceConfig.routes";
+import adminQueuesRoutes from "./routes/adminQueues.routes";
+import adminTeacherUtilisationRoutes from "./routes/adminTeacherUtilisation.routes";
+import adminGlhAnalyticsRoutes from "./routes/adminGlhAnalytics.routes";
+import adminSalesIntelligenceRoutes from "./routes/adminSalesIntelligence.routes";
+import adminFailedJobsRoutes from "./routes/adminFailedJobs.routes";
+import stage5Routes from "./routes/stage5.routes";
+import orgAdminStage5Routes from "./routes/orgAdminStage5.routes";
+import teacherRoutes from "./routes/teacher.routes";
+import orgAdminTeachersRoutes from "./routes/orgAdminTeachers.routes";
 import orgRoutes from "./routes/org.routes";
 import { stripeWebhook } from "./controllers/webhook.controller";
 import { initSocketIO } from "./services/websocket.service";
@@ -52,6 +83,7 @@ import SafeguardingDetector from "./services/safeguardingDetector.service";
 import PostcodeRouter from "./services/postcodeRouter.service";
 import FALACache from "./services/falaCache.service";
 import { cacheRefreshQueue } from "./queues";
+import { demoModeHeader } from "./middlewares/demoMode";
 
 const PORT = 4000;
 
@@ -74,9 +106,17 @@ const corsOption = {
     return callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
   credentials: true,
+  // Function 16 — surface X-Demo-Mode to the browser. Custom headers
+  // are NOT in the CORS-safelisted response set, so the frontend
+  // can't read them through fetch/axios without an explicit
+  // Access-Control-Expose-Headers entry.
+  exposedHeaders: ["X-Demo-Mode"],
 };
 
 app.use(cors(corsOption));
+// Stamp X-Demo-Mode on every response when DEMO_MODE=true. Runs
+// before any route so even /health surfaces the flag.
+app.use(demoModeHeader);
 
 (async () => {
   // ── Stripe webhook MUST be before express.json() ──
@@ -121,15 +161,29 @@ app.use(cors(corsOption));
   }
 
   // ── Initialise Redis singleton at boot ──
-  // BullMQ queues, the rate limiter, and pre-cache services all share this
-  // connection. If Redis is unreachable, we refuse to start rather than
-  // silently failing to enqueue jobs later.
+  // BullMQ queues, the rate limiter, and pre-cache services all share
+  // this connection. Redis is a SOFT dependency (see lib/redis.ts) —
+  // a connection failure logs a warning but does NOT crash the
+  // process. Features that need Redis (rate limiter, BullMQ enqueue,
+  // cache reads) degrade gracefully:
+  //   • Rate limiter falls back to in-memory (per-container counters)
+  //   • BullMQ enqueues become no-ops (logged + dropped)
+  //   • Cache misses fall through to Mongo
+  //
+  // The only hard-failure case lives inside initRedis itself: missing
+  // REDIS_URL in production. That's a deploy mistake we still crash on.
   try {
-    await initRedis();
+    const ok = await initRedis();
+    if (!ok) {
+      logger.warn(
+        "Redis unavailable — continuing in degraded mode " +
+          "(rate limiters in-memory, queues no-op, cache off)"
+      );
+    }
   } catch (err) {
     logger.fatal(
       { err: (err as Error).message },
-      "Redis failed to initialise at boot. Refusing to start."
+      "Redis init reported an unrecoverable error. Refusing to start."
     );
     process.exit(1);
   }
@@ -203,6 +257,58 @@ app.use(cors(corsOption));
   app.use("/api/jobs", jobsRoutes);
   app.use("/api/admin/cache", adminCacheRoutes);
   app.use("/api/admin/users", adminUsersRoutes);
+  // Brief Function 10 / Function 15 — Amber-admin safeguarding console.
+  // Mounted BEFORE the legacy /api/esol/safeguarding router so the new
+  // strictly-admin-only paths take precedence; the legacy router stays
+  // available for back-compat until the frontend migrates.
+  app.use("/api/admin/safeguarding", adminSafeguardingRoutes);
+  app.use("/api/org-admin/safeguarding", orgAdminSafeguardingRoutes);
+  // Function 11 To-Do 2 — Amber admin confirm/reject a flagged learner.
+  app.use("/api/admin/level-change", adminLevelChangeRoutes);
+  // Function 12 To-Do 1 — org-admin cohort table.
+  app.use("/api/org-admin/learners", orgAdminLearnersRoutes);
+  // Function 12 To-Do 3 — Gemini-powered cohort narrative summary.
+  app.use("/api/org-admin/narrative-summary", orgAdminNarrativeRoutes);
+  // Final Addendum §6 — org-wide audit log.
+  app.use("/api/org-admin/audit-log", orgAdminAuditLogRoutes);
+  // Function 13 To-Do 4 — ILR export pipeline (BullMQ-dispatched).
+  app.use("/api/org-admin/export/ilr", ilrExportRoutes);
+  // Function 14 To-Do 4 — consolidated RARPA evidence-report PDF.
+  app.use("/api/org-admin/evidence-report", orgAdminEvidenceReportRoutes);
+  app.use("/api/admin/evidence-report", adminEvidenceReportRoutes);
+  // Function 15 To-Do 1 — Amber-admin all-orgs overview + management.
+  app.use("/api/admin/orgs", adminOrgsRoutes);
+  // Function 15 — Amber-admin impersonation for support sessions.
+  app.use("/api/admin/impersonate", adminImpersonationRoutes);
+  // Final Addendum §3 — versioned ComplianceConfig editor.
+  app.use("/api/admin/compliance-config", adminComplianceConfigRoutes);
+  // Final Addendum §1 — admin queues dashboard summary + Bull Board
+  // link generator. The Bull Board UI itself is mounted further down
+  // at /admin/queues (no /api prefix).
+  app.use("/api/admin/queues", adminQueuesRoutes);
+  // Final Addendum §4 — teacher utilisation analytics.
+  app.use("/api/admin/teacher-utilisation", adminTeacherUtilisationRoutes);
+  // Final Addendum §12 — cross-platform GLH analytics. Validates
+  // the "AI + teacher oversight" funding-model shape (target
+  // teacher GLH ratio 10-20% of total).
+  app.use("/api/admin/glh-analytics", adminGlhAnalyticsRoutes);
+  // Final Addendum §13 — sales-intelligence over the public ROI
+  // calculator submission feed. Outstanding-lead backlog +
+  // mark-contacted action.
+  app.use("/api/admin/sales-intelligence", adminSalesIntelligenceRoutes);
+  // Final Addendum §1 — failed-job review dashboard.
+  app.use("/api/admin/failed-jobs", adminFailedJobsRoutes);
+  // Function 17 — Stage 5 RARPA review (learner self-assessment).
+  app.use("/api/esol/stage5", stage5Routes);
+  // Function 17 — Stage 5 RARPA review (org-admin confirmation).
+  app.use("/api/org-admin/stage5", orgAdminStage5Routes);
+  // Final Addendum §9 — teacher route group. Auth chain
+  // (isAuthenticated + requireTeacherRole + requireTeacherContext)
+  // applied inside the router; controllers stubbed pending
+  // Todos 22.3-22.7 + Phase 23/24.
+  app.use("/api/teacher", teacherRoutes);
+  // Final Addendum §4 — teacher assignment management.
+  app.use("/api/org-admin/teachers", orgAdminTeachersRoutes);
   app.use("/api/orgs", orgRoutes);
   app.use("/api/users", userRoutes);
   app.use("/api/availability", availabilityRoutes);
@@ -231,7 +337,25 @@ app.use(cors(corsOption));
   app.use("/api/esol/level-changes", esolLevelChangeRoutes);
   app.use("/api/esol/session-feedback", esolSessionFeedbackRoutes);
   app.use("/api/esol/vocab", esolVocabRoutes);
+  // Final Addendum §11 — learner-facing messages endpoints.
+  // GET /api/esol/messages/unread powers the learner dashboard's
+  // unread banner; see esolMessages.routes.ts.
+  app.use("/api/esol/messages", esolMessagesRoutes);
   app.use("/api/esol/teacher-matches", esolMatchingRoutes);
+  app.use("/api/esol/verify-token", esolVerifyTokenRoutes);
+  app.use("/api/esol/register", esolRegisterRoutes);
+  app.use("/api/esol/declare-eligibility", esolEligibilityRoutes);
+  app.use("/api/esol/uln", esolUlnRoutes);
+  app.use("/api/org-admin/import", orgAdminImportRoutes);
+  app.use("/api/esol/placement", placementRoutes);
+  app.use("/api/admin/calibration", calibrationRoutes);
+  app.use("/api/esol/session", aiSessionRoutes);
+
+  // Final Addendum §13 — public ROI calculator submission endpoint.
+  // NO AUTH. Rate-limited at 20/IP/hr (see src/config/rateLimiter).
+  // Anything under /api/public/* must be safe to expose without
+  // a JWT — this is the only such mount today.
+  app.use("/api/public/roi-calculator", publicRoiCalculatorRoutes);
 
   // ── Bull Board admin UI ──────────────────────────────────────────────
   // Three gates in order: JWT, admin role, defence-in-depth token header.

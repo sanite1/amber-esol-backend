@@ -1,0 +1,15 @@
+# Issue-template chooser config.
+#
+# blank_issues_enabled: false forces reporters through the template
+# chooser so every pilot-feedback issue carries the structured fields
+# the triage workflow depends on. Engineers can still file a regular
+# bug via the chooser; the "Other" link below covers that.
+
+blank_issues_enabled: false
+contact_links:
+  - name: "Safeguarding incident"
+    url: "mailto:safeguarding@ambertraining.co.uk"
+    about: "Safeguarding-relevant detail (learner name, message content, alert specifics) is NEVER filed on GitHub. Email the safeguarding inbox. Joey will loop engineering in via 1Password if a platform change is needed."
+  - name: "Pilot org chat (your Slack channel)"
+    url: "https://ambertraining.slack.com"
+    about: "For quick questions and conversational feedback, use your pilot Slack channel. File a GitHub issue for anything that's an actual bug or change request."

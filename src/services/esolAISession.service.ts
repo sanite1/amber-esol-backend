@@ -20,7 +20,7 @@ import {
   ScenarioContext,
 } from "./geminiAI.service";
 import { loadScenario } from "./scenarioLoader.service";
-import { sendSafeguardingAlertMail } from "./nodemailer/mail.service";
+import { notificationsQueue } from "../queues";
 import logger from "../config/logger";
 
 const sha256 = (text: string): string =>
@@ -159,8 +159,12 @@ export const getAISessionService = async (params: {
   const role = params.callerRole;
   const ownsAsLearner =
     role === "student" && session.learnerId._id.toString() === params.callerId;
+  // teacherId is optional on the schema (pre-platform imports have none),
+  // but a tutor role only reaches this path on live sessions they own.
   const ownsAsTeacher =
-    role === "tutor" && session.teacherId._id.toString() === params.callerId;
+    role === "tutor" &&
+    !!session.teacherId &&
+    session.teacherId._id.toString() === params.callerId;
   const sameOrg =
     role === "org_admin" && session.orgId.toString() === params.callerOrgId;
   const isPlatformAdmin = role === "admin";
@@ -241,7 +245,10 @@ export const processTurnService = async (params: {
       learnerInput: params.input,
       scenario,
       learner: {
-        esolLevel: session.esolLevel,
+        // Non-null: this branch only runs for live AI tutor sessions,
+        // which always set esolLevel at creation. Pre-platform imports
+        // never reach this code path.
+        esolLevel: session.esolLevel!,
         l1Language: learner.l1Language ?? "",
         vocabularyToReinforce: vocabToReinforce.map((v) => v._id),
         recentSessionSummaries: recentSessions
@@ -260,14 +267,32 @@ export const processTurnService = async (params: {
     throw err; // ApiError already wrapped in geminiProcessTurn
   }
 
-  // ── Safeguarding handling ──
+  // ── Safeguarding handling (brief Function 10) ──
+  //
+  // The legacy route at /api/esol/sessions/.../turn shares the
+  // SafeguardingAlert + notifications-queue pipeline with the
+  // hardened processTurnService in aiSession.service.ts. Two privacy
+  // invariants this block enforces:
+  //
+  //   1. The alert document stores ONLY the SHA-256 of the message
+  //      (messageContentHash). No cleartext.
+  //   2. The email is dispatched via the notifications queue with the
+  //      minimal { category, org_id, alert_id, alert_created_at }
+  //      payload — no learner name, no session id, no message content
+  //      in the email body (the queue worker composes the body).
+  //
+  // The previous in-process call to sendSafeguardingAlertMail (which
+  // passed learnerName + sessionId into a Handlebars template) was a
+  // Function 10 violation and has been replaced.
   if (result.safeguarding_flag) {
     const alert = await SafeguardingAlert.create({
       learnerId: session.learnerId,
       orgId: session.orgId,
       sessionId: session._id,
       alertLevel: result.safeguarding_category === "self_harm" ? "critical" : "high",
-      triggerTextHash: sha256(params.input),
+      messageContentHash: sha256(params.input),
+      triggerCategory: result.safeguarding_category ?? null,
+      triggerSource: "ai_only",
       claudeReasoning: `Category: ${result.safeguarding_category ?? "unknown"}`,
       status: "open",
     });
@@ -275,35 +300,56 @@ export const processTurnService = async (params: {
     session.safeguardingFlagged = true;
     session.safeguardingAlertId = alert._id as Types.ObjectId;
 
-    const org = await Organisation.findById(session.orgId).select("name");
-    sendSafeguardingAlertMail({
-      alertLevel: alert.alertLevel,
-      learnerName: `${learner.firstname} ${learner.lastname}`,
-      orgName: org?.name ?? "Unknown organisation",
-      sessionId: session._id.toString(),
-      reasoning: `Category: ${result.safeguarding_category ?? "unknown"}`,
-      raisedAt: new Date(),
-    })
-      .then(async () => {
-        alert.notificationSentAt = new Date();
-        await alert.save();
-      })
-      .catch((emailErr) =>
+    notificationsQueue
+      .add(
+        "safeguarding-alert",
+        {
+          category: result.safeguarding_category ?? "unknown",
+          org_id: session.orgId.toString(),
+          alert_id: alert._id.toString(),
+          alert_created_at: (alert.createdAt instanceof Date
+            ? alert.createdAt
+            : new Date()
+          ).toISOString(),
+        },
+        { priority: 1 }
+      )
+      .catch((err) =>
         logger.error(
-          { err: emailErr, alertId: alert._id.toString() },
-          "Failed to dispatch safeguarding alert email"
+          { err, alertId: alert._id.toString() },
+          "Failed to enqueue safeguarding-alert notification (legacy path)"
         )
       );
+
+    // CRITICAL: do NOT push the safeguarding-triggered message into
+    // session.turns. Per Function 10 the raw disclosure must not be
+    // persisted into AISession; the audit trail lives in TurnLog only
+    // (Function 7 To-Do 5 wiring). We still save the safeguardingFlagged
+    // state below.
+    await session.save();
+    return new ApiResponse(200, "Safeguarding response served", {
+      response: result.reply,
+      mode: session.sessionMode,
+      assessment: "",
+      grammarFeedback: "",
+      comprehensionScore: 0,
+      vocabIntroduced: [],
+      skillCodesUsed: [],
+      safeguardingFlagged: true,
+      safeguardingCategory: result.safeguarding_category,
+      sessionComplete: false,
+      sessionSummary: null,
+    });
   }
 
-  // ── Persist turn + vocab ──
+  // ── Persist turn + vocab (safe path only) ──
   const turn: IAISessionTurn = {
     turnIndex: session.turns.length,
     originalInput: params.input,
     scrubbed: false, // No scrubbing — Vertex EU keeps data in EU
     deepSeekResponse: result.reply, // field name retained for backward compatibility
     claudeAssessment: result.grammar_feedback ?? "",
-    safeguardingScore: result.safeguarding_flag ? 0.9 : 0,
+    safeguardingScore: 0,
     timestamp: new Date(),
   };
 
@@ -371,7 +417,9 @@ export const completeAISessionService = async (params: {
   // Authorisation
   if (
     params.callerRole === "tutor" &&
-    session.teacherId.toString() !== params.callerId
+    // Pre-platform sessions have no teacher; tutors can't own them.
+    (!session.teacherId ||
+      session.teacherId.toString() !== params.callerId)
   ) {
     throw new ApiError(403, "You can only complete your own sessions");
   }
@@ -417,7 +465,9 @@ export const getTeacherPrepNoteService = async (params: {
   // Authorisation
   if (
     params.callerRole === "tutor" &&
-    session.teacherId.toString() !== params.callerId
+    // Pre-platform sessions have no teacher; tutors can't own them.
+    (!session.teacherId ||
+      session.teacherId.toString() !== params.callerId)
   ) {
     throw new ApiError(403, "Access denied to this prep note");
   }
@@ -462,7 +512,9 @@ export const getTeacherPrepNoteService = async (params: {
     .filter((s): s is string => Boolean(s));
 
   const content = await generateTeacherPrepNote({
-    esolLevel: session.esolLevel,
+    // Non-null: prep-note generation only runs against live sessions
+    // booked with a teacher; pre-platform imports never trigger this.
+    esolLevel: session.esolLevel!,
     l1Language: learner?.l1Language ?? "",
     topic: session.topic ?? undefined,
     recentSessionSummaries: summaries,

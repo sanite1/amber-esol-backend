@@ -1,0 +1,42 @@
+{
+  "scenario_id": "s3_housing_rights",
+  "title": {
+    "en": "Your housing rights",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "nqf_level_range": { "min": "e2", "max": "l1" },
+  "skill_codes": ["Rt", "Sc", "Lr"],
+  "stage3_objective_domains": ["Rt", "Sc", "Lr"],
+  "vocabulary_set": [
+    {
+      "word": "tenancy",
+      "definition_en": "The legal right to live in a property that you rent.",
+      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "example_sentence": "My tenancy starts on the first of October and lasts for twelve months.",
+      "reinforcement_weight": 1.0
+    },
+    {
+      "word": "TODO_vocab_2_through_20",
+      "definition_en": "REPLACE: 19 more vocabulary items required. Likely candidates for this scenario: 'landlord', 'tenant', 'deposit', 'rent', 'rent arrears', 'eviction', 'notice', 'repairs', 'damp', 'mould', 'gas safety certificate', 'EPC', 'council', 'housing benefit', 'Universal Credit (housing element)', 'Shelter', 'Citizens Advice', 'tenancy agreement', 'inventory'.",
+      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "example_sentence": "",
+      "reinforcement_weight": 0.5
+    }
+  ],
+  "grammar_targets": [
+    "TODO: 3-5 grammar items — likely 'modal verbs for obligation (must / should / have to)', 'past simple for reporting issues (I told the landlord …)', 'reading formal language in tenancy agreements'."
+  ],
+  "roleplay_prompt_en": "TODO: 2-4 sentences. Example: 'You rent a flat from a private landlord. The boiler has been broken for two weeks and the landlord has not replied to your messages. Amber will help you understand your rights, what you can say to the landlord, and who you can contact for help.'",
+  "pass_threshold": 0.7,
+  "cultural_notes_en": "TODO: 3-5 sentences on UK housing rights context. Key concepts: the standard Assured Shorthold Tenancy (AST), the landlord's obligation to make repairs (Landlord and Tenant Act 1985 s.11), how the deposit must be in a government-approved scheme, what Section 21 ('no fault') and Section 8 evictions are, the rule that a landlord must give at least 24 hours' notice to enter, that Shelter (0808 800 4444) and Citizens Advice give free legal advice. Note the difference between social housing (council/housing association) and private rented sector — many learners will be in one or the other but not both.",
+  "cultural_notes_ar": "",
+  "cultural_notes_so": "",
+  "cultural_notes_fa": "",
+  "cultural_notes_zh": "",
+  "authoring": {
+    "version": "0.1-draft"
+  }
+}

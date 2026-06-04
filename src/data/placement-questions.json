@@ -1,0 +1,235 @@
+{
+  "version": 1,
+  "questions": [
+    {
+      "id": "e1-reading-001",
+      "level": "e1",
+      "skill_domain": "reading",
+      "question_en": "Read the sign: 'NO ENTRY'. What does this mean?",
+      "question_ar": "اقرأ اللافتة: 'NO ENTRY'. ماذا تعني؟",
+      "question_so": "Akhri calaamadda: 'NO ENTRY'. Maxay ka dhigan tahay?",
+      "question_fa": "تابلو را بخوانید: 'NO ENTRY'. این به چه معناست؟",
+      "question_zh": "閱讀標誌:'NO ENTRY'。這是什麼意思?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "You cannot go in",
+          "text_ar": "لا يمكنك الدخول",
+          "text_so": "Ma geli kartid",
+          "text_fa": "نمی‌توانید وارد شوید",
+          "text_zh": "你不能進入"
+        },
+        {
+          "id": "b",
+          "text_en": "Please come in",
+          "text_ar": "تفضل بالدخول",
+          "text_so": "Fadlan soo gal",
+          "text_fa": "لطفاً وارد شوید",
+          "text_zh": "請進"
+        },
+        {
+          "id": "c",
+          "text_en": "Open the door",
+          "text_ar": "افتح الباب",
+          "text_so": "Albaabka fur",
+          "text_fa": "در را باز کنید",
+          "text_zh": "開門"
+        },
+        {
+          "id": "d",
+          "text_en": "Wait here",
+          "text_ar": "انتظر هنا",
+          "text_so": "Halkan sug",
+          "text_fa": "اینجا منتظر بمانید",
+          "text_zh": "在這裡等"
+        }
+      ],
+      "correct_answer": "a",
+      "difficulty_weight": 1.0
+    },
+    {
+      "id": "e2-listening-001",
+      "level": "e2",
+      "skill_domain": "listening",
+      "question_en": "Listen: 'The train to Manchester leaves at half past three from platform two.' What time does the train leave?",
+      "question_ar": "استمع: 'يغادر القطار إلى مانشستر في الساعة الثالثة والنصف من الرصيف رقم اثنين'. متى يغادر القطار؟",
+      "question_so": "Dhageyso: 'Tareenka Manchester wuxuu ka tagayaa saacada 3:30 jeegada labaad.' Goorma ayuu tareenku tagayaa?",
+      "question_fa": "گوش کنید: 'قطار به سمت منچستر در ساعت سه و نیم از سکوی دو حرکت می‌کند.' قطار چه ساعتی حرکت می‌کند؟",
+      "question_zh": "請聽:'開往曼徹斯特的火車三點半從二號月台出發。'火車幾點出發?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "2:30",
+          "text_ar": "الساعة 2:30",
+          "text_so": "2:30",
+          "text_fa": "ساعت ۲:۳۰",
+          "text_zh": "2:30"
+        },
+        {
+          "id": "b",
+          "text_en": "3:30",
+          "text_ar": "الساعة 3:30",
+          "text_so": "3:30",
+          "text_fa": "ساعت ۳:۳۰",
+          "text_zh": "3:30"
+        },
+        {
+          "id": "c",
+          "text_en": "3:00",
+          "text_ar": "الساعة 3:00",
+          "text_so": "3:00",
+          "text_fa": "ساعت ۳:۰۰",
+          "text_zh": "3:00"
+        },
+        {
+          "id": "d",
+          "text_en": "4:30",
+          "text_ar": "الساعة 4:30",
+          "text_so": "4:30",
+          "text_fa": "ساعت ۴:۳۰",
+          "text_zh": "4:30"
+        }
+      ],
+      "correct_answer": "b",
+      "difficulty_weight": 1.0
+    },
+    {
+      "id": "e3-writing-001",
+      "level": "e3",
+      "skill_domain": "writing",
+      "question_en": "Choose the correctly written sentence.",
+      "question_ar": "اختر الجملة المكتوبة بشكل صحيح.",
+      "question_so": "Dooro jumladda si sax ah loo qoray.",
+      "question_fa": "جمله‌ای را که به درستی نوشته شده انتخاب کنید.",
+      "question_zh": "選擇寫得正確的句子。",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "She go to the shops yesterday.",
+          "text_ar": "She go to the shops yesterday.",
+          "text_so": "She go to the shops yesterday.",
+          "text_fa": "She go to the shops yesterday.",
+          "text_zh": "She go to the shops yesterday."
+        },
+        {
+          "id": "b",
+          "text_en": "She went to the shops yesterday.",
+          "text_ar": "She went to the shops yesterday.",
+          "text_so": "She went to the shops yesterday.",
+          "text_fa": "She went to the shops yesterday.",
+          "text_zh": "She went to the shops yesterday."
+        },
+        {
+          "id": "c",
+          "text_en": "She going to the shops yesterday.",
+          "text_ar": "She going to the shops yesterday.",
+          "text_so": "She going to the shops yesterday.",
+          "text_fa": "She going to the shops yesterday.",
+          "text_zh": "She going to the shops yesterday."
+        },
+        {
+          "id": "d",
+          "text_en": "She gone to the shops yesterday.",
+          "text_ar": "She gone to the shops yesterday.",
+          "text_so": "She gone to the shops yesterday.",
+          "text_fa": "She gone to the shops yesterday.",
+          "text_zh": "She gone to the shops yesterday."
+        }
+      ],
+      "correct_answer": "b",
+      "difficulty_weight": 1.0
+    },
+    {
+      "id": "l1-reading-001",
+      "level": "l1",
+      "skill_domain": "reading",
+      "question_en": "A tenancy agreement states: 'The tenant shall give one month's notice in writing prior to vacating the premises.' What must a tenant do before leaving the property?",
+      "question_ar": "تنص اتفاقية الإيجار على: 'يجب على المستأجر تقديم إشعار كتابي قبل شهر واحد من إخلاء العقار'. ماذا يجب على المستأجر فعله قبل مغادرة العقار؟",
+      "question_so": "Heshiiska kireynta wuxuu sheegayaa: 'Kireeyaha waa inuu siiyaa ogeysiis qoraal ah hal bil ka hor bixitaanka guriga.' Maxaa kireeyahu ahaado samayn ka hor inta uusan ka bixin guriga?",
+      "question_fa": "قرارداد اجاره می‌گوید: 'مستأجر باید یک ماه قبل از تخلیه ملک، اطلاعیه کتبی بدهد.' مستأجر قبل از ترک ملک چه باید بکند؟",
+      "question_zh": "租賃合約規定:'租客必須在遷出前以書面形式提前一個月通知。'租客在離開房產前必須做什麼?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "Tell the landlord by phone on the day of leaving",
+          "text_ar": "إخبار المالك بالهاتف يوم المغادرة",
+          "text_so": "U sheeg mulkiilaha telefoonka maalinta uu baxayo",
+          "text_fa": "در روز خروج با تلفن به صاحبخانه بگوید",
+          "text_zh": "在離開當天用電話告訴房東"
+        },
+        {
+          "id": "b",
+          "text_en": "Send a written notice one month in advance",
+          "text_ar": "إرسال إشعار كتابي قبل شهر واحد",
+          "text_so": "Soo dir ogeysiis qoraal ah hal bil ka hor",
+          "text_fa": "یک ماه قبل اطلاعیه کتبی ارسال کند",
+          "text_zh": "提前一個月發出書面通知"
+        },
+        {
+          "id": "c",
+          "text_en": "Leave the keys at the property",
+          "text_ar": "ترك المفاتيح في العقار",
+          "text_so": "Ku dhaaf furayaasha guriga",
+          "text_fa": "کلیدها را در ملک رها کند",
+          "text_zh": "把鑰匙留在房產內"
+        },
+        {
+          "id": "d",
+          "text_en": "Pay an extra month's rent",
+          "text_ar": "دفع إيجار شهر إضافي",
+          "text_so": "Bixi kirada hal bil dheeraad ah",
+          "text_fa": "یک ماه اجاره اضافی بپردازد",
+          "text_zh": "支付額外一個月的租金"
+        }
+      ],
+      "correct_answer": "b",
+      "difficulty_weight": 1.5
+    },
+    {
+      "id": "l2-speaking-001",
+      "level": "l2",
+      "skill_domain": "speaking",
+      "question_en": "Your manager asks why you missed a deadline. Which response is the most appropriate?",
+      "question_ar": "يسألك مديرك عن سبب تفويتك للموعد النهائي. أي رد هو الأكثر ملاءمة؟",
+      "question_so": "Maamulahaaga ayaa kugu weydiinaya sababta aad ku seegtay wakhtigii la ballamay. Jawaab keebaa ugu habboon?",
+      "question_fa": "مدیرتان می‌پرسد چرا یک مهلت را از دست داده‌اید. کدام پاسخ مناسب‌ترین است؟",
+      "question_zh": "你的經理問你為什麼錯過了截止日期。哪個回答最恰當?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "I apologise — I underestimated the complexity. I've already drafted a revised timeline and would like to walk you through it.",
+          "text_ar": "أعتذر — لقد قللت من تقدير التعقيد. لقد قمت بالفعل بصياغة جدول زمني منقح وأود أن أشرحه لك.",
+          "text_so": "Waan ka xumahay — waxaan dhayalsaday adkaanta shaqada. Hore ayaan u diyaariyay jadwal cusub, waxaan jeclaan lahaa inaan kuu sharaxo.",
+          "text_fa": "عذر می‌خواهم — پیچیدگی کار را دست‌کم گرفتم. یک جدول زمانی جدید آماده کرده‌ام و می‌خواهم آن را برایتان توضیح دهم.",
+          "text_zh": "我道歉——我低估了複雜性。我已經起草了一個修訂的時間表,想向您詳細說明。"
+        },
+        {
+          "id": "b",
+          "text_en": "It's not my fault.",
+          "text_ar": "إنه ليس خطأي.",
+          "text_so": "Khaladkayga ma aha.",
+          "text_fa": "تقصیر من نیست.",
+          "text_zh": "這不是我的錯。"
+        },
+        {
+          "id": "c",
+          "text_en": "I forgot about it.",
+          "text_ar": "لقد نسيت الأمر.",
+          "text_so": "Waan iloobay arrintaas.",
+          "text_fa": "آن را فراموش کردم.",
+          "text_zh": "我忘了。"
+        },
+        {
+          "id": "d",
+          "text_en": "Maybe next time.",
+          "text_ar": "ربما في المرة القادمة.",
+          "text_so": "Waxaa laga yaabaa mar dambe.",
+          "text_fa": "شاید دفعه بعد.",
+          "text_zh": "也許下次吧。"
+        }
+      ],
+      "correct_answer": "a",
+      "difficulty_weight": 1.5
+    }
+  ]
+}

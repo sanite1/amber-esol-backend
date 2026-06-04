@@ -9,6 +9,7 @@ import User from "../models/User";
 import ReferralToken from "../models/ReferralToken";
 import { validatePassword } from "../utils/validatePassword";
 import { sendOrgAdminWelcomeMail } from "./nodemailer/mail.service";
+import { buildRoiCalculatorUrl } from "./roiCalculatorUrl.service";
 import logger from "../config/logger";
 
 // Match the salt rounds used elsewhere in the codebase (user.service.ts).
@@ -520,12 +521,29 @@ export const createOrgAdminUserService = async (
     isActive: true,
   });
 
+  // Final Addendum §13 — prefill the ROI calculator with whatever
+  // sales-context we already know about the org. `org.name` and
+  // `org.type` are always available on a freshly-created org; the
+  // waiting-list / ASF-rate / current-throughput numbers are not
+  // captured during the org-creation form today but the helper
+  // tolerates their absence and just omits the matching query
+  // params. When Joey adds those fields to the create-org wizard
+  // (or to a sales-intake form), the prefill picks them up
+  // automatically with no further plumbing.
+  const roiCalculatorUrl = buildRoiCalculatorUrl({
+    org_name: org.name,
+    org_type:
+      (org as { type?: "college" | "council" | "charity" | "employer" | null })
+        .type ?? null,
+  });
+
   // Fire-and-forget email — delivery failure must not roll back creation.
   sendOrgAdminWelcomeMail({
     toEmail: orgAdmin.email,
     firstname: orgAdmin.firstname,
     orgName: org.name,
     loginUrl: ESOL_LOGIN_URL,
+    roiCalculatorUrl,
   }).catch((err) =>
     logger.error(
       { err, userId: orgAdmin._id, orgId: org._id },

@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
+import { Types } from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 import ApiError from "../errors/apiError";
 import ApiResponse from "../errors/apiResponse";
@@ -138,7 +139,102 @@ export const listReferralTokensService = async (
   });
 };
 
-/* ── Validate Token (public preview) ── */
+/* ── Verify Token (brief Function 2 To-Do 1) ────────────────────────
+   POST /api/esol/verify-token public endpoint.
+
+   Parallel to the legacy `validateReferralTokenService` below, which has
+   a different payload shape (camelCase `orgId`, no `type` claim) and a
+   different return shape (orgName/orgLogoUrl/esolLevel/email). The
+   brief Function 2 contract speaks snake_case + type-tagged claims and
+   returns `{ org_id, org_name, org_type }`.
+
+   Status codes per brief:
+     401 on JWT failures (expired / tampered / wrong signature / wrong type)
+     403 when org missing or billing inactive
+     403 when ReferralToken row is marked inactive
+     200 on success — atomically increments usage_count
+
+   Defence-in-depth: the JWT's `org_id` must match the persisted row's
+   orgId. Prevents a forged-but-correctly-signed JWT (e.g. via leaked
+   secret) from impersonating a different org's tokens.
+─────────────────────────────────────────────────────────────────── */
+
+interface VerifyReferralJwt {
+  org_id?: string;
+  orgId?: string; // legacy alias accepted for back-compat
+  type?: string;
+}
+
+export const verifyReferralTokenService = async (token: string) => {
+  const secret = process.env.REFERRAL_JWT_SECRET;
+  if (!secret) {
+    throw new ApiError(500, "REFERRAL_JWT_SECRET is not configured");
+  }
+
+  // 1. JWT signature + expiry
+  let decoded: VerifyReferralJwt;
+  try {
+    decoded = jwt.verify(token, secret) as VerifyReferralJwt;
+  } catch {
+    throw new ApiError(401, "Invalid or expired link");
+  }
+
+  // 2. Type claim — must be esol_referral. Other JWTs in the system
+  //    (user auth, password reset, etc.) use the same library; the type
+  //    field is what stops them from being mis-presented as referral
+  //    links.
+  if (decoded.type !== "esol_referral") {
+    throw new ApiError(401, "Invalid or expired link");
+  }
+
+  const orgIdFromJwt = decoded.org_id || decoded.orgId;
+  if (!orgIdFromJwt || !Types.ObjectId.isValid(String(orgIdFromJwt))) {
+    throw new ApiError(401, "Invalid or expired link");
+  }
+
+  // 3. Look up the persisted ReferralToken row by the JWT string itself.
+  //    We find first (with no isActive filter) so we can give the brief's
+  //    distinct 403 "deactivated" message vs the generic 401 "invalid".
+  const tokenRow = await ReferralToken.findOne({ token });
+  if (!tokenRow) {
+    throw new ApiError(401, "Invalid or expired link");
+  }
+  if (!tokenRow.isActive) {
+    throw new ApiError(403, "This link has been deactivated");
+  }
+
+  // Defence-in-depth — JWT org_id must match the row's stored orgId.
+  // Belt-and-braces against a leaked-secret forgery scenario.
+  if (tokenRow.orgId.toString() !== String(orgIdFromJwt)) {
+    throw new ApiError(401, "Invalid or expired link");
+  }
+
+  // 4. Organisation lookup + billing_active gate.
+  const org = await Organisation.findById(tokenRow.orgId).select(
+    "name type billing_active"
+  );
+  if (!org) {
+    throw new ApiError(403, "Organisation is not active");
+  }
+  if (org.billing_active === false) {
+    throw new ApiError(403, "Organisation is not active");
+  }
+
+  // 5. Atomic increment of usage_count. updateOne with $inc is a single
+  //    Mongo operation — safe under concurrent verifications.
+  await ReferralToken.updateOne(
+    { _id: tokenRow._id },
+    { $inc: { usage_count: 1 } }
+  );
+
+  return new ApiResponse(200, "Token verified", {
+    org_id: org._id.toString(),
+    org_name: org.name,
+    org_type: org.type ?? null,
+  });
+};
+
+/* ── Validate Token (public preview, LEGACY) ── */
 
 export const validateReferralTokenService = async (token: string) => {
   const secret = process.env.REFERRAL_JWT_SECRET;

@@ -1,0 +1,44 @@
+{
+  "self_harm": {
+    "en": "Thank you for telling me — that took courage. You don't have to face this alone. Samaritans is open 24 hours a day on 116 123 (free from any UK phone), or you can text SHOUT to 85258 if you prefer not to talk out loud. I'm here when you're ready to keep practising English.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "domestic_abuse": {
+    "en": "Thank you for sharing that with me. What you're describing is serious, and help is available. The National Domestic Abuse Helpline (0808 2000 247) is free, 24 hours a day, and won't show on your phone bill. They speak many languages. I'm here when you want to carry on with our session.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "radicalisation": {
+    "en": "Thank you for telling me. I've made a note of what you've said and someone from your organisation will be in touch when they can. There's nothing more you need to do right now. Would you like to carry on practising English, or would a short break be better?",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "child_concern": {
+    "en": "Thank you for telling me — keeping children safe is really important. NSPCC has trained advisors available 24 hours a day on 0808 800 5000 (free from any UK phone). You can speak to them in confidence, and they can help you decide what to do next. Whenever you're ready, we can continue.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "exploitation": {
+    "en": "Thank you for sharing that. Help is available in confidence. The Modern Slavery Helpline (08000 121 700) is free, open 24 hours a day, and you can call from any UK phone. They can advise on what to do next. I'm here when you'd like to carry on with English.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "mental_health_crisis": {
+    "en": "Thank you for telling me how you're feeling. You don't have to deal with this alone. NHS 111 (free, 24 hours a day — press option 2 for mental health) can help, or you can text SHOUT to 85258 if you'd rather not speak out loud. I'm here when you're ready to keep going.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  }
+}

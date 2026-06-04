@@ -781,6 +781,14 @@ export const sendOrgAdminWelcomeMail = async (ctx: {
   firstname: string;
   orgName: string;
   loginUrl: string;
+  /**
+   * Final Addendum §13 — optional prefill URL for the ROI
+   * calculator section in the welcome email. When omitted (or
+   * empty) the template's `{{#if roiCalculatorUrl}}` block hides
+   * the entire CTA section, so org creations without sales
+   * context don't show a half-empty calculator pitch.
+   */
+  roiCalculatorUrl?: string | null;
 }) => {
   const mailOptions = {
     from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
@@ -792,6 +800,7 @@ export const sendOrgAdminWelcomeMail = async (ctx: {
       email: ctx.toEmail,
       orgName: ctx.orgName,
       loginUrl: ctx.loginUrl,
+      roiCalculatorUrl: ctx.roiCalculatorUrl ?? null,
       currentYear: new Date().getFullYear(),
     },
   };

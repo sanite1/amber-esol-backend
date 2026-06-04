@@ -28,7 +28,8 @@ const referralTokenSchema = new Schema<IReferralToken>(
   }
 );
 
-referralTokenSchema.index({ token: 1 }, { unique: true });
+// token uniqueness is declared via `unique: true` on the field above —
+// the explicit .index() here was a duplicate.
 referralTokenSchema.index({ orgId: 1, isActive: 1 });
 // NB: deliberately NO TTL — would destroy audit trail (usedBy/usedAt).
 // Cleanup of expired-and-unused tokens should be a scheduled job.

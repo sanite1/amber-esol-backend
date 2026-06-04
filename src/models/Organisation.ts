@@ -104,7 +104,8 @@ const organisationSchema = new Schema<IOrganisation>(
 );
 
 // ── Indexes ────────────────────────────────────────────────────────────
-organisationSchema.index({ slug: 1 }, { unique: true });
+// slug uniqueness is declared via `unique: true` on the field above —
+// duplicating it here triggers Mongoose's "Duplicate schema index" warning.
 organisationSchema.index({ adminUserId: 1 });
 // Critical guardrail: any production ILR / RARPA export MUST filter
 // is_demo: false. This index makes that filter cheap.

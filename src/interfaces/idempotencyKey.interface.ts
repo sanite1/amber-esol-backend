@@ -8,7 +8,8 @@ export type IdempotencyOperation =
   | "session-write"
   | "placement-scoring"
   | "stage5-review"
-  | "invoice-generation";
+  | "invoice-generation"
+  | "learner-bulk-import";
 
 export type IdempotencyStatus = "processing" | "completed" | "failed";
 

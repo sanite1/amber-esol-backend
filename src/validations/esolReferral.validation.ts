@@ -88,3 +88,18 @@ export const registerViaReferralValidation = () =>
     { context: true },
     { abortEarly: false }
   );
+
+/* ── POST /api/esol/verify-token (brief Function 2 To-Do 1) ─────────── */
+
+export const verifyTokenBodyValidation = () =>
+  validate(
+    {
+      body: Joi.object({
+        token: Joi.string().trim().required().messages({
+          "any.required": "Token is required",
+        }),
+      }).unknown(false),
+    },
+    { context: true },
+    { abortEarly: false }
+  );

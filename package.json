@@ -13,8 +13,12 @@
     "format": "prettier --write .",
     "check-format": "prettier --check .",
     "check-types": "tsc --noEmit",
+    "validate:placement-bank": "ts-node --transpile-only src/utils/validatePlacementBank.ts",
+    "validate:scenarios": "ts-node --transpile-only src/scripts/validateScenarios.ts",
+    "validate:safeguarding-messages": "ts-node --transpile-only src/scripts/validateSafeguardingMessages.ts",
     "test": "jest --runInBand --forceExit",
-    "test:watch": "jest --runInBand --watch"
+    "test:watch": "jest --runInBand --watch",
+    "audit:todo": "ts-node --transpile-only scripts/auditMergedTodo.ts"
   },
   "keywords": [],
   "author": "",
@@ -46,6 +50,7 @@
     "nodemailer-express-handlebars": "^6.1.2",
     "pino": "^10.3.1",
     "puppeteer-core": "^24.43.0",
+    "rate-limit-redis": "^4.3.1",
     "socket.io": "^4.8.1",
     "stripe": "^18.2.1",
     "uuid": "^11.1.1"

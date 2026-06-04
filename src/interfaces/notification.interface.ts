@@ -23,6 +23,11 @@ export type NotificationType =
   | "payout_rejected"
   | "account_suspended"
   | "account_reactivated"
+  | "progression_ready"
+  | "progression_confirmed"
+  | "progression_rejected"
+  // Function 17 — org-admin alert that a Stage 5 review has been opened
+  | "stage5_review_initiated"
   | "system";
 
 /* ══════════════════════════════════════════════

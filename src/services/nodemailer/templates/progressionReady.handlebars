@@ -1,0 +1,136 @@
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .header {
+        background: #0b2343;
+        padding: 30px;
+        text-align: center;
+      }
+      .header h1 {
+        color: #ffffff;
+        margin: 0;
+        font-size: 22px;
+      }
+      .header p {
+        color: #94a3b8;
+        margin: 6px 0 0;
+        font-size: 14px;
+      }
+      .body {
+        padding: 30px;
+      }
+      .body p {
+        color: #333;
+        line-height: 1.6;
+      }
+      .panel {
+        background: #fafbfc;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin: 20px 0;
+      }
+      .panel dt {
+        color: #6b7280;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-top: 8px;
+      }
+      .panel dd {
+        color: #111827;
+        font-size: 15px;
+        margin: 4px 0 0;
+      }
+      .button {
+        display: inline-block;
+        background: #0b2343;
+        color: #ffffff !important;
+        padding: 12px 22px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        margin-top: 8px;
+      }
+      .footnote {
+        color: #6b7280;
+        font-size: 12px;
+        margin-top: 24px;
+        line-height: 1.5;
+      }
+      .footer {
+        background: #f3f4f6;
+        padding: 18px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Learner ready for level review</h1>
+        <p>{{adminLooksLikeOrg}}</p>
+      </div>
+      <div class="body">
+        <p>Hello,</p>
+
+        <p>
+          <strong>{{learnerName}}</strong> has met all five level-progression
+          criteria at <strong>{{currentLevel}}</strong>.
+          The Amber platform has flagged this learner as a candidate for level
+          review — but no automatic level change has been made. You decide
+          whether to confirm a promotion or hold the learner at the current
+          level.
+        </p>
+
+        <div class="panel">
+          <dl>
+            <dt>Learner</dt>
+            <dd>{{learnerName}}</dd>
+            <dt>Current NQF level</dt>
+            <dd>{{currentLevel}}</dd>
+            <dt>Flagged ready at</dt>
+            <dd>{{readyAt}}</dd>
+          </dl>
+        </div>
+
+        <p>
+          The learner record holds the evidence that drove the decision —
+          scenario completions, average scores, skill-domain coverage, teaching
+          modes used in recent sessions, and time at the current level.
+        </p>
+
+        <p>
+          <a href="{{dashboardUrl}}" class="button">Open learner record</a>
+        </p>
+
+        <p class="footnote">
+          You will not receive another email about
+          <strong>{{learnerName}}</strong>
+          at this level for seven days. If they progress (or are demoted) to a
+          different level, a fresh notification will fire as soon as they meet
+          the criteria there.
+        </p>
+      </div>
+      <div class="footer">
+        © {{currentYear}} Amber Training. Automated message — please do not
+        reply directly.
+      </div>
+    </div>
+  </body>
+</html>

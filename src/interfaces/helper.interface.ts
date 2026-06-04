@@ -19,10 +19,23 @@ export interface IEsolContext {
   org_id: string;
 }
 
+/**
+ * Per-request teacher context attached by `requireTeacherContext`
+ * middleware — Final Addendum §9. Every service function that
+ * touches teacher-scoped data (review writes, assigned-learner
+ * reads, prep-list queries) MUST receive `teacher_id` as an
+ * explicit parameter sourced from this context, never from
+ * `req.user` directly. Same invariant as IEsolContext.
+ */
+export interface ITeacherContext {
+  teacher_id: string;
+}
+
 export type ExpressFunction<B = {}, Q = {}> = (
   req: Request<{}, {}, B, Q> & {
     user?: IUserDecoded;
     esol_context?: IEsolContext;
+    teacher_context?: ITeacherContext;
   },
   res: Response,
   next: NextFunction

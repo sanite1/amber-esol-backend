@@ -48,7 +48,7 @@ const orgInvoiceSchema = new Schema<IOrgInvoice>(
 
 orgInvoiceSchema.index({ orgId: 1, status: 1 });
 orgInvoiceSchema.index({ orgId: 1, periodStart: -1 });
-orgInvoiceSchema.index({ invoiceNumber: 1 }, { unique: true });
+// invoiceNumber uniqueness is declared via `unique: true` on the field above.
 
 const OrgInvoice = model<IOrgInvoice>("OrgInvoice", orgInvoiceSchema);
 

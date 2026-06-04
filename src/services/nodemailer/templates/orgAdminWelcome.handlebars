@@ -71,6 +71,30 @@
         text-decoration: none;
         margin: 12px 0;
       }
+      /* Final Addendum §13 — ROI calculator CTA section. */
+      .roi-block {
+        background: linear-gradient(135deg, #0b2343 0%, #1a3865 100%);
+        border-radius: 12px;
+        padding: 22px;
+        margin: 22px 0;
+        color: #ffffff;
+      }
+      .roi-block h2 {
+        color: #ffffff;
+        font-size: 18px;
+        margin: 0 0 6px 0;
+      }
+      .roi-block p {
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0 0 14px 0;
+      }
+      .roi-block .roi-meta {
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 12px;
+        margin: 10px 0 0 0;
+      }
       .footer {
         background: #fafbfc;
         padding: 18px 30px;
@@ -126,6 +150,37 @@
         <p style="text-align: center;">
           <a class="cta" href="{{loginUrl}}">Sign in to your dashboard</a>
         </p>
+
+        {{!--
+          Final Addendum §13 — ROI calculator CTA. Hidden when
+          roiCalculatorUrl is null/missing so self-serve org
+          creations don't render a half-empty pitch.
+        --}}
+        {{#if roiCalculatorUrl}}
+          <div class="roi-block">
+            <h2>Before you start: how much funding is on the table?</h2>
+            <p>
+              Most ESOL providers we work with discover they're
+              under-claiming ESFA funding by tens of thousands a year. We
+              built a three-minute calculator that tells you the gap on
+              your numbers — we've pre-filled it with your organisation
+              details to save you a click.
+            </p>
+            <p style="text-align: center;">
+              <a
+                class="cta"
+                href="{{roiCalculatorUrl}}"
+                style="background: #ff7c22; color: #ffffff !important;"
+              >
+                Run the funding calculator
+              </a>
+            </p>
+            <p class="roi-meta">
+              No commitment. Your numbers stay in your browser unless you
+              share them.
+            </p>
+          </div>
+        {{/if}}
 
         <p>
           If you didn't expect this account, please reply to this email so we

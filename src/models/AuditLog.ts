@@ -55,7 +55,17 @@ const auditLogSchema = new Schema<IAuditLog>(
     },
     action: {
       type: String,
+      // Keep in sync with AuditAction in interfaces/auditLog.interface.ts.
+      // The interface is the source of truth — the enum mirrors it so
+      // schema-level validation rejects typos.
       enum: [
+        "learner_registered",
+        "learner_bulk_imported",
+        "forskills_imported",
+        "historical_session_imported",
+        "eligibility_declared",
+        "uln_recorded",
+        "session_started",
         "session_completed",
         "rarpa_stage_advanced",
         "ilr_record_generated",
@@ -70,7 +80,52 @@ const auditLogSchema = new Schema<IAuditLog>(
         "level_change_confirmed",
         "placement_completed",
         "stage5_review_generated",
+        // Function 17 — Stage 5 review opened on level-change confirmation
+        "stage5_review_initiated",
+        // Function 17 — learner submitted their Stage 5 self-assessment
+        "stage5_self_assessment_submitted",
+        // Function 17 — org admin signed off the Stage 5 review
+        "stage5_review_confirmed",
+        // Final Addendum §9, Todo 22.7 — teacher Stage 5 sign-off
+        "rarpa_stage5_teacher_signed_off",
+        // Final Addendum §10, Todo 23.3 — priority recalc audit rows
+        "learner_priority_changed",
+        "priority_queue_recalculated",
+        // Final Addendum §10, Todo 23.6 — daily cron dispatcher row
+        "priority_queue_cron_dispatched",
+        // Final Addendum §11 — re-engagement cron summary row
+        "re_engagement_cron_dispatched",
+        // Final Addendum §11 — learner acknowledged a tutor message
+        "teacher_message_read",
+        // Final Addendum §7 — daily MIS delta-sync outcomes
+        "mis_delta_discrepancy",
+        "mis_delta_unknown_learner",
         "safeguarding_ai_only_flag",
+        // Function 11 — daily progression cron outcomes
+        "progression_ready_flagged",
+        "cohort_status_changed",
+        "level_change_rejected",
+        "learner_nudge_sent",
+        // Final Addendum §4 — teacher assignment management
+        "teacher_added_to_org",
+        "teacher_removed_from_org",
+        "learner_teacher_assigned",
+        // Function 13 To-Do 4 — ILR export pipeline completion
+        "ilr_export_completed",
+        // Function 14 — evidence-report PDF lifecycle
+        "evidence_report_generated",
+        "evidence_report_cache_cleared",
+        // Function 15 — Amber-admin impersonation
+        "user_impersonation_started",
+        "user_impersonation_ended",
+        // Final Addendum §3 — ComplianceConfig versions
+        "compliance_config_activated",
+        // Final Addendum §7 — MIS settings management
+        "mis_settings_updated",
+        "mis_test_connection_attempted",
+        // Final Addendum §1 — failed-job review actions
+        "failed_job_retried",
+        "failed_job_dismissed",
       ],
       required: true,
     },
@@ -91,6 +146,33 @@ const auditLogSchema = new Schema<IAuditLog>(
     },
     compliance_config_version: {
       type: Number,
+      default: null,
+    },
+    /**
+     * Function 15 — populated on every audit row written while an admin
+     * impersonation session is active. `actor_id` reflects the
+     * impersonated user (so org-scoped audit views read naturally);
+     * `impersonated_by` carries the original Amber admin's user id so
+     * the trail of "who actually clicked this button" is preserved.
+     *
+     * Null on normal (non-impersonated) actions.
+     */
+    impersonated_by: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
+    /**
+     * Final Addendum §11 — populated on system-driven actions
+     * masquerading as a teacher (re-engagement cron). `actor_type`
+     * stays "system"; this field attributes the action to the
+     * teacher whose templated voice the message carries. Null on
+     * all non-acting-as-teacher rows.
+     */
+    acting_as_teacher_id: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
       default: null,
     },
   },

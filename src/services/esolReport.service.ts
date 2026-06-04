@@ -14,6 +14,38 @@ import {
 import { generatePdfFromHtml } from "./pdfGenerator.service";
 
 /**
+ * Hours contributed by one AISession to GLH totals.
+ *
+ * Live AI tutor sessions store the span implicitly: `completedAt -
+ * createdAt`. Pre-platform imports (brief Function 5) set both fields
+ * to `session_date`, so the span is zero — the real duration lives in
+ * `duration_mins` because the importer wrote it there explicitly.
+ *
+ *   - If `duration_mins` is set → use it (convert minutes → hours).
+ *   - Else if `completedAt` is set → fall back to the span calc.
+ *   - Else → 0 (session is still in progress).
+ *
+ * Always clamped to ≥ 0 so a clock-skewed timestamp can't subtract
+ * from the cohort total.
+ */
+const sessionHours = (s: {
+  duration_mins?: number | null;
+  completedAt?: Date | null;
+  createdAt?: Date;
+}): number => {
+  if (typeof s.duration_mins === "number" && s.duration_mins > 0) {
+    return s.duration_mins / 60;
+  }
+  if (s.completedAt && s.createdAt) {
+    const dur =
+      (s.completedAt.getTime() - new Date(s.createdAt).getTime()) /
+      (1000 * 60 * 60);
+    return Math.max(0, dur);
+  }
+  return 0;
+};
+
+/**
  * ILR fields per spec D3.6 — official names so a college MIS can import directly.
  * Critical fields cause learner record validation failure if missing.
  */
@@ -216,17 +248,17 @@ export const generateIntegrationReadinessPdf = async (params: {
   const sessionsThisPeriod = await AISession.find({
     orgId: org._id,
     createdAt: { $gte: periodStart, $lte: periodEnd },
-  }).select("learnerId completedAt turns vocabIntroduced");
+  }).select(
+    // duration_mins + session_source added in brief Function 5 — pre-platform
+    // imports store their span as duration_mins because their createdAt and
+    // completedAt are the same instant (session_date).
+    "learnerId completedAt turns vocabIntroduced duration_mins session_source"
+  );
 
-  const totalHours = sessionsThisPeriod.reduce((sum, s) => {
-    if (s.completedAt) {
-      const dur =
-        (s.completedAt.getTime() - new Date((s as any).createdAt).getTime()) /
-        (1000 * 60 * 60);
-      return sum + Math.max(0, dur);
-    }
-    return sum;
-  }, 0);
+  const totalHours = sessionsThisPeriod.reduce(
+    (sum, s) => sum + sessionHours(s),
+    0
+  );
   const avgHours = learners.length ? totalHours / learners.length : 0;
 
   const activeLearnerIds = new Set(
@@ -259,11 +291,9 @@ export const generateIntegrationReadinessPdf = async (params: {
     if (!learnerStatsMap[id]) {
       learnerStatsMap[id] = { hours: 0, scenarios: new Set(), vocab: new Set() };
     }
-    if (s.completedAt) {
-      const dur =
-        (s.completedAt.getTime() - new Date((s as any).createdAt).getTime()) /
-        (1000 * 60 * 60);
-      learnerStatsMap[id].hours += Math.max(0, dur);
+    const dur = sessionHours(s);
+    if (dur > 0) {
+      learnerStatsMap[id].hours += dur;
       if ((s as any).topic) learnerStatsMap[id].scenarios.add((s as any).topic);
     }
     for (const v of s.vocabIntroduced ?? []) {

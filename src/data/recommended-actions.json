@@ -1,0 +1,78 @@
+{
+  "$schema_version": 1,
+  "$meta": {
+    "description": "Teacher-facing recommended-action copy deck for the priority queue (Final Addendum §10, Todo 23.2). Each top-level key maps 1:1 to a trigger in priorityQueue.service.ts; the value carries one string per supported UI language. Strings render in the teacher's UI language (default English; per-teacher preference lands in Phase 19 alongside the other-language strings here).",
+    "authoring": "Joey + ESOL practitioner co-author each English template. Translations are deferred to Phase 19 — the placeholder strings below are intentionally empty so a runtime fallback to `en` is unambiguous (empty string ⇒ untranslated ⇒ fall back).",
+    "fallback_rule": "Renderers MUST fall back to `en` when the requested language slot is empty or missing. Never display a partial translation."
+  },
+  "safeguarding_alert_unresolved": {
+    "en": "Safeguarding alert raised. Review and resolve within 24 hours.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "dormant_active_learner": {
+    "en": "Learner inactive for 14+ days. Send a check-in message and schedule a contact session.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "struggling_score": {
+    "en": "Three consecutive sessions below threshold. Review pathway and consider an anchor-mode adjustment.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "inactive_7_13_days": {
+    "en": "Learner inactive for a week. Send an encouragement message.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "vocab_retention_drop": {
+    "en": "Vocabulary retention dropped >20%. Schedule a reinforcement session.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "stage3_stagnant": {
+    "en": "No progress on a Stage 3 objective for 21+ days. Discuss with learner and adjust if needed.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "inactive_5_6_days": {
+    "en": "Learner inactive for several days. Light-touch nudge recommended.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "low_average_score": {
+    "en": "Sustained low average score. Review last 5 sessions for patterns.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "ready_for_progression": {
+    "en": "Learner meets all 5 progression criteria. Initiate level change.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "healthy_maintenance": {
+    "en": "Learner on track. No action required this week.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  }
+}

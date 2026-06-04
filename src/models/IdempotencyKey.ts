@@ -41,6 +41,7 @@ const idempotencyKeySchema = new Schema<IIdempotencyKey>(
         "placement-scoring",
         "stage5-review",
         "invoice-generation",
+        "learner-bulk-import",
       ],
       required: true,
     },

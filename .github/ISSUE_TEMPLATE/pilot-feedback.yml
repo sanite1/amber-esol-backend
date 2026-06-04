@@ -1,0 +1,159 @@
+name: "Pilot feedback"
+description: "Capture feedback, bugs, UX issues, or content gaps from a pilot organisation."
+title: "[Pilot] <one-line summary>"
+labels: ["pilot-feedback"]
+projects: []
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing pilot feedback. Every field below is read by Joey + engineering during the next triage pass. If you're representing a pilot org, please pick **Pilot org** correctly — the weekly summary email back to that org reads this label.
+
+        Severity guidance:
+        - **P0** — data loss, security gap, compliance failure, total feature blocker. Fix + deploy within **24 hours**.
+        - **P1** — functional bug that blocks one workflow, significant UX confusion. Fix + deploy within **7 days**.
+        - **P2** — polish, nice-to-have, copy edit. Batched into a weekly release.
+
+        If you're unsure, leave severity blank — triage will set it.
+
+  - type: dropdown
+    id: pilot_org
+    attributes:
+      label: Pilot org
+      description: "Which pilot organisation does this come from?"
+      options:
+        - "(not org-specific / internal)"
+        - "Pilot org #1 — TBD"
+        - "Pilot org #2 — TBD"
+        - "Pilot org #3 — TBD"
+      default: 0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: "Best guess — triage will adjust if needed."
+      options:
+        - "P0 — data loss / security / compliance / total blocker"
+        - "P1 — functional bug / significant UX issue"
+        - "P2 — polish / nice-to-have / copy"
+        - "(let triage decide)"
+      default: 3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: "Pick the closest fit. Multiple categories: pick the dominant one and mention the others in the description."
+      options:
+        - "bug — something is broken"
+        - "UX — works but confusing"
+        - "feature — net-new ask"
+        - "content — wording, scenario, translation, safeguarding message"
+        - "compliance — ILR, RARPA, ESFA rule"
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: "Plain-English description. Who was using the platform, what were they trying to do, what did they observe."
+      placeholder: |
+        e.g. "Sarah Chen (Hillview org admin) tried to generate the
+        funding report for May 2026. The modal opened but the
+        Generate button stayed disabled even after she picked both
+        dates."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: How to reproduce (if applicable)
+      description: "Numbered steps. If you can paste a sequence that a developer can follow on the demo deployment, do."
+      placeholder: |
+        1. Log in as Sarah Chen at https://esol-demo.ambertraining.co.uk
+        2. Open the org-admin dashboard
+        3. Click Funding report
+        4. Pick period_start = 2026-05-01, period_end = 2026-05-31
+        5. Observe: Generate button stays grey
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected_vs_actual
+    attributes:
+      label: Expected vs. actual
+      description: "What should have happened? What actually happened?"
+      placeholder: |
+        Expected: Generate button enabled once both dates are valid.
+        Actual: Button stays disabled. No error message visible.
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / recordings
+      description: "Drag and drop images or paste links. Loom recordings welcome."
+    validations:
+      required: false
+
+  - type: input
+    id: reporter_contact
+    attributes:
+      label: Reporter name + role
+      description: "Who at the pilot org reported this? Helps triage know who to follow up with."
+      placeholder: "e.g. Sarah Chen, Hillview Adult Learning — org admin"
+    validations:
+      required: false
+
+  - type: input
+    id: occurred_at
+    attributes:
+      label: When did this happen?
+      description: "Date / approximate time (UK)."
+      placeholder: "e.g. 2026-06-10 around 14:30"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Where was this observed?
+      description: "Which deployment?"
+      options:
+        - "production (esol.ambertraining.co.uk)"
+        - "demo (esol-demo.ambertraining.co.uk)"
+        - "staging"
+        - "local dev"
+        - "unsure"
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: safeguarding
+    attributes:
+      label: Does this touch safeguarding?
+      description: "**STOP** if learner identity or message content needs to be in this issue. Safeguarding-relevant detail goes to Joey via encrypted email, NOT a public GitHub issue. This field is for flagging that a safeguarding follow-up is needed; do NOT paste content."
+      placeholder: "e.g. 'Yes — DSL needs to be looped in. Have emailed Joey separately with detail.'"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Pre-submit confirmations
+      options:
+        - label: "I have **not** pasted any learner-identifying detail (name, email, ULN, DOB, postcode, message content) into this issue."
+          required: true
+        - label: "I have checked the existing open `pilot-feedback` issues for a duplicate."
+          required: true

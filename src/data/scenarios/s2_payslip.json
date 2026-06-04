@@ -1,0 +1,42 @@
+{
+  "scenario_id": "s2_payslip",
+  "title": {
+    "en": "Understanding your payslip",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": ""
+  },
+  "nqf_level_range": { "min": "e2", "max": "l1" },
+  "skill_codes": ["Rt", "Rw", "Sc"],
+  "stage3_objective_domains": ["Rt", "Sc"],
+  "vocabulary_set": [
+    {
+      "word": "payslip",
+      "definition_en": "A document from your employer that shows what you earned and what was taken off.",
+      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "example_sentence": "I check my payslip every month to see my tax and National Insurance.",
+      "reinforcement_weight": 1.0
+    },
+    {
+      "word": "TODO_vocab_2_through_20",
+      "definition_en": "REPLACE: 19 more vocabulary items required. Likely candidates for this scenario: 'gross pay', 'net pay', 'tax', 'National Insurance', 'pension', 'deduction', 'overtime', 'hourly rate', 'salary', 'tax code', 'P60', 'P45', 'HMRC', 'employer', 'employee', 'minimum wage', 'holiday pay', 'sick pay'.",
+      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "example_sentence": "",
+      "reinforcement_weight": 0.5
+    }
+  ],
+  "grammar_targets": [
+    "TODO: 3-5 grammar items — likely 'numbers and money (£, p)', 'present simple for facts (My tax code is …)', 'asking clarification questions (What does … mean?)'."
+  ],
+  "roleplay_prompt_en": "TODO: 2-4 sentences. Example: 'You have just received your first payslip from a new job in the UK. There are several lines you do not understand. Amber will help you read and understand each part — gross pay, deductions, net pay — and answer your questions.'",
+  "pass_threshold": 0.7,
+  "cultural_notes_en": "TODO: 3-5 sentences on UK payroll context. Key UK-specific concepts: PAYE (Pay As You Earn) tax, National Insurance contributions, tax codes (1257L is the standard), the difference between gross and net pay, monthly vs weekly payslips, what HMRC is, that payslips are a legal right (Employment Rights Act 1996 s.8).",
+  "cultural_notes_ar": "",
+  "cultural_notes_so": "",
+  "cultural_notes_fa": "",
+  "cultural_notes_zh": "",
+  "authoring": {
+    "version": "0.1-draft"
+  }
+}
