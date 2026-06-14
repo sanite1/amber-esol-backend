@@ -5,7 +5,11 @@ const safeguardingAlertSchema = new Schema<ISafeguardingAlert>(
   {
     learnerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     orgId: { type: Schema.Types.ObjectId, ref: "Organisation", required: true },
-    sessionId: { type: Schema.Types.ObjectId, ref: "AISession", required: true },
+    sessionId: {
+      type: Schema.Types.ObjectId,
+      ref: "AISession",
+      required: true,
+    },
     alertLevel: {
       type: String,
       enum: ["low", "medium", "high", "critical"],
@@ -68,7 +72,7 @@ const safeguardingAlertSchema = new Schema<ISafeguardingAlert>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 safeguardingAlertSchema.index({ orgId: 1, status: 1 });
@@ -81,7 +85,7 @@ safeguardingAlertSchema.index({ triggerCategory: 1, createdAt: -1 });
 
 const SafeguardingAlert = model<ISafeguardingAlert>(
   "SafeguardingAlert",
-  safeguardingAlertSchema
+  safeguardingAlertSchema,
 );
 
 export default SafeguardingAlert;

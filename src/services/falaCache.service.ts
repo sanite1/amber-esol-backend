@@ -47,7 +47,10 @@ const SEED_AIM_REFS: readonly string[] = [
  * Check whether a LearnAimRef is in the whitelist for an academic year.
  * Returns false if not whitelisted or if Redis is unreachable (fail closed).
  */
-const isValidAim = async (ref: string, academicYear: string): Promise<boolean> => {
+const isValidAim = async (
+  ref: string,
+  academicYear: string,
+): Promise<boolean> => {
   if (!ref || !academicYear) return false;
   try {
     const present = await redis.sismember(keyForYear(academicYear), ref);
@@ -55,7 +58,7 @@ const isValidAim = async (ref: string, academicYear: string): Promise<boolean> =
   } catch (err) {
     logger.error(
       { ref, academicYear, err: (err as Error).message },
-      "FALACache.isValidAim failed — failing closed"
+      "FALACache.isValidAim failed — failing closed",
     );
     return false;
   }
@@ -69,7 +72,7 @@ const isValidAim = async (ref: string, academicYear: string): Promise<boolean> =
  */
 const reload = async (
   academicYear: string = TARGET_ACADEMIC_YEAR,
-  refs: readonly string[] = SEED_AIM_REFS
+  refs: readonly string[] = SEED_AIM_REFS,
 ): Promise<{ count: number }> => {
   const key = keyForYear(academicYear);
   const pipeline = redis.pipeline();
@@ -80,7 +83,7 @@ const reload = async (
   await pipeline.exec();
   logger.info(
     { academicYear, count: refs.length, key },
-    "FALACache reload complete"
+    "FALACache reload complete",
   );
   return { count: refs.length };
 };
@@ -90,7 +93,7 @@ const reload = async (
  * Used at boot to decide whether to enqueue the startup seed job.
  */
 const isPopulated = async (
-  academicYear: string = TARGET_ACADEMIC_YEAR
+  academicYear: string = TARGET_ACADEMIC_YEAR,
 ): Promise<boolean> => {
   try {
     const count = await redis.scard(keyForYear(academicYear));

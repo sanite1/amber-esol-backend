@@ -55,7 +55,7 @@ const getOrCreateWallet = async (tutorId: string) => {
 
 export const createPaymentIntentService = async (
   userId: string,
-  data: ICreatePaymentIntentRequest
+  data: ICreatePaymentIntentRequest,
 ) => {
   const booking = await Booking.findById(data.bookingId);
   if (!booking) {
@@ -83,7 +83,7 @@ export const createPaymentIntentService = async (
   if (existingTx && existingTx.stripePaymentIntentId) {
     // Return existing payment intent
     const intent = await stripe.paymentIntents.retrieve(
-      existingTx.stripePaymentIntentId
+      existingTx.stripePaymentIntentId,
     );
     return new ApiResponse(200, "Payment intent retrieved", {
       clientSecret: intent.client_secret,
@@ -134,7 +134,7 @@ export const createPaymentIntentService = async (
 export const listTransactionsService = async (
   userId: string,
   role: string,
-  query: ITransactionQuery
+  query: ITransactionQuery,
 ) => {
   const page = parseInt(query.page || "1", 10);
   const limit = parseInt(query.limit || "10", 10);
@@ -224,7 +224,7 @@ export const listTransactionsService = async (
 export const getTransactionByIdService = async (
   transactionId: string,
   userId: string,
-  role: string
+  role: string,
 ) => {
   const transaction = await Transaction.findById(transactionId)
     .populate("studentId", "firstname lastname profilePicture email")
@@ -246,7 +246,7 @@ export const getTransactionByIdService = async (
   return new ApiResponse(
     200,
     "Transaction retrieved successfully",
-    transaction.toJSON()
+    transaction.toJSON(),
   );
 };
 
@@ -266,11 +266,11 @@ export const paymentSummaryService = async (userId: string, role: string) => {
   const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
   const totalCommission = transactions.reduce(
     (sum, t) => sum + t.platformCommission,
-    0
+    0,
   );
   const totalEarnings = transactions.reduce(
     (sum, t) => sum + t.tutorEarnings,
-    0
+    0,
   );
 
   // This month
@@ -282,19 +282,19 @@ export const paymentSummaryService = async (userId: string, role: string) => {
   const thisMonthAmount = thisMonth.reduce((sum, t) => sum + t.amount, 0);
   const thisMonthEarnings = thisMonth.reduce(
     (sum, t) => sum + t.tutorEarnings,
-    0
+    0,
   );
 
   // Last month
   const startOfLastMonth = new Date(startOfMonth);
   startOfLastMonth.setMonth(startOfLastMonth.getMonth() - 1);
   const lastMonth = transactions.filter(
-    (t) => t.createdAt >= startOfLastMonth && t.createdAt < startOfMonth
+    (t) => t.createdAt >= startOfLastMonth && t.createdAt < startOfMonth,
   );
   const lastMonthAmount = lastMonth.reduce((sum, t) => sum + t.amount, 0);
   const lastMonthEarnings = lastMonth.reduce(
     (sum, t) => sum + t.tutorEarnings,
-    0
+    0,
   );
 
   // Refunded
@@ -328,14 +328,14 @@ export const getWalletService = async (tutorId: string) => {
 
 export const requestPayoutService = async (
   tutorId: string,
-  data: IRequestPayoutRequest
+  data: IRequestPayoutRequest,
 ) => {
   const wallet = await getOrCreateWallet(tutorId);
 
   if (data.amount > wallet.availableBalance) {
     throw new ApiError(
       400,
-      `Insufficient balance. Available: £${wallet.availableBalance.toFixed(2)}`
+      `Insufficient balance. Available: £${wallet.availableBalance.toFixed(2)}`,
     );
   }
 
@@ -351,7 +351,7 @@ export const requestPayoutService = async (
   if (pendingPayout) {
     throw new ApiError(
       400,
-      "You already have a pending payout request. Please wait for it to be processed."
+      "You already have a pending payout request. Please wait for it to be processed.",
     );
   }
 
@@ -380,7 +380,7 @@ export const requestPayoutService = async (
       currency: wallet.currency,
       status: "pending",
     }).catch((err) =>
-      logger.error({ err }, "Error sending payout requested email")
+      logger.error({ err }, "Error sending payout requested email"),
     );
   }
 
@@ -397,13 +397,13 @@ export const requestPayoutService = async (
       method: data.method,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating payout requested notification")
+    logger.error({ err }, "Error creating payout requested notification"),
   );
 
   return new ApiResponse(
     201,
     "Payout request submitted successfully",
-    payout.toJSON()
+    payout.toJSON(),
   );
 };
 
@@ -412,7 +412,7 @@ export const requestPayoutService = async (
 export const listPayoutsService = async (
   userId: string,
   role: string,
-  query: IPayoutQuery
+  query: IPayoutQuery,
 ) => {
   const page = parseInt(query.page || "1", 10);
   const limit = parseInt(query.limit || "10", 10);
@@ -467,7 +467,7 @@ export const listPayoutsService = async (
 
 export const approvePayoutService = async (
   payoutId: string,
-  data: IApprovePayoutRequest
+  data: IApprovePayoutRequest,
 ) => {
   const payout = await Payout.findById(payoutId);
   if (!payout) {
@@ -477,7 +477,7 @@ export const approvePayoutService = async (
   if (payout.status !== "pending") {
     throw new ApiError(
       400,
-      `Cannot approve a payout with status "${payout.status}"`
+      `Cannot approve a payout with status "${payout.status}"`,
     );
   }
 
@@ -498,13 +498,13 @@ export const approvePayoutService = async (
       status: "processing",
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating payout approved notification")
+    logger.error({ err }, "Error creating payout approved notification"),
   );
 
   return new ApiResponse(
     200,
     "Payout approved and is now processing",
-    payout.toJSON()
+    payout.toJSON(),
   );
 };
 
@@ -512,7 +512,7 @@ export const approvePayoutService = async (
 
 export const rejectPayoutService = async (
   payoutId: string,
-  data: IRejectPayoutRequest
+  data: IRejectPayoutRequest,
 ) => {
   const payout = await Payout.findById(payoutId);
   if (!payout) {
@@ -522,7 +522,7 @@ export const rejectPayoutService = async (
   if (payout.status !== "pending" && payout.status !== "processing") {
     throw new ApiError(
       400,
-      `Cannot reject a payout with status "${payout.status}"`
+      `Cannot reject a payout with status "${payout.status}"`,
     );
   }
 
@@ -548,7 +548,7 @@ export const rejectPayoutService = async (
       status: "failed",
       reason: data.reason,
     }).catch((err) =>
-      logger.error({ err }, "Error sending payout rejected email")
+      logger.error({ err }, "Error sending payout rejected email"),
     );
   }
 
@@ -565,7 +565,7 @@ export const rejectPayoutService = async (
       reason: data.reason || null,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating payout rejected notification")
+    logger.error({ err }, "Error creating payout rejected notification"),
   );
 
   return new ApiResponse(200, "Payout rejected", payout.toJSON());
@@ -575,7 +575,7 @@ export const rejectPayoutService = async (
 
 export const completePayoutService = async (
   payoutId: string,
-  data: ICompletePayoutRequest
+  data: ICompletePayoutRequest,
 ) => {
   const payout = await Payout.findById(payoutId);
   if (!payout) {
@@ -585,7 +585,7 @@ export const completePayoutService = async (
   if (payout.status !== "processing") {
     throw new ApiError(
       400,
-      `Cannot complete a payout with status "${payout.status}"`
+      `Cannot complete a payout with status "${payout.status}"`,
     );
   }
 
@@ -611,7 +611,7 @@ export const completePayoutService = async (
       status: "completed",
       reference: data.reference,
     }).catch((err) =>
-      logger.error({ err }, "Error sending payout completed email")
+      logger.error({ err }, "Error sending payout completed email"),
     );
   }
 
@@ -628,7 +628,7 @@ export const completePayoutService = async (
       reference: data.reference || null,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating payout completed notification")
+    logger.error({ err }, "Error creating payout completed notification"),
   );
 
   return new ApiResponse(200, "Payout completed successfully", payout.toJSON());
@@ -640,7 +640,7 @@ export const refundTransactionService = async (
   transactionId: string,
   userId: string,
   role: string,
-  data: IRefundRequest
+  data: IRefundRequest,
 ) => {
   const transaction = await Transaction.findById(transactionId)
     .populate("studentId", "firstname lastname email")
@@ -657,14 +657,14 @@ export const refundTransactionService = async (
   if (!isStudent && !isAdmin) {
     throw new ApiError(
       403,
-      "You are not authorized to refund this transaction"
+      "You are not authorized to refund this transaction",
     );
   }
 
   if (transaction.status !== "paid") {
     throw new ApiError(
       400,
-      `Cannot refund a transaction with status "${transaction.status}"`
+      `Cannot refund a transaction with status "${transaction.status}"`,
     );
   }
 
@@ -701,7 +701,7 @@ export const refundTransactionService = async (
         totalEarned: -deduction,
       },
     },
-    { new: true }
+    { new: true },
   );
 
   // If pendingBalance was insufficient, deduct from availableBalance instead
@@ -714,7 +714,7 @@ export const refundTransactionService = async (
           totalEarned: -deduction,
         },
       },
-      { new: true }
+      { new: true },
     );
   }
 
@@ -724,7 +724,7 @@ export const refundTransactionService = async (
     const fromPending = Math.min(wallet.pendingBalance, deduction);
     const fromAvailable = Math.min(
       wallet.availableBalance,
-      deduction - fromPending
+      deduction - fromPending,
     );
     const totalDeducted = fromPending + fromAvailable;
 
@@ -737,13 +737,13 @@ export const refundTransactionService = async (
           totalEarned: -totalDeducted,
         },
       },
-      { new: true }
+      { new: true },
     );
 
     if (fromPending + fromAvailable < deduction) {
       logger.warn(
         { tutorId: transaction.tutorId, deduction, totalDeducted },
-        "Refund exceeds total wallet balance"
+        "Refund exceeds total wallet balance",
       );
     }
   }
@@ -779,7 +779,7 @@ export const refundTransactionService = async (
       reason: data.reason || null,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating refund notification for student")
+    logger.error({ err }, "Error creating refund notification for student"),
   );
 
   // Notify tutor that earnings were deducted due to refund
@@ -796,13 +796,13 @@ export const refundTransactionService = async (
       date: booking?.date || null,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating refund notification for tutor")
+    logger.error({ err }, "Error creating refund notification for tutor"),
   );
 
   return new ApiResponse(
     200,
     "Refund issued successfully",
-    transaction.toJSON()
+    transaction.toJSON(),
   );
 };
 
@@ -810,7 +810,7 @@ export const refundTransactionService = async (
 
 export const flagTransactionService = async (
   transactionId: string,
-  data: IFlagTransactionRequest
+  data: IFlagTransactionRequest,
 ) => {
   const transaction = await Transaction.findById(transactionId);
   if (!transaction) {
@@ -838,7 +838,7 @@ export const listPaymentMethodsService = async (userId: string) => {
   return new ApiResponse(
     200,
     "Payment methods retrieved successfully",
-    methods.map((m) => m.toJSON())
+    methods.map((m) => m.toJSON()),
   );
 };
 
@@ -846,7 +846,7 @@ export const listPaymentMethodsService = async (userId: string) => {
 
 export const addPaymentMethodService = async (
   userId: string,
-  data: IAddPaymentMethodRequest
+  data: IAddPaymentMethodRequest,
 ) => {
   // If setting as default, unset all others
   if (data.isDefault) {
@@ -872,7 +872,7 @@ export const addPaymentMethodService = async (
   return new ApiResponse(
     201,
     "Payment method added successfully",
-    method.toJSON()
+    method.toJSON(),
   );
 };
 
@@ -880,7 +880,7 @@ export const addPaymentMethodService = async (
 
 export const removePaymentMethodService = async (
   userId: string,
-  methodId: string
+  methodId: string,
 ) => {
   const method = await PaymentMethod.findOneAndDelete({
     _id: methodId,
@@ -907,7 +907,7 @@ export const removePaymentMethodService = async (
 
 export const setDefaultPaymentMethodService = async (
   userId: string,
-  methodId: string
+  methodId: string,
 ) => {
   const method = await PaymentMethod.findOne({ _id: methodId, userId });
   if (!method) {
@@ -923,7 +923,7 @@ export const setDefaultPaymentMethodService = async (
   return new ApiResponse(
     200,
     "Default payment method updated",
-    method.toJSON()
+    method.toJSON(),
   );
 };
 
@@ -932,7 +932,7 @@ export const setDefaultPaymentMethodService = async (
 export const monthlyChartService = async (
   userId: string,
   role: string,
-  query: IMonthlyChartQuery
+  query: IMonthlyChartQuery,
 ) => {
   const monthsCount = parseInt(query.months || "12", 10);
   const now = new Date();
@@ -941,7 +941,7 @@ export const monthlyChartService = async (
   const startDate = new Date(
     now.getFullYear(),
     now.getMonth() - (monthsCount - 1),
-    1
+    1,
   );
 
   const filter: any = {

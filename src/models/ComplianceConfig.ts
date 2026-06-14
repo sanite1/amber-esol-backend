@@ -23,10 +23,10 @@ export type ComplianceDomain = "ilr" | "rarpa" | "asf-routing";
 
 export interface IComplianceConfig extends Document {
   domain: ComplianceDomain;
-  academic_year: string;          // e.g. "2025/26"
-  version: number;                // 1, 2, 3 ...
-  active: boolean;                // exactly one true per (domain, academic_year)
-  rules: unknown;                 // domain-specific structure; cast by caller
+  academic_year: string; // e.g. "2025/26"
+  version: number; // 1, 2, 3 ...
+  active: boolean; // exactly one true per (domain, academic_year)
+  rules: unknown; // domain-specific structure; cast by caller
   updated_by: Types.ObjectId | null;
   updated_at: Date;
   changelog: string;
@@ -47,7 +47,7 @@ const complianceConfigSchema = new Schema<IComplianceConfig>(
     updated_at: { type: Date, default: Date.now },
     changelog: { type: String, default: "" },
   },
-  { collection: "compliance_configs", versionKey: false }
+  { collection: "compliance_configs", versionKey: false },
 );
 
 // Compound index per the brief — supports the cache-warm-up query
@@ -63,7 +63,7 @@ complianceConfigSchema.index(
     unique: true,
     partialFilterExpression: { active: true },
     name: "unique_active_per_domain_year",
-  }
+  },
 );
 
 // Validation hook: refuse to save a second active config for the same
@@ -81,8 +81,8 @@ complianceConfigSchema.pre("save", async function (next) {
     return next(
       new Error(
         `ComplianceConfig: another active config already exists for ${this.domain}/${this.academic_year}. ` +
-          `Deactivate it before creating a new active version.`
-      )
+          `Deactivate it before creating a new active version.`,
+      ),
     );
   }
   next();
@@ -90,7 +90,7 @@ complianceConfigSchema.pre("save", async function (next) {
 
 const ComplianceConfig = mongoose.model<IComplianceConfig>(
   "ComplianceConfig",
-  complianceConfigSchema
+  complianceConfigSchema,
 );
 
 export default ComplianceConfig;

@@ -20,7 +20,7 @@ const TimeBlockSchema = new Schema(
       ],
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const dateOverrideSchema = new Schema<IDateOverride>(
@@ -50,7 +50,7 @@ const dateOverrideSchema = new Schema<IDateOverride>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // Compound index: one override per tutor per date

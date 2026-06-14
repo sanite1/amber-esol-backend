@@ -20,7 +20,8 @@ export const computeFundingStatus = (params: {
   }
 
   const monthsResident =
-    (Date.now() - params.residencyDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
+    (Date.now() - params.residencyDate.getTime()) /
+    (1000 * 60 * 60 * 24 * 30.44);
 
   if (monthsResident >= REQUIRED_RESIDENCY_MONTHS) {
     return "fundable";

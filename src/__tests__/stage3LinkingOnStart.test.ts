@@ -11,7 +11,7 @@
 
 jest.mock("../queues", () => ({
   __esModule: true,
-  esolSessionQueue:   { add: jest.fn().mockResolvedValue(undefined) },
+  esolSessionQueue: { add: jest.fn().mockResolvedValue(undefined) },
   notificationsQueue: { add: jest.fn().mockResolvedValue(undefined) },
   priorityQueueQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
@@ -21,7 +21,8 @@ jest.mock("../services/ComplianceConfigService", () => ({
   default: { getCurrent: jest.fn().mockReturnValue({ version: 1 }) },
 }));
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 import { Types } from "mongoose";
 import { randomUUID } from "crypto";
@@ -48,7 +49,7 @@ const createOrg = async () =>
 const createLearner = async (
   orgId: unknown,
   objectives: Array<{ skill_domain: string; description?: string }>,
-  overrides: Record<string, unknown> = {}
+  overrides: Record<string, unknown> = {},
 ) =>
   User.create({
     firstname: "Test",
@@ -75,7 +76,11 @@ const createLearner = async (
     ...overrides,
   });
 
-const startInOrg = (learnerId: string, orgId: string, scenarioId = "s1_gp_appointment") =>
+const startInOrg = (
+  learnerId: string,
+  orgId: string,
+  scenarioId = "s1_gp_appointment",
+) =>
   startSessionService({
     scenarioId,
     learnerId,
@@ -91,16 +96,16 @@ describe("Stage 3 objective linking at session start", () => {
     const org = await createOrg();
     // s1_gp_appointment covers ["Sc", "Lr", "Rt"]
     const learner = await createLearner(org._id, [
-      { skill_domain: "Sc" },    // ← in scenario
-      { skill_domain: "Lr" },    // ← in scenario
-      { skill_domain: "Wt" },    // not in scenario — should be dropped
+      { skill_domain: "Sc" }, // ← in scenario
+      { skill_domain: "Lr" }, // ← in scenario
+      { skill_domain: "Wt" }, // not in scenario — should be dropped
       { skill_domain: "general" }, // always matches
     ]);
 
     const res = await startInOrg(
       learner._id.toString(),
       org._id.toString(),
-      "s1_gp_appointment"
+      "s1_gp_appointment",
     );
     const sessionId = (res.data as { session_id: string }).session_id;
 
@@ -113,7 +118,7 @@ describe("Stage 3 objective linking at session start", () => {
     // The Wt objective's id is NOT in the link set
     const learnerDoc = await User.findById(learner._id).lean();
     const wtObjective = (learnerDoc as any).stage3_objectives.find(
-      (o: { skill_domain: string }) => o.skill_domain === "Wt"
+      (o: { skill_domain: string }) => o.skill_domain === "Wt",
     );
     expect(linkedIds).not.toContain(wtObjective.id);
   });
@@ -123,14 +128,14 @@ describe("Stage 3 objective linking at session start", () => {
     // s1_gp_appointment covers ["Sc", "Lr", "Rt"] — learner has only a Wt
     // objective + the always-matches "general" one.
     const learner = await createLearner(org._id, [
-      { skill_domain: "Wt" },        // doesn't match s1
-      { skill_domain: "general" },   // always matches
+      { skill_domain: "Wt" }, // doesn't match s1
+      { skill_domain: "general" }, // always matches
     ]);
 
     const res = await startInOrg(
       learner._id.toString(),
       org._id.toString(),
-      "s1_gp_appointment"
+      "s1_gp_appointment",
     );
     const sessionId = (res.data as { session_id: string }).session_id;
 
@@ -141,7 +146,7 @@ describe("Stage 3 objective linking at session start", () => {
     expect(linkedIds).toHaveLength(1);
     const learnerDoc = await User.findById(learner._id).lean();
     const generalObj = (learnerDoc as any).stage3_objectives.find(
-      (o: { skill_domain: string }) => o.skill_domain === "general"
+      (o: { skill_domain: string }) => o.skill_domain === "general",
     );
     expect(linkedIds[0]).toBe(generalObj.id);
   });
@@ -157,7 +162,7 @@ describe("Stage 3 objective linking at session start", () => {
       const res = await startInOrg(
         learner._id.toString(),
         org._id.toString(),
-        "s1_gp_appointment"
+        "s1_gp_appointment",
       );
       const sessionId = (res.data as { session_id: string }).session_id;
       const session = await AISession.findById(sessionId).lean();
@@ -179,12 +184,12 @@ describe("Stage 3 objective linking at session start", () => {
 
   it("learner with zero objectives does not crash", async () => {
     const org = await createOrg();
-    const learner = await createLearner(org._id, []);  // no objectives at all
+    const learner = await createLearner(org._id, []); // no objectives at all
 
     const res = await startInOrg(
       learner._id.toString(),
       org._id.toString(),
-      "s1_gp_appointment"
+      "s1_gp_appointment",
     );
     const sessionId = (res.data as { session_id: string }).session_id;
     const session = await AISession.findById(sessionId).lean();
@@ -207,10 +212,10 @@ describe("Stage 3 objective linking at session start", () => {
     const r3 = await startInOrg(
       learner._id.toString(),
       org._id.toString(),
-      "s3_housing_rights"
+      "s3_housing_rights",
     );
     const s3session = await AISession.findById(
-      (r3.data as { session_id: string }).session_id
+      (r3.data as { session_id: string }).session_id,
     ).lean();
     expect(s3session?.stage3_objective_ids).toHaveLength(3);
 
@@ -223,10 +228,10 @@ describe("Stage 3 objective linking at session start", () => {
     const r2 = await startInOrg(
       learner._id.toString(),
       org._id.toString(),
-      "s2_payslip"
+      "s2_payslip",
     );
     const s2session = await AISession.findById(
-      (r2.data as { session_id: string }).session_id
+      (r2.data as { session_id: string }).session_id,
     ).lean();
     expect(s2session?.stage3_objective_ids).toHaveLength(2);
   });

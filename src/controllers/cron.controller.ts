@@ -36,7 +36,7 @@ const requireCronSecret = (req: Request, res: Response): boolean => {
 export const cronCompleteLessons = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     // ── Verify cron secret ──
@@ -71,7 +71,7 @@ export const cronCompleteLessons = async (
 export const cronGenerateInvoices = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const authHeader = req.headers.authorization;
@@ -126,7 +126,7 @@ export const cronGenerateInvoices = async (
 export const cronCheckProgression = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const authHeader = req.headers.authorization;
@@ -147,7 +147,7 @@ export const cronCheckProgression = async (
         orgs: result.orgs_with_active_learners,
         jobs_enqueued: result.jobs_enqueued,
       },
-      "cronCheckProgression: fan-out enqueued"
+      "cronCheckProgression: fan-out enqueued",
     );
 
     return res.status(200).json({
@@ -170,7 +170,7 @@ export const cronCheckProgression = async (
 export const cronPostcodeRefreshAlert = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!requireCronSecret(req, res)) return;
@@ -207,7 +207,7 @@ export const cronPostcodeRefreshAlert = async (
 export const cronFalaRefresh = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!requireCronSecret(req, res)) return;
@@ -269,7 +269,7 @@ export const cronFalaRefresh = async (
 export const cronPriorityQueue = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!requireCronSecret(req, res)) return;
@@ -344,7 +344,7 @@ export const cronPriorityQueue = async (
 export const cronResetDemoEnvironment = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     // ── Guard #1 — fail-closed on DEMO_MODE before any secret check.
@@ -473,6 +473,160 @@ export const cronReEngagement = async (
     return res.status(200).json({
       message: "Re-engagement cron complete",
       data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/cron/academic-year-transition
+ *
+ * Annual cron (1 August at 06:00) — Final Addendum §3: "auto-activate
+ * new year config on 1 August each year. Retain previous year for
+ * historical record lookups."
+ *
+ * Per domain (ilr / rarpa / asf-routing):
+ *   - active config for the NEW academic year already exists → no-op
+ *   - a pre-created (inactive) config for the new year exists →
+ *     activate the latest version
+ *   - nothing pre-created → ROLL OVER the previous year's active
+ *     rules as v1 of the new year, with a changelog telling the admin
+ *     to review for the year's ILR changes
+ *   - no prior config either → flagged in the admin alert; that
+ *     domain keeps failing closed until a config is seeded
+ *
+ * The previous year's documents are never touched — getConfig() is
+ * keyed on (domain, year), so historical lookups keep resolving.
+ * Every change writes a `compliance_config_activated` audit row with
+ * actor_type "system", and an Amber-admin notification summarises
+ * what happened so the auto-rolled rules get human review.
+ */
+export const cronAcademicYearTransition = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (!requireCronSecret(req, res)) return;
+
+    const { default: ComplianceConfig } = await import(
+      "../models/ComplianceConfig"
+    );
+
+    const year = ComplianceConfigService.currentAcademicYear();
+    // "2026/27" → "2025/26"
+    const startYear = parseInt(year.slice(0, 4), 10);
+    const prevYear = `${startYear - 1}/${String(startYear).slice(-2)}`;
+
+    const DOMAINS = ["ilr", "rarpa", "asf-routing"] as const;
+    const results: Array<{ domain: string; status: string; version?: number }> =
+      [];
+
+    for (const domain of DOMAINS) {
+      if (ComplianceConfigService.getConfig(domain, year)) {
+        results.push({ domain, status: "already_active" });
+        continue;
+      }
+
+      // Pre-created (inactive) config for the new year → activate it.
+      const preCreated = await ComplianceConfig.findOne({
+        domain,
+        academic_year: year,
+      }).sort({ version: -1 });
+
+      let activated: { version: number; rules: unknown } | null = null;
+      let status = "";
+
+      if (preCreated) {
+        preCreated.active = true;
+        await preCreated.save();
+        activated = { version: preCreated.version, rules: preCreated.rules };
+        status = "activated_precreated";
+      } else {
+        const prior = await ComplianceConfig.findOne({
+          domain,
+          academic_year: prevYear,
+          active: true,
+        }).lean();
+        if (!prior) {
+          results.push({ domain, status: "missing_no_prior_config" });
+          continue;
+        }
+        const created = await ComplianceConfig.create({
+          domain,
+          academic_year: year,
+          version: 1,
+          active: true,
+          rules: prior.rules,
+          updated_by: null,
+          updated_at: new Date(),
+          changelog:
+            `Auto-rolled over from ${prevYear} active config (v${prior.version}) ` +
+            `by the 1 August academic-year transition cron. REVIEW REQUIRED — ` +
+            `apply the ${year} specification changes via the compliance-config editor.`,
+        });
+        activated = { version: created.version, rules: created.rules };
+        status = "rolled_over_from_previous_year";
+      }
+
+      await writeAuditLog({
+        actor_type: "system",
+        actor_id: null,
+        org_id: null,
+        learner_id: null,
+        action: "compliance_config_activated",
+        before_state: { domain, academic_year: year, active: null },
+        after_state: {
+          domain,
+          academic_year: year,
+          version: activated?.version ?? null,
+          status,
+        },
+        reason:
+          `Academic-year transition cron: ${domain} / ${year} ` +
+          `v${activated?.version} ${status === "rolled_over_from_previous_year" ? `rolled over from ${prevYear} — needs review` : "activated"}.`,
+        compliance_config_version: activated?.version ?? null,
+      });
+
+      results.push({ domain, status, version: activated?.version });
+    }
+
+    await ComplianceConfigService.loadAll();
+
+    // Alert the Amber admin whenever the cron had to act (or failed
+    // to) — silent auto-rollover of funding rules would be worse
+    // than no automation at all.
+    const needsAttention = results.filter((r) => r.status !== "already_active");
+    if (needsAttention.length > 0) {
+      await notificationsQueue
+        .add("academic_year_transition", {
+          channel: "email",
+          recipientId: "amber-admin",
+          type: "academic_year_transition",
+          payload: {
+            academicYear: year,
+            results,
+            message:
+              `Academic-year transition for ${year}: ` +
+              needsAttention
+                .map((r) => `${r.domain} → ${r.status}`)
+                .join("; ") +
+              ". Rolled-over configs carry last year's rules — review and apply this year's specification changes in the compliance-config editor.",
+          },
+        })
+        .catch((err) =>
+          logger.error(
+            { err: (err as Error).message },
+            "cronAcademicYearTransition: admin alert enqueue failed",
+          ),
+        );
+    }
+
+    logger.info({ year, results }, "cronAcademicYearTransition: complete");
+    return res.status(200).json({
+      message: "Academic-year transition complete",
+      data: { academic_year: year, results },
     });
   } catch (error) {
     next(error);

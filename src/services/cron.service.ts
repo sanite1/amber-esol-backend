@@ -56,17 +56,17 @@ export const autoCompleteLessonsService = async () => {
           totalLessonsTaken: 1,
           totalHoursLearned: lessonDurationHours(
             booking.startTime,
-            booking.endTime
+            booking.endTime,
           ),
         },
       });
 
       // ── 7. Notify both parties ──
       const student = await User.findById(booking.studentId).select(
-        "firstname lastname"
+        "firstname lastname",
       );
       const tutor = await User.findById(booking.tutorId).select(
-        "firstname lastname"
+        "firstname lastname",
       );
 
       createNotification({
@@ -84,8 +84,8 @@ export const autoCompleteLessonsService = async () => {
       }).catch((err) =>
         logger.error(
           { err, bookingId: booking._id },
-          "Error sending completion email"
-        )
+          "Error sending completion email",
+        ),
       );
 
       createNotification({
@@ -101,7 +101,10 @@ export const autoCompleteLessonsService = async () => {
           autoCompleted: true,
         },
       }).catch((err) =>
-        logger.error({ err, tutorId: booking.tutorId }, "Error notifying tutor")
+        logger.error(
+          { err, tutorId: booking.tutorId },
+          "Error notifying tutor",
+        ),
       );
 
       // ── 8. Prompt student to leave a review ──
@@ -118,19 +121,19 @@ export const autoCompleteLessonsService = async () => {
       }).catch((err) =>
         logger.error(
           { err, studentId: booking.studentId },
-          "Error notifying student"
-        )
+          "Error notifying student",
+        ),
       );
       // ── 9. Send "Lesson Completed" email to student ──
       if (student) {
         const studentFull = await User.findById(booking.studentId).select(
-          "email firstname"
+          "email firstname",
         );
         if (studentFull?.email) {
           const DOMAIN_NAME =
             process.env.DOMAIN_NAME || "http://localhost:3000";
           const formattedDate = new Date(
-            `${booking.date}T00:00:00`
+            `${booking.date}T00:00:00`,
           ).toLocaleDateString("en-GB", {
             weekday: "long",
             day: "numeric",
@@ -150,8 +153,8 @@ export const autoCompleteLessonsService = async () => {
           }).catch((err) =>
             logger.error(
               { err, studentId: booking.studentId },
-              "Error sending review prompt"
-            )
+              "Error sending review prompt",
+            ),
           );
         }
       }
@@ -161,7 +164,7 @@ export const autoCompleteLessonsService = async () => {
       errors.push(`Booking ${booking._id}: ${err.message}`);
       logger.error(
         { err, bookingId: booking._id },
-        "Failed to complete booking"
+        "Failed to complete booking",
       );
     }
   }

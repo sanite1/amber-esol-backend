@@ -36,7 +36,7 @@ export interface ProgressionRejectedEmailResult {
 const DOMAIN_NAME = process.env.DOMAIN_NAME ?? "";
 
 export const sendProgressionRejectedEmail = async (
-  job: ProgressionRejectedEmailJob
+  job: ProgressionRejectedEmailJob,
 ): Promise<ProgressionRejectedEmailResult> => {
   const startedAt = Date.now();
 
@@ -50,7 +50,7 @@ export const sendProgressionRejectedEmail = async (
   if (!recipient) {
     logger.warn(
       { org_admin_user_id: job.org_admin_user_id, org_id: job.org_id },
-      "progression-rejected-email: org admin email not resolvable — skipping"
+      "progression-rejected-email: org admin email not resolvable — skipping",
     );
     return {
       sent: false,
@@ -90,7 +90,7 @@ export const sendProgressionRejectedEmail = async (
   } catch (err) {
     logger.error(
       { err: (err as Error).message, recipient, org_id: job.org_id },
-      "progression-rejected-email: SMTP send failed"
+      "progression-rejected-email: SMTP send failed",
     );
     throw err;
   }
@@ -104,7 +104,7 @@ export const sendProgressionRejectedEmail = async (
       message_id: messageId,
       dispatch_latency_ms: dispatchLatencyMs,
     },
-    "progression-rejected-email sent"
+    "progression-rejected-email sent",
   );
 
   return {

@@ -126,7 +126,8 @@ export const validateMisRecord = (record: MISRecord): ValidationResult => {
       `ULN "${record.uln}" is not 10 digits (every ESFA-issued ULN is 10 digits).`,
     );
   }
-  if (!isNonEmptyString(record.firstname)) reasons.push("First name is missing.");
+  if (!isNonEmptyString(record.firstname))
+    reasons.push("First name is missing.");
   if (!isNonEmptyString(record.lastname)) reasons.push("Last name is missing.");
   if (!isNonEmptyString(record.date_of_birth)) {
     reasons.push("Date of birth is missing.");
@@ -135,7 +136,8 @@ export const validateMisRecord = (record: MISRecord): ValidationResult => {
       `Date of birth "${record.date_of_birth}" is not a valid YYYY-MM-DD date.`,
     );
   }
-  if (!isNonEmptyString(record.esol_level)) reasons.push("ESOL level is missing.");
+  if (!isNonEmptyString(record.esol_level))
+    reasons.push("ESOL level is missing.");
 
   // ── 2. Date sanity ────────────────────────────────────────────
   const startDate = parseIsoDate(record.learn_start_date);
@@ -157,10 +159,7 @@ export const validateMisRecord = (record: MISRecord): ValidationResult => {
       `Learn start date is after the planned end date — start must be ≤ planned end.`,
     );
   }
-  if (
-    record.learn_act_end_date !== null &&
-    actualEnd === null
-  ) {
+  if (record.learn_act_end_date !== null && actualEnd === null) {
     reasons.push(
       `Learn actual end date "${record.learn_act_end_date}" is not a valid YYYY-MM-DD date.`,
     );

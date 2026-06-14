@@ -1,6 +1,11 @@
 import { Types, Document } from "mongoose";
 
-export type OrgInvoiceStatus = "draft" | "issued" | "paid" | "overdue" | "cancelled";
+export type OrgInvoiceStatus =
+  | "draft"
+  | "issued"
+  | "paid"
+  | "overdue"
+  | "cancelled";
 
 export interface IOrgInvoiceLineItem {
   description: string;

@@ -14,7 +14,7 @@ import {
 export const provisionOrg: ExpressFunction<IProvisionOrgRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const data = await provisionOrgService(req.body);
@@ -40,7 +40,7 @@ export const getOrg: ExpressFunction = async (req, res, next) => {
       params.orgId,
       req.user!.id.toString(),
       req.user!.role,
-      req.user!.orgId
+      req.user!.orgId,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -51,7 +51,7 @@ export const getOrg: ExpressFunction = async (req, res, next) => {
 export const updateOrg: ExpressFunction<IUpdateOrganisationRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const params = req.params as Record<string, string>;
@@ -65,7 +65,7 @@ export const updateOrg: ExpressFunction<IUpdateOrganisationRequest> = async (
 export const updateOrgStatus: ExpressFunction<{ isActive: boolean }> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const params = req.params as Record<string, string>;

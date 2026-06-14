@@ -10,7 +10,8 @@
  *   V7   Invalid learner id → 400
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 import { Types } from "mongoose";
 import Organisation from "../models/Organisation";
@@ -51,7 +52,12 @@ const createLearner = async (orgId: unknown) =>
 
 const seedVocab = async (
   learnerId: unknown,
-  rows: Array<{ word: string; retained?: boolean; times?: number; lastSeen?: Date }>
+  rows: Array<{
+    word: string;
+    retained?: boolean;
+    times?: number;
+    lastSeen?: Date;
+  }>,
 ) => {
   await VocabLedger.insertMany(
     rows.map((r) => ({
@@ -61,14 +67,14 @@ const seedVocab = async (
       times_encountered: r.times ?? 1,
       last_seen_at: r.lastSeen ?? new Date(),
       introducedAt: new Date(),
-    }))
+    })),
   );
 };
 
 const seedSession = async (
   learnerId: unknown,
   orgId: unknown,
-  overrides: Record<string, unknown> = {}
+  overrides: Record<string, unknown> = {},
 ) =>
   AISession.create({
     learnerId,
@@ -95,17 +101,17 @@ describe("GET /api/esol/learners/:id/vocab-ledger", () => {
     const org = await createOrg();
     const learner = await createLearner(org._id);
     await seedVocab(learner._id, [
-      { word: "apple",      retained: true,  times: 6 },
-      { word: "banana",     retained: true,  times: 7 },
-      { word: "cherry",     retained: false, times: 2 },
-      { word: "doughnut",   retained: false, times: 1 },
+      { word: "apple", retained: true, times: 6 },
+      { word: "banana", retained: true, times: 7 },
+      { word: "cherry", retained: false, times: 2 },
+      { word: "doughnut", retained: false, times: 1 },
       { word: "elderberry", retained: false, times: 3 },
     ]);
 
     const res = await getLearnerVocabLedgerService(
       learner._id.toString(),
       "org_admin",
-      org._id.toString()
+      org._id.toString(),
     );
     const data = res.data as {
       retained: Array<{ word: string }>;
@@ -113,7 +119,10 @@ describe("GET /api/esol/learners/:id/vocab-ledger", () => {
       totals: { retained: number; in_progress: number; total: number };
     };
 
-    expect(data.retained.map((r) => r.word).sort()).toEqual(["apple", "banana"]);
+    expect(data.retained.map((r) => r.word).sort()).toEqual([
+      "apple",
+      "banana",
+    ]);
     expect(data.in_progress.map((r) => r.word).sort()).toEqual([
       "cherry",
       "doughnut",
@@ -126,7 +135,7 @@ describe("GET /api/esol/learners/:id/vocab-ledger", () => {
     const org = await createOrg();
     const learner = await createLearner(org._id);
     await seedVocab(learner._id, [
-      { word: "old_rare",   times: 1, lastSeen: new Date("2024-01-01") },
+      { word: "old_rare", times: 1, lastSeen: new Date("2024-01-01") },
       { word: "recent_rare", times: 1, lastSeen: new Date("2024-12-01") },
       { word: "old_common", times: 5, lastSeen: new Date("2024-01-01") },
     ]);
@@ -134,7 +143,7 @@ describe("GET /api/esol/learners/:id/vocab-ledger", () => {
     const res = await getLearnerVocabLedgerService(
       learner._id.toString(),
       "org_admin",
-      org._id.toString()
+      org._id.toString(),
     );
     const data = res.data as { in_progress: Array<{ word: string }> };
     // Same last_seen → tiebreak on times_encountered ASC (rare first)
@@ -160,7 +169,7 @@ describe("GET /api/esol/learners/:id/sessions", () => {
       const s = await seedSession(learner._id, org._id);
       await AISession.collection.updateOne(
         { _id: s._id },
-        { $set: { createdAt: new Date(2024, 0, 1, 0, i) } } // jan 1, hour:i
+        { $set: { createdAt: new Date(2024, 0, 1, 0, i) } }, // jan 1, hour:i
       );
     }
 
@@ -168,14 +177,24 @@ describe("GET /api/esol/learners/:id/sessions", () => {
     const r1 = await getLearnerSessionsService(
       learner._id.toString(),
       "org_admin",
-      org._id.toString()
+      org._id.toString(),
     );
     const d1 = r1.data as {
       sessions: Array<{ createdAt: string; turns?: unknown[] }>;
-      pagination: { page: number; limit: number; total: number; totalPages: number };
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
     };
     expect(d1.sessions).toHaveLength(20);
-    expect(d1.pagination).toEqual({ page: 1, limit: 20, total: 25, totalPages: 2 });
+    expect(d1.pagination).toEqual({
+      page: 1,
+      limit: 20,
+      total: 25,
+      totalPages: 2,
+    });
 
     // Recent-first ordering
     const times = d1.sessions.map((s) => new Date(s.createdAt).getTime());
@@ -191,7 +210,7 @@ describe("GET /api/esol/learners/:id/sessions", () => {
       learner._id.toString(),
       "org_admin",
       org._id.toString(),
-      { page: 2 }
+      { page: 2 },
     );
     const d2 = r2.data as { sessions: unknown[]; pagination: { page: number } };
     expect(d2.sessions).toHaveLength(5);
@@ -207,7 +226,7 @@ describe("GET /api/esol/learners/:id/sessions", () => {
       learner._id.toString(),
       "org_admin",
       org._id.toString(),
-      { limit: 5000 }
+      { limit: 5000 },
     );
     const data = res.data as { pagination: { limit: number } };
     expect(data.pagination.limit).toBe(100);
@@ -228,16 +247,16 @@ describe("ACL on learner-detail endpoints", () => {
       getLearnerVocabLedgerService(
         learnerInA._id.toString(),
         "org_admin",
-        orgB._id.toString()       // different org
-      )
+        orgB._id.toString(), // different org
+      ),
     ).rejects.toMatchObject({ statusCode: 403 });
 
     await expect(
       getLearnerSessionsService(
         learnerInA._id.toString(),
         "org_admin",
-        orgB._id.toString()
-      )
+        orgB._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 403 });
   });
 
@@ -250,28 +269,26 @@ describe("ACL on learner-detail endpoints", () => {
     const res = await getLearnerVocabLedgerService(
       learner._id.toString(),
       "admin",
-      null
+      null,
     );
     expect(res.statusCode).toBe(200);
-    expect(
-      (res.data as { totals: { total: number } }).totals.total
-    ).toBe(1);
+    expect((res.data as { totals: { total: number } }).totals.total).toBe(1);
   });
 
   it("V6 — non-existent learner → 404", async () => {
     const fakeId = new Types.ObjectId().toString();
     await expect(
-      getLearnerVocabLedgerService(fakeId, "admin", null)
+      getLearnerVocabLedgerService(fakeId, "admin", null),
     ).rejects.toMatchObject({ statusCode: 404 });
   });
 
   it("V7 — invalid learner id → 400", async () => {
     await expect(
-      getLearnerVocabLedgerService("not-an-objectid", "admin", null)
+      getLearnerVocabLedgerService("not-an-objectid", "admin", null),
     ).rejects.toMatchObject({ statusCode: 400 });
 
     await expect(
-      getLearnerSessionsService("not-an-objectid", "admin", null)
+      getLearnerSessionsService("not-an-objectid", "admin", null),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -293,11 +310,7 @@ describe("ACL on learner-detail endpoints", () => {
     });
 
     await expect(
-      getLearnerVocabLedgerService(
-        tutor._id.toString(),
-        "admin",
-        null
-      )
+      getLearnerVocabLedgerService(tutor._id.toString(), "admin", null),
     ).rejects.toBeInstanceOf(ApiError);
   });
 });

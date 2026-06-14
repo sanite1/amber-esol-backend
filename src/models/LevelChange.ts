@@ -54,7 +54,7 @@ const levelChangeSchema = new Schema<ILevelChange>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 levelChangeSchema.index({ learnerId: 1, createdAt: -1 });
@@ -71,23 +71,25 @@ levelChangeSchema.index({ orgId: 1, createdAt: -1 });
 const blockUpdate = function (next: (err?: Error) => void) {
   next(
     new Error(
-      "LevelChange is append-only — updates and deletes are not permitted."
-    )
+      "LevelChange is append-only — updates and deletes are not permitted.",
+    ),
   );
 };
 
 levelChangeSchema.pre(
   ["updateOne", "findOneAndUpdate", "updateMany"] as any,
-  blockUpdate
+  blockUpdate,
 );
 levelChangeSchema.pre(
   ["deleteOne", "findOneAndDelete", "deleteMany"] as any,
-  blockUpdate
+  blockUpdate,
 );
 levelChangeSchema.pre("save", function (next) {
   if (!this.isNew) {
     return next(
-      new Error("LevelChange is append-only — re-saving an existing doc is not permitted.")
+      new Error(
+        "LevelChange is append-only — re-saving an existing doc is not permitted.",
+      ),
     );
   }
   next();

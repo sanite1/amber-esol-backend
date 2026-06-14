@@ -24,7 +24,8 @@
  *   I8   AddHours suppression when esol_aim_type=non_regulated
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 // FALACache uses Redis — mock isValidAim so tests don't need Redis.
 const falaIsValidMock = jest.fn();
@@ -56,7 +57,10 @@ import {
 const ACADEMIC_YEAR = "2025/26";
 
 const seedConfig = async (overrides: Partial<Record<string, unknown>> = {}) => {
-  await ComplianceConfig.deleteMany({ domain: "ilr", academic_year: ACADEMIC_YEAR });
+  await ComplianceConfig.deleteMany({
+    domain: "ilr",
+    academic_year: ACADEMIC_YEAR,
+  });
   const rules = {
     field_name_overrides: { SOC2000: "SOC" },
     valid_sof_codes: ["105", "107"],
@@ -241,8 +245,12 @@ describe("pure formatters / lookups", () => {
       non_regulated: "suppress" as const,
       missing: "suppress" as const,
     };
-    expect(__internals__.decideAddHours("regulated", 4.5, rule).addHours).toBe(4.5);
-    expect(__internals__.decideAddHours("non_regulated", 4.5, rule).addHours).toBeNull();
+    expect(__internals__.decideAddHours("regulated", 4.5, rule).addHours).toBe(
+      4.5,
+    );
+    expect(
+      __internals__.decideAddHours("non_regulated", 4.5, rule).addHours,
+    ).toBeNull();
     expect(__internals__.decideAddHours(null, 4.5, rule).addHours).toBeNull();
   });
 
@@ -251,13 +259,17 @@ describe("pure formatters / lookups", () => {
     expect(__internals__.resolveLearnAimRefForLevel("e2", map)).toBe("ref-e2");
     expect(__internals__.resolveLearnAimRefForLevel("L1", map)).toBeNull(); // case + missing
     expect(__internals__.resolveLearnAimRefForLevel(null, map)).toBeNull();
-    expect(__internals__.resolveLearnAimRefForLevel("e1", undefined)).toBeNull();
+    expect(
+      __internals__.resolveLearnAimRefForLevel("e1", undefined),
+    ).toBeNull();
   });
 
   it("F8 — resolveEnglishProgType is config-driven", () => {
     const rules = { regulated: 25, non_regulated: null };
     expect(__internals__.resolveEnglishProgType("regulated", rules)).toBe(25);
-    expect(__internals__.resolveEnglishProgType("non_regulated", rules)).toBeNull();
+    expect(
+      __internals__.resolveEnglishProgType("non_regulated", rules),
+    ).toBeNull();
     expect(__internals__.resolveEnglishProgType(null, rules)).toBeNull();
   });
 });
@@ -285,16 +297,22 @@ describe("buildIlrRows integration", () => {
     const learnerB = await createLearner({ orgId: org._id, firstname: "B" });
     await seedSession(learnerA._id, org._id, { source: "ai_tutor" });
     await seedSession(learnerA._id, org._id, { source: "pre_platform" });
-    await seedSession(learnerA._id, org._id, { source: "teacher_consolidation" });
+    await seedSession(learnerA._id, org._id, {
+      source: "teacher_consolidation",
+    });
     await seedSession(learnerB._id, org._id, { source: "ai_tutor" });
 
     const out = await buildIlrRows(org._id.toString(), ACADEMIC_YEAR);
     expect(out.rows).toHaveLength(4);
 
-    const aRows = out.rows.filter((r) => r._learner_id === learnerA._id.toString());
+    const aRows = out.rows.filter(
+      (r) => r._learner_id === learnerA._id.toString(),
+    );
     expect(aRows.map((r) => r.AimSeqNumber)).toEqual([1, 2, 3]);
 
-    const bRows = out.rows.filter((r) => r._learner_id === learnerB._id.toString());
+    const bRows = out.rows.filter(
+      (r) => r._learner_id === learnerB._id.toString(),
+    );
     expect(bRows.map((r) => r.AimSeqNumber)).toEqual([1]);
   });
 
@@ -370,13 +388,17 @@ describe("buildIlrRows integration", () => {
     await seedSession(learnerBad._id, org._id);
 
     // E2 ref valid, E3 ref invalid
-    falaIsValidMock.mockImplementation(async (ref: string) =>
-      ref === "60139572",
+    falaIsValidMock.mockImplementation(
+      async (ref: string) => ref === "60139572",
     );
 
     const out = await buildIlrRows(org._id.toString(), ACADEMIC_YEAR);
-    const okRow = out.rows.find((r) => r._learner_id === learnerOk._id.toString());
-    const badRow = out.rows.find((r) => r._learner_id === learnerBad._id.toString());
+    const okRow = out.rows.find(
+      (r) => r._learner_id === learnerOk._id.toString(),
+    );
+    const badRow = out.rows.find(
+      (r) => r._learner_id === learnerBad._id.toString(),
+    );
     expect(okRow!._aim_invalid).toBe(false);
     expect(badRow!._aim_invalid).toBe(true);
     expect(badRow!._suppression_notes.join(" ")).toMatch(/FALA whitelist/);
@@ -437,11 +459,15 @@ describe("buildIlrRows integration", () => {
 
     const out = await buildIlrRows(org._id.toString(), ACADEMIC_YEAR);
     const regRow = out.rows.find((r) => r._learner_id === reg._id.toString())!;
-    const nonRegRow = out.rows.find((r) => r._learner_id === nonReg._id.toString())!;
+    const nonRegRow = out.rows.find(
+      (r) => r._learner_id === nonReg._id.toString(),
+    )!;
 
     expect(regRow.AddHours).toBeGreaterThan(0); // 1 + 4.5 = 5.5
     expect(nonRegRow.AddHours).toBeNull();
-    expect(nonRegRow._suppression_notes.join(" ")).toMatch(/AddHours suppressed/);
+    expect(nonRegRow._suppression_notes.join(" ")).toMatch(
+      /AddHours suppressed/,
+    );
   });
 
   it("I9 — dates always formatted YYYY-MM-DD; NINumber blank", async () => {

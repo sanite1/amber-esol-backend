@@ -26,7 +26,12 @@ interface ReportData {
   }[];
   curriculumCoverage: { learnerName: string; skillCodes: string[] }[];
   transitionReady: { name: string; level: string; reason: string }[];
-  certificates: { name: string; fromLevel: string; toLevel: string; date: Date }[];
+  certificates: {
+    name: string;
+    fromLevel: string;
+    toLevel: string;
+    date: Date;
+  }[];
   safeguarding: {
     totalAlerts: number;
     open: number;
@@ -68,7 +73,7 @@ export const buildIntegrationReadinessHtml = (data: ReportData): string => {
           <td class="num">${l.scenarios}</td>
           <td class="num">${l.vocabRetained}</td>
           <td>${fmtDate(l.lastActive)}</td>
-        </tr>`
+        </tr>`,
     )
     .join("");
 
@@ -76,7 +81,7 @@ export const buildIntegrationReadinessHtml = (data: ReportData): string => {
     ? data.levelProgression
         .map(
           (p) =>
-            `<tr><td>${escapeHtml(p.fromLevel)} → ${escapeHtml(p.toLevel)}</td><td class="num">${p.count}</td></tr>`
+            `<tr><td>${escapeHtml(p.fromLevel)} → ${escapeHtml(p.toLevel)}</td><td class="num">${p.count}</td></tr>`,
         )
         .join("")
     : `<tr><td colspan="2" class="muted">No level changes recorded this period.</td></tr>`;
@@ -85,7 +90,7 @@ export const buildIntegrationReadinessHtml = (data: ReportData): string => {
     ? data.transitionReady
         .map(
           (t) =>
-            `<li><strong>${escapeHtml(t.name)}</strong> — ${escapeHtml(t.level)} <span class="muted">(${escapeHtml(t.reason)})</span></li>`
+            `<li><strong>${escapeHtml(t.name)}</strong> — ${escapeHtml(t.level)} <span class="muted">(${escapeHtml(t.reason)})</span></li>`,
         )
         .join("")
     : `<li class="muted">No learners meeting transition-ready criteria yet.</li>`;
@@ -94,7 +99,7 @@ export const buildIntegrationReadinessHtml = (data: ReportData): string => {
     .slice(0, 12)
     .map(
       (c) =>
-        `<tr><td>${escapeHtml(c.learnerName)}</td><td>${c.skillCodes.map(escapeHtml).join(", ")}</td></tr>`
+        `<tr><td>${escapeHtml(c.learnerName)}</td><td>${c.skillCodes.map(escapeHtml).join(", ")}</td></tr>`,
     )
     .join("");
 
@@ -102,7 +107,7 @@ export const buildIntegrationReadinessHtml = (data: ReportData): string => {
     ? data.learnerVoice
         .map(
           (v) =>
-            `<blockquote class="voice ${v.rating}"><span class="emoji">${v.rating === "confident" ? "😊" : "🙂"}</span> "${escapeHtml(v.quote)}"</blockquote>`
+            `<blockquote class="voice ${v.rating}"><span class="emoji">${v.rating === "confident" ? "😊" : "🙂"}</span> "${escapeHtml(v.quote)}"</blockquote>`,
         )
         .join("")
     : `<p class="muted">No learner voice quotes available for this period.</p>`;
@@ -111,7 +116,7 @@ export const buildIntegrationReadinessHtml = (data: ReportData): string => {
     ? data.certificates
         .map(
           (c) =>
-            `<li><strong>${escapeHtml(c.name)}</strong> advanced from ${escapeHtml(c.fromLevel)} to ${escapeHtml(c.toLevel)} on ${fmtDate(c.date)}</li>`
+            `<li><strong>${escapeHtml(c.name)}</strong> advanced from ${escapeHtml(c.fromLevel)} to ${escapeHtml(c.toLevel)} on ${fmtDate(c.date)}</li>`,
         )
         .join("")
     : `<li class="muted">No level advancements this period.</li>`;

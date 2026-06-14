@@ -52,12 +52,18 @@ import adminLevelChangeRoutes from "./routes/adminLevelChange.routes";
 import orgAdminLearnersRoutes from "./routes/orgAdminLearners.routes";
 import orgAdminNarrativeRoutes from "./routes/orgAdminNarrative.routes";
 import orgAdminAuditLogRoutes from "./routes/orgAdminAuditLog.routes";
+// Phase 1 / Final Addendum §6 (BE-A) — learner-self audit log.
+import learnerAuditLogRoutes from "./routes/learnerAuditLog.routes";
+// Phase 2 / Final Addendum §13 (BE-G) — org-admin onboarding embed.
+import orgOnboardingRoutes from "./routes/orgOnboarding.routes";
 import ilrExportRoutes from "./routes/ilrExport.routes";
 import orgAdminEvidenceReportRoutes from "./routes/orgAdminEvidenceReport.routes";
 import adminEvidenceReportRoutes from "./routes/adminEvidenceReport.routes";
 import adminOrgsRoutes from "./routes/adminOrgs.routes";
 import adminImpersonationRoutes from "./routes/adminImpersonation.routes";
 import adminComplianceConfigRoutes from "./routes/adminComplianceConfig.routes";
+import adminAuditLogRoutes from "./routes/adminAuditLog.routes";
+import adminSafeguardingMessagesRoutes from "./routes/adminSafeguardingMessages.routes";
 import adminQueuesRoutes from "./routes/adminQueues.routes";
 import adminTeacherUtilisationRoutes from "./routes/adminTeacherUtilisation.routes";
 import adminGlhAnalyticsRoutes from "./routes/adminGlhAnalytics.routes";
@@ -93,7 +99,7 @@ const server = createServer(app);
 const corsOption = {
   origin: (
     origin: string | undefined,
-    callback: (err: Error | null, allow?: boolean) => void
+    callback: (err: Error | null, allow?: boolean) => void,
   ) => {
     // Allow requests with no origin header — mobile apps, server-to-server,
     // Stripe webhooks, Vercel cron jobs.
@@ -124,7 +130,7 @@ app.use(demoModeHeader);
     "/api/webhooks/stripe",
     webhookLimiter,
     raw({ type: "application/json" }),
-    stripeWebhook
+    stripeWebhook,
   );
 
   app.use(express.json());
@@ -143,7 +149,7 @@ app.use(demoModeHeader);
   } catch (err) {
     logger.fatal(
       { err: (err as Error).message },
-      "ComplianceConfig loadAll failed at boot. Refusing to start."
+      "ComplianceConfig loadAll failed at boot. Refusing to start.",
     );
     process.exit(1);
   }
@@ -155,7 +161,7 @@ app.use(demoModeHeader);
   } catch (err) {
     logger.fatal(
       { err: (err as Error).message },
-      "Vertex AI client failed to initialise at boot. Refusing to start."
+      "Vertex AI client failed to initialise at boot. Refusing to start.",
     );
     process.exit(1);
   }
@@ -177,13 +183,13 @@ app.use(demoModeHeader);
     if (!ok) {
       logger.warn(
         "Redis unavailable — continuing in degraded mode " +
-          "(rate limiters in-memory, queues no-op, cache off)"
+          "(rate limiters in-memory, queues no-op, cache off)",
       );
     }
   } catch (err) {
     logger.fatal(
       { err: (err as Error).message },
-      "Redis init reported an unrecoverable error. Refusing to start."
+      "Redis init reported an unrecoverable error. Refusing to start.",
     );
     process.exit(1);
   }
@@ -197,7 +203,24 @@ app.use(demoModeHeader);
   } catch (err) {
     logger.error(
       { err: (err as Error).message },
-      "SafeguardingDetector.loadAll failed — continuing with empty cache"
+      "SafeguardingDetector.loadAll failed — continuing with empty cache",
+    );
+  }
+
+  // ── Safeguarding response texts (Final Addendum §2) ──
+  // Mongo-backed bank, seeded from the JSON file on first boot,
+  // editable via the admin CMS without deployment. Failure keeps the
+  // module-load file copy — the learner-facing fall-back chain never
+  // breaks.
+  try {
+    const { reloadSafeguardingBankFromDb } = await import(
+      "./services/safeguardingMessages.service"
+    );
+    await reloadSafeguardingBankFromDb();
+  } catch (err) {
+    logger.error(
+      { err: (err as Error).message },
+      "Safeguarding message bank DB load failed — using file copy",
     );
   }
 
@@ -214,7 +237,7 @@ app.use(demoModeHeader);
       });
       logger.info(
         { jobId: job.id },
-        "Postcode dataset not loaded — enqueued startup load job"
+        "Postcode dataset not loaded — enqueued startup load job",
       );
     } else {
       logger.info("Postcode dataset already loaded — skipping startup load");
@@ -222,7 +245,7 @@ app.use(demoModeHeader);
   } catch (err) {
     logger.error(
       { err: (err as Error).message },
-      "Postcode startup-load check failed"
+      "Postcode startup-load check failed",
     );
   }
 
@@ -236,15 +259,17 @@ app.use(demoModeHeader);
       });
       logger.info(
         { jobId: job.id },
-        "FALA whitelist empty — enqueued startup refresh job"
+        "FALA whitelist empty — enqueued startup refresh job",
       );
     } else {
-      logger.info("FALA whitelist already populated — skipping startup refresh");
+      logger.info(
+        "FALA whitelist already populated — skipping startup refresh",
+      );
     }
   } catch (err) {
     logger.error(
       { err: (err as Error).message },
-      "FALA startup-load check failed"
+      "FALA startup-load check failed",
     );
   }
 
@@ -271,6 +296,13 @@ app.use(demoModeHeader);
   app.use("/api/org-admin/narrative-summary", orgAdminNarrativeRoutes);
   // Final Addendum §6 — org-wide audit log.
   app.use("/api/org-admin/audit-log", orgAdminAuditLogRoutes);
+  // Phase 1 / BE-A — learner-self audit log (mounted at /api/learner;
+  // the only route under it today is GET /me/audit-log).
+  app.use("/api/learner", learnerAuditLogRoutes);
+  // Phase 2 / BE-G — org-admin onboarding embed (GET /status,
+  // POST /complete). Lives under /api/org-admin/onboarding to keep
+  // the org-admin auth chain consistent across the family.
+  app.use("/api/org-admin/onboarding", orgOnboardingRoutes);
   // Function 13 To-Do 4 — ILR export pipeline (BullMQ-dispatched).
   app.use("/api/org-admin/export/ilr", ilrExportRoutes);
   // Function 14 To-Do 4 — consolidated RARPA evidence-report PDF.
@@ -282,6 +314,10 @@ app.use(demoModeHeader);
   app.use("/api/admin/impersonate", adminImpersonationRoutes);
   // Final Addendum §3 — versioned ComplianceConfig editor.
   app.use("/api/admin/compliance-config", adminComplianceConfigRoutes);
+  // Final Addendum §6 — cross-organisation audit search (Amber admin).
+  app.use("/api/admin/audit-log", adminAuditLogRoutes);
+  // Final Addendum §2 — safeguarding response-text CMS (Amber admin).
+  app.use("/api/admin/safeguarding-messages", adminSafeguardingMessagesRoutes);
   // Final Addendum §1 — admin queues dashboard summary + Bull Board
   // link generator. The Bull Board UI itself is mounted further down
   // at /admin/queues (no /api prefix).
@@ -366,7 +402,7 @@ app.use(demoModeHeader);
     isAuthenticated,
     isAdmin,
     requireBullBoardToken,
-    bullBoardAdapter.getRouter()
+    bullBoardAdapter.getRouter(),
   );
 
   app.all("*", (req, _res, next) => {
@@ -385,7 +421,7 @@ app.use(demoModeHeader);
     } catch (err) {
       logger.error(
         { err: (err as Error).message },
-        "Inline worker startup failed — server will continue without workers"
+        "Inline worker startup failed — server will continue without workers",
       );
     }
   }

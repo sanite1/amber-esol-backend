@@ -28,7 +28,7 @@ export const createSessionValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const listSessionsValidation = () =>
@@ -42,14 +42,14 @@ export const listSessionsValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const sessionIdParamValidation = () =>
   validate(
     { params: Joi.object({ sessionId: objectId.required() }) },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const submitTurnValidation = () =>
@@ -65,7 +65,7 @@ export const submitTurnValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 // joinSessionValidation removed in pivot

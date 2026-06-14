@@ -1,25 +1,75 @@
 <html>
   <head>
     <style>
-      body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
-      .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; }
-      .header { background: #0b2343; padding: 30px; text-align: center; }
-      .header .l1-greeting { color: #facc15; font-size: 24px; margin: 0; }
-      .header .en-greeting { color: #ffffff; font-size: 16px; margin: 6px 0 0; }
-      .body { padding: 30px; }
-      .body p { color: #333; line-height: 1.65; font-size: 16px; }
-      .l1-block { background: #fafbfc; border-left: 4px solid #facc15;
-                  padding: 12px 16px; margin: 16px 0; color: #111827; }
-      .custom-note { background: #fefce8; border: 1px solid #facc15;
-                     border-radius: 8px; padding: 14px 18px; margin: 20px 0;
-                     color: #422006; font-style: italic; }
-      .button {
-        display: inline-block; background: #0b2343; color: #ffffff !important;
-        padding: 14px 26px; border-radius: 8px; text-decoration: none;
-        font-weight: 600; margin-top: 12px;
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        margin: 0;
+        padding: 20px;
       }
-      .footer { background: #f3f4f6; padding: 18px; text-align: center;
-                color: #6b7280; font-size: 12px; }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .header {
+        background: #0b2343;
+        padding: 30px;
+        text-align: center;
+      }
+      .header .l1-greeting {
+        color: #facc15;
+        font-size: 24px;
+        margin: 0;
+      }
+      .header .en-greeting {
+        color: #ffffff;
+        font-size: 16px;
+        margin: 6px 0 0;
+      }
+      .body {
+        padding: 30px;
+      }
+      .body p {
+        color: #333;
+        line-height: 1.65;
+        font-size: 16px;
+      }
+      .l1-block {
+        background: #fafbfc;
+        border-left: 4px solid #facc15;
+        padding: 12px 16px;
+        margin: 16px 0;
+        color: #111827;
+      }
+      .custom-note {
+        background: #fefce8;
+        border: 1px solid #facc15;
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin: 20px 0;
+        color: #422006;
+        font-style: italic;
+      }
+      .button {
+        display: inline-block;
+        background: #0b2343;
+        color: #ffffff !important;
+        padding: 14px 26px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        margin-top: 12px;
+      }
+      .footer {
+        background: #f3f4f6;
+        padding: 18px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 12px;
+      }
     </style>
   </head>
   <body>
@@ -32,9 +82,9 @@
         <div class="l1-block">{{l1Body}}</div>
 
         <p>
-          We have not seen you on Amber for a while. Your English
-          practice is waiting for you whenever you have a few minutes.
-          Even one short session keeps your progress moving.
+          We have not seen you on Amber for a while. Your English practice is
+          waiting for you whenever you have a few minutes. Even one short
+          session keeps your progress moving.
         </p>
 
         {{#if hasCustomMessage}}
@@ -48,8 +98,10 @@
         <p style="color: #6b7280; font-size: 14px;">{{l1Signoff}}</p>
       </div>
       <div class="footer">
-        © {{currentYear}} Amber Training. Please do not reply directly —
-        contact your organisation's coordinator if you need support.
+        ©
+        {{currentYear}}
+        Amber Training. Please do not reply directly — contact your
+        organisation's coordinator if you need support.
       </div>
     </div>
   </body>

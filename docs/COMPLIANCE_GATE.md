@@ -6,6 +6,7 @@ Section 0 of the brief is the legal/operational gate that must close before any 
 > No production deployment that processes real learner data goes live until every task marked _**production-blocker**_ below is `Complete`.
 
 Update statuses by editing the task blocks. Use:
+
 - `Pending` — not started
 - `In Progress` — started, awaiting external response, mid-document, etc.
 - `Complete` — fully closed, evidence filed
@@ -16,18 +17,18 @@ Last updated: 2026-05-27 (initial creation)
 
 ## Status summary
 
-| # | Task                                  | Owner   | Status     | Blocks                                       |
-|---|---------------------------------------|---------|------------|----------------------------------------------|
-| 1 | ICO registration                      | Joey    | Pending    | Any real learner data processing             |
-| 2 | UKPRN application                     | Joey    | Pending    | ILR submission (Function 13); G-Cloud listing |
-| 3 | Google Cloud Vertex AI DPA            | Joey    | Pending    | Any real Gemini call (production)            |
-| 4 | DPIA 1 — D1 onboarding data           | Joey    | Pending    | Production launch                            |
-| 5 | DPIA 2 — D2 AI session data           | Joey    | Pending    | Production launch                            |
-| 6 | Privacy notice                        | Joey    | Pending    | Registration screen goes live                |
-| 7 | Cyber Essentials certification        | Joey    | Pending    | G-Cloud Lot 2b listing (Horizon 3, not MVP)  |
-| 8 | Insurance (£5M PL + £1M PI minimum)   | Joey    | Pending    | G-Cloud listing                              |
-| 9 | SEIS advance assurance                | Joey    | Pending    | Investor conversations (not platform launch) |
-| 10 | WCAG 2.1 AA agreement                | Joey + Dev | Pending | Frontend launch with real learners           |
+| #   | Task                                | Owner      | Status  | Blocks                                        |
+| --- | ----------------------------------- | ---------- | ------- | --------------------------------------------- |
+| 1   | ICO registration                    | Joey       | Pending | Any real learner data processing              |
+| 2   | UKPRN application                   | Joey       | Pending | ILR submission (Function 13); G-Cloud listing |
+| 3   | Google Cloud Vertex AI DPA          | Joey       | Pending | Any real Gemini call (production)             |
+| 4   | DPIA 1 — D1 onboarding data         | Joey       | Pending | Production launch                             |
+| 5   | DPIA 2 — D2 AI session data         | Joey       | Pending | Production launch                             |
+| 6   | Privacy notice                      | Joey       | Pending | Registration screen goes live                 |
+| 7   | Cyber Essentials certification      | Joey       | Pending | G-Cloud Lot 2b listing (Horizon 3, not MVP)   |
+| 8   | Insurance (£5M PL + £1M PI minimum) | Joey       | Pending | G-Cloud listing                               |
+| 9   | SEIS advance assurance              | Joey       | Pending | Investor conversations (not platform launch)  |
+| 10  | WCAG 2.1 AA agreement               | Joey + Dev | Pending | Frontend launch with real learners            |
 
 ---
 
@@ -41,6 +42,7 @@ Last updated: 2026-05-27 (initial creation)
 - **Target**: Week 1 of build
 
 **Actions**
+
 - [ ] Open the ICO new-registration form
 - [ ] Select **"Training and education"** as the processing purpose
 - [ ] Complete the registration form for Amber Training Ltd
@@ -49,6 +51,7 @@ Last updated: 2026-05-27 (initial creation)
 - [ ] Record the ICO registration number — store in `AMBER_ICO_NUMBER` env var (add to `.env.example` when received)
 
 **Notes**
+
 - Registration is a legal precondition. Without it, processing personal data is a notifiable offence.
 - Renew annually.
 
@@ -67,12 +70,14 @@ Last updated: 2026-05-27 (initial creation)
 - **ETA from submission**: 2–4 weeks
 
 **Actions**
+
 - [ ] Register Amber Training Ltd at ukrlp.co.uk
 - [ ] Receive UKPRN by email
 - [ ] Set `AMBER_UKPRN` in `.env` and Vercel env vars
 - [ ] Confirm UKPRN renders correctly in test ILR export header row
 
 **Notes**
+
 - Clock starts on application, not approval. Submit on Day 1.
 - The ILR export validator in Phase 14 should warn loudly if `AMBER_UKPRN` is unset.
 
@@ -86,6 +91,7 @@ Last updated: 2026-05-27 (initial creation)
 - **Link**: <https://cloud.google.com/terms/data-processing-addendum>
 
 **Actions**
+
 - [ ] Review the Google Cloud DPA
 - [ ] Verify UK GDPR (retained EU law) is named in the Definitions section
 - [ ] Contact Google legal to confirm:
@@ -95,6 +101,7 @@ Last updated: 2026-05-27 (initial creation)
 - [ ] Save a signed PDF copy of the accepted DPA in the compliance archive
 
 **Notes**
+
 - Must use **Vertex AI** (`europe-west4`), NOT the free-tier Gemini API at `ai.google.dev`.
 - Vertex AI commits in writing: _"Google will not use Customer Data to train or fine-tune any AI/ML models without Customer's prior permission or instruction."_
 - Google Search Grounding retains data for 30 days — **do NOT enable** that feature.
@@ -111,6 +118,7 @@ Last updated: 2026-05-27 (initial creation)
 **Scope**: name, date of birth, nationality, postcode (`postcode_prior`), employment status, LLDD status, eligibility declaration.
 
 **Actions**
+
 - [ ] Document the data fields collected at D1 onboarding
 - [ ] Legal basis: **Article 6(1)(f) UK GDPR — legitimate interests** (providers' legitimate interest in submitting accurate ILR data)
 - [ ] Document who has access (org_admin, Amber admin, learner themselves)
@@ -131,6 +139,7 @@ Last updated: 2026-05-27 (initial creation)
 **Scope**: learner chat messages, scenario interactions, safeguarding triggers, session logs. Key risk: messages may contain unsolicited sensitive personal disclosures.
 
 **Actions**
+
 - [ ] Document the data flow (learner → Gemini via Vertex AI in europe-west4 → response)
 - [ ] Document mitigations:
   - EU data residency (`europe-west4`, Netherlands)
@@ -153,6 +162,7 @@ Last updated: 2026-05-27 (initial creation)
 - **Link**: ICO privacy notice generator — <https://ico.org.uk/for-organisations/make-your-own-privacy-notice/>
 
 **Actions**
+
 - [ ] Draft via the ICO generator
 - [ ] Cover key points:
   - ILR submission to ESFA
@@ -178,6 +188,7 @@ Last updated: 2026-05-27 (initial creation)
 - **Validity**: 12 months — must be renewed annually
 
 **Actions**
+
 - [ ] Choose certification body (IASME recommended)
 - [ ] Complete the self-assessment questionnaire (dev assists with the technical sections)
 - [ ] Submit for assessment
@@ -186,6 +197,7 @@ Last updated: 2026-05-27 (initial creation)
 - [ ] Diarise renewal
 
 **Notes**
+
 - **Cyber Essentials** (not Plus) is sufficient for G-Cloud Lot 2b.
 - G-Cloud 15 application window closed January 2026. Next window ~March 2028. Start certification now so it's ready when the window opens.
 
@@ -199,10 +211,12 @@ Last updated: 2026-05-27 (initial creation)
 - **Current insurer**: Simply Business (from existing Amber Training setup — confirm)
 
 **Required levels**:
+
 - Public Liability: **minimum £5 million**
 - Professional Indemnity: **minimum £1 million** (£2M preferred)
 
 **Actions**
+
 - [ ] Confirm current policy limits with Simply Business
 - [ ] If below threshold: increase to required levels
 - [ ] Obtain certificate of insurance for the G-Cloud application package
@@ -220,12 +234,14 @@ Last updated: 2026-05-27 (initial creation)
 - **ETA**: 4–6 weeks
 
 **Actions**
+
 - [ ] Complete HMRC form SEIS1 (advance assurance application)
 - [ ] Submit by post or email to HMRC SITR Team, Cardiff
 - [ ] Receive advance assurance letter from HMRC
 - [ ] Use in investor pitch deck appendix
 
 **Notes**
+
 - Advance assurance lets angel investors claim 50% income tax relief on their investment — typically the difference between an angel saying yes or no at this stage.
 - Apply this month so it's ready before the first serious investor conversation.
 
@@ -239,6 +255,7 @@ Last updated: 2026-05-27 (initial creation)
 - **Link**: <https://www.w3.org/WAI/WCAG21/quickref/>
 
 **Agreed minimums** (sign off in writing before any new D1/D2 frontend work):
+
 - [ ] 4.5:1 colour contrast ratio for all body text
 - [ ] All form fields and buttons have ARIA labels
 - [ ] All screens fully navigable by keyboard alone
@@ -247,11 +264,13 @@ Last updated: 2026-05-27 (initial creation)
 - [ ] `<html lang="…">` attribute set to the learner's detected language throughout the session
 
 **Dev tooling**
+
 - [ ] Install **axe DevTools** browser extension: <https://www.deque.com/axe/devtools/>
 - [ ] Run on every screen before marking that screen complete
 - [ ] Zero critical or serious violations before merge
 
 **Notes**
+
 - Retrofitting accessibility is significantly more expensive than building it in. Agree the standards now; the dev applies them by default in every new screen rather than as a separate audit pass.
 
 ---

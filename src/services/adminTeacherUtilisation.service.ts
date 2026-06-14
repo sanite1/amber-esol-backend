@@ -134,9 +134,7 @@ export const getTeacherUtilisationService = async (
   if (orgIdFilter && !Types.ObjectId.isValid(orgIdFilter)) {
     throw new ApiError(400, "org_id must be a valid ObjectId");
   }
-  const orgObjectId = orgIdFilter
-    ? new Types.ObjectId(orgIdFilter)
-    : null;
+  const orgObjectId = orgIdFilter ? new Types.ObjectId(orgIdFilter) : null;
 
   const now = new Date();
   const { monthStart, monthEnd } = monthBoundsUtc(now);
@@ -161,7 +159,12 @@ export const getTeacherUtilisationService = async (
         pipeline: [
           {
             $match: {
-              $expr: { $in: ["$$teacherId", { $ifNull: ["$assigned_teacher_ids", []] }] },
+              $expr: {
+                $in: [
+                  "$$teacherId",
+                  { $ifNull: ["$assigned_teacher_ids", []] },
+                ],
+              },
             },
           },
           {
@@ -347,16 +350,20 @@ export const getTeacherHistoryService = async (
 
   const rows: TeacherReviewHistoryRow[] = reviews.map((r) => ({
     _id: (r._id as Types.ObjectId).toString(),
-    learner_id: (r as { learner_id: { _id: Types.ObjectId } }).learner_id._id?.toString() ?? "",
+    learner_id:
+      (
+        r as { learner_id: { _id: Types.ObjectId } }
+      ).learner_id._id?.toString() ?? "",
     learner_uln:
-      ((r as { learner_id?: { uln?: string | null } }).learner_id?.uln ??
-        null),
-    org_id: (r as { org_id?: Types.ObjectId | null }).org_id?.toString() ?? null,
+      (r as { learner_id?: { uln?: string | null } }).learner_id?.uln ?? null,
+    org_id:
+      (r as { org_id?: Types.ObjectId | null }).org_id?.toString() ?? null,
     review_type: (r as { review_type: string }).review_type,
     duration_mins: (r as { duration_mins: number }).duration_mins,
     notes: (r as { notes?: string }).notes ?? "",
     ai_recommendation_acted_on: Boolean(
-      (r as { ai_recommendation_acted_on?: boolean }).ai_recommendation_acted_on,
+      (r as { ai_recommendation_acted_on?: boolean })
+        .ai_recommendation_acted_on,
     ),
     created_at: (r as { created_at: Date }).created_at.toISOString(),
   }));
@@ -364,7 +371,8 @@ export const getTeacherHistoryService = async (
   const payload: TeacherHistoryResponse = {
     teacher_id: teacherId,
     teacher_name:
-      `${teacher.firstname ?? ""} ${teacher.lastname ?? ""}`.trim() || "(unnamed)",
+      `${teacher.firstname ?? ""} ${teacher.lastname ?? ""}`.trim() ||
+      "(unnamed)",
     reviews: rows,
   };
   return new ApiResponse(200, "Teacher review history", payload);

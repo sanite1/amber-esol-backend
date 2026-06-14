@@ -36,7 +36,12 @@ export const buildInvoiceHtml = (data: InvoiceTemplateData): string => {
   const inv = data.invoice;
   const org = inv.orgId;
   const orgAddress = org.address
-    ? [org.address.street, org.address.city, org.address.postcode, org.address.country]
+    ? [
+        org.address.street,
+        org.address.city,
+        org.address.postcode,
+        org.address.country,
+      ]
         .filter(Boolean)
         .join(", ")
     : "";
@@ -53,7 +58,7 @@ export const buildInvoiceHtml = (data: InvoiceTemplateData): string => {
       <td class="num">${item.quantity}</td>
       <td class="num">${formatCurrency(item.unitPrice, inv.currency)}</td>
       <td class="num">${formatCurrency(item.amount, inv.currency)}</td>
-    </tr>`
+    </tr>`,
     )
     .join("");
 

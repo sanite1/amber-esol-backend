@@ -112,14 +112,14 @@ const resolveSlot = (l1: string | null | undefined) => {
 };
 
 export const sendLearnerNudgeEmail = async (
-  job: LearnerNudgeEmailJob
+  job: LearnerNudgeEmailJob,
 ): Promise<LearnerNudgeEmailResult> => {
   const startedAt = Date.now();
 
   if (!job.learner_email) {
     logger.warn(
       { learner_id: job.learner_id },
-      "learner-nudge-email: no learner email — skipping"
+      "learner-nudge-email: no learner email — skipping",
     );
     return {
       sent: false,
@@ -142,7 +142,9 @@ export const sendLearnerNudgeEmail = async (
       l1Signoff: slot.signoff,
       learnerName: job.learner_name,
       customMessage: job.custom_message ?? "",
-      hasCustomMessage: Boolean(job.custom_message && job.custom_message.length > 0),
+      hasCustomMessage: Boolean(
+        job.custom_message && job.custom_message.length > 0,
+      ),
       dashboardUrl: DASHBOARD_URL,
       currentYear: new Date().getFullYear(),
     },
@@ -154,8 +156,12 @@ export const sendLearnerNudgeEmail = async (
     messageId = info.messageId;
   } catch (err) {
     logger.error(
-      { err: (err as Error).message, recipient: job.learner_email, learner_id: job.learner_id },
-      "learner-nudge-email: SMTP send failed"
+      {
+        err: (err as Error).message,
+        recipient: job.learner_email,
+        learner_id: job.learner_id,
+      },
+      "learner-nudge-email: SMTP send failed",
     );
     throw err;
   }
@@ -169,7 +175,7 @@ export const sendLearnerNudgeEmail = async (
       message_id: messageId,
       dispatch_latency_ms: dispatchLatencyMs,
     },
-    "learner-nudge-email sent"
+    "learner-nudge-email sent",
   );
 
   return {

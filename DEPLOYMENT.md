@@ -68,7 +68,7 @@ Set in Vercel project → Settings → Environment Variables (or your host's equ
 ```json
 {
   "crons": [
-    { "path": "/api/cron/complete-lessons",  "schedule": "0 0 * * *" },
+    { "path": "/api/cron/complete-lessons", "schedule": "0 0 * * *" },
     { "path": "/api/cron/generate-invoices", "schedule": "0 9 1 * *" },
     { "path": "/api/cron/check-progression", "schedule": "0 6 * * *" }
   ]

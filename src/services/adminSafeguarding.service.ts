@@ -119,16 +119,23 @@ const populatedString = (v: unknown): string | null => {
 
 const populatedName = (
   v: unknown,
-  format: (doc: { firstname?: string; lastname?: string; name?: string }) => string | null
+  format: (doc: {
+    firstname?: string;
+    lastname?: string;
+    name?: string;
+  }) => string | null,
 ): string | null => {
   if (!v || typeof v !== "object") return null;
   return format(v as { firstname?: string; lastname?: string; name?: string });
 };
 
 const toBriefResponse = (alert: any): BriefAlertResponse => {
-  const session = alert.sessionId && typeof alert.sessionId === "object" && "_id" in alert.sessionId
-    ? alert.sessionId
-    : null;
+  const session =
+    alert.sessionId &&
+    typeof alert.sessionId === "object" &&
+    "_id" in alert.sessionId
+      ? alert.sessionId
+      : null;
 
   return {
     id: alert._id.toString(),
@@ -136,10 +143,14 @@ const toBriefResponse = (alert: any): BriefAlertResponse => {
     org_name: populatedName(alert.orgId, (o) => o.name ?? null),
     learner_id: populatedString(alert.learnerId) ?? "",
     learner_name: populatedName(alert.learnerId, (l) =>
-      l.firstname || l.lastname ? `${l.firstname ?? ""} ${l.lastname ?? ""}`.trim() : null
+      l.firstname || l.lastname
+        ? `${l.firstname ?? ""} ${l.lastname ?? ""}`.trim()
+        : null,
     ),
     learner_email: populatedName(alert.learnerId, (l) =>
-      "email" in (l as Record<string, unknown>) ? ((l as { email?: string }).email ?? null) : null
+      "email" in (l as Record<string, unknown>)
+        ? ((l as { email?: string }).email ?? null)
+        : null,
     ),
     session_id: populatedString(alert.sessionId) ?? "",
     session_context: session
@@ -169,7 +180,9 @@ const toBriefResponse = (alert: any): BriefAlertResponse => {
       alert.resolvedAt instanceof Date ? alert.resolvedAt.toISOString() : null,
     resolved_by: populatedString(alert.resolvedBy),
     resolver_name: populatedName(alert.resolvedBy, (u) =>
-      u.firstname || u.lastname ? `${u.firstname ?? ""} ${u.lastname ?? ""}`.trim() : null
+      u.firstname || u.lastname
+        ? `${u.firstname ?? ""} ${u.lastname ?? ""}`.trim()
+        : null,
     ),
     resolution_notes: alert.resolutionNotes ?? null,
     notification_sent_at:
@@ -221,7 +234,7 @@ const cutoffFromDays = (raw: string | undefined): Date | null => {
  * accidentally page through old alerts first and miss the new ones.
  */
 export const listAdminSafeguardingAlertsService = async (
-  query: AdminListSafeguardingQuery
+  query: AdminListSafeguardingQuery,
 ): Promise<ApiResponse> => {
   // Page / limit parsing — defensive against negative or NaN inputs.
   const rawPage = parseInt(query.page ?? "1", 10);
@@ -229,7 +242,7 @@ export const listAdminSafeguardingAlertsService = async (
   const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
   const limit = Math.min(
     Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : DEFAULT_PAGE_SIZE,
-    MAX_PAGE_SIZE
+    MAX_PAGE_SIZE,
   );
   const skip = (page - 1) * limit;
 
@@ -347,7 +360,11 @@ export const getAdminSafeguardingSummaryService = async (
     by_category: Array<{ _id: string; count: number }>;
     by_org: Array<{ org_id: Types.ObjectId; org_name: string; count: number }>;
     unresolved_over_24h: Array<{ n: number }>;
-    resolution_times: Array<{ avg_ms: number; count: number; values: number[] }>;
+    resolution_times: Array<{
+      avg_ms: number;
+      count: number;
+      values: number[];
+    }>;
     total: Array<{ n: number }>;
   }>([
     { $match: baseMatch },
@@ -378,10 +395,7 @@ export const getAdminSafeguardingSummaryService = async (
               _id: 0,
               org_id: "$_id",
               org_name: {
-                $ifNull: [
-                  { $arrayElemAt: ["$org.name", 0] },
-                  "(unknown)",
-                ],
+                $ifNull: [{ $arrayElemAt: ["$org.name", 0] }, "(unknown)"],
               },
               count: 1,
             },
@@ -481,7 +495,7 @@ export const getAdminSafeguardingSummaryService = async (
 // ─────────────────────────────────────────────────────────────────────
 
 export const getAdminSafeguardingAlertService = async (
-  alertId: string
+  alertId: string,
 ): Promise<ApiResponse> => {
   if (!Types.ObjectId.isValid(alertId)) {
     throw new ApiError(400, "alert id must be a valid ObjectId");
@@ -517,7 +531,7 @@ export interface ResolveAdminSafeguardingBody {
 export const resolveAdminSafeguardingAlertService = async (
   alertId: string,
   body: ResolveAdminSafeguardingBody,
-  callerId: string
+  callerId: string,
 ): Promise<ApiResponse> => {
   if (!Types.ObjectId.isValid(alertId)) {
     throw new ApiError(400, "alert id must be a valid ObjectId");
@@ -531,7 +545,10 @@ export const resolveAdminSafeguardingAlertService = async (
     throw new ApiError(400, "resolution_notes is required");
   }
   if (notes.length > 4_000) {
-    throw new ApiError(400, "resolution_notes must be 4000 characters or fewer");
+    throw new ApiError(
+      400,
+      "resolution_notes must be 4000 characters or fewer",
+    );
   }
 
   // Conditional update so two admins racing to resolve don't clobber
@@ -546,7 +563,7 @@ export const resolveAdminSafeguardingAlertService = async (
         status: "resolved",
       },
     },
-    { new: true }
+    { new: true },
   )
     .populate("orgId", "name")
     .populate("learnerId", "firstname lastname email esolLevel l1Language")
@@ -560,7 +577,9 @@ export const resolveAdminSafeguardingAlertService = async (
   if (!updated) {
     // Either the alert doesn't exist, or someone else already resolved
     // it. Disambiguate so the admin UI can show the right message.
-    const exists = await SafeguardingAlert.findById(alertId).select("_id resolvedAt").lean();
+    const exists = await SafeguardingAlert.findById(alertId)
+      .select("_id resolvedAt")
+      .lean();
     if (!exists) {
       throw new ApiError(404, "Safeguarding alert not found");
     }
@@ -595,7 +614,7 @@ export interface OrgAdminCountQuery {
  */
 export const getOrgAdminSafeguardingCountService = async (
   callerOrgId: string | null | undefined,
-  query: OrgAdminCountQuery
+  query: OrgAdminCountQuery,
 ): Promise<ApiResponse> => {
   if (!callerOrgId) {
     throw new ApiError(400, "Organisation context required for this endpoint");

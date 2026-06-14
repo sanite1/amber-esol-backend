@@ -11,7 +11,7 @@ const turnSchema = new Schema(
     safeguardingScore: { type: Number, min: 0, max: 1 },
     timestamp: { type: Date, required: true, default: Date.now },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const aiSessionSchema = new Schema<IAISession>(
@@ -113,7 +113,7 @@ const aiSessionSchema = new Schema<IAISession>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 aiSessionSchema.index({ learnerId: 1, createdAt: -1 });

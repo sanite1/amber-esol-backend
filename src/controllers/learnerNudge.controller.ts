@@ -20,7 +20,7 @@ export const nudgeLearner: ExpressFunction = async (req, res, next) => {
       req.user!.role,
       req.user!.orgId,
       callerId,
-      req.body as NudgeLearnerBody
+      req.body as NudgeLearnerBody,
     );
     return res.status(result.statusCode).json({
       message: result.message,

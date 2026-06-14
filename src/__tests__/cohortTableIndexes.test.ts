@@ -15,7 +15,8 @@
  * got slow.
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 import User from "../models/User";
 
@@ -40,16 +41,16 @@ describe("User indexes — brief Function 12 refinement", () => {
   });
 
   it("I1 — (orgId, cohort_status) compound index exists", async () => {
-    const indexes = (await User.collection.indexes()) as Array<Record<string, unknown>>;
-    expect(
-      indexHasKeys(indexes, { orgId: 1, cohort_status: 1 }),
-    ).toBe(true);
+    const indexes = (await User.collection.indexes()) as Array<
+      Record<string, unknown>
+    >;
+    expect(indexHasKeys(indexes, { orgId: 1, cohort_status: 1 })).toBe(true);
   });
 
   it("I2 — (orgId, esolLevel) compound index exists", async () => {
-    const indexes = (await User.collection.indexes()) as Array<Record<string, unknown>>;
-    expect(
-      indexHasKeys(indexes, { orgId: 1, esolLevel: 1 }),
-    ).toBe(true);
+    const indexes = (await User.collection.indexes()) as Array<
+      Record<string, unknown>
+    >;
+    expect(indexHasKeys(indexes, { orgId: 1, esolLevel: 1 })).toBe(true);
   });
 });

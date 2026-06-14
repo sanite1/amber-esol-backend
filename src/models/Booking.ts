@@ -103,7 +103,11 @@ const bookingSchema = new Schema<IBooking>(
 
     // ── ESOL fields (camelCase preserved from prior work) ────────────
     orgId: { type: Schema.Types.ObjectId, ref: "Organisation", default: null },
-    aiSessionId: { type: Schema.Types.ObjectId, ref: "AISession", default: null },
+    aiSessionId: {
+      type: Schema.Types.ObjectId,
+      ref: "AISession",
+      default: null,
+    },
     teacherPrepViewed: { type: Boolean, default: false },
     teacherNotesPosted: { type: Boolean, default: false },
   },
@@ -114,7 +118,7 @@ const bookingSchema = new Schema<IBooking>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // ── Indexes ────────────────────────────────────────────────────────────

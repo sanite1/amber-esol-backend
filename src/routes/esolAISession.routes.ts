@@ -22,7 +22,7 @@ import ApiError from "../errors/apiError";
 const isSessionManager = (
   req: Request & { user?: IUserDecoded },
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const role = req.user?.role;
   if (role === "tutor" || role === "org_admin" || role === "admin") {
@@ -42,19 +42,19 @@ router.post(
   "/:sessionId/turns",
   requireEsolLearner,
   submitTurnValidation(),
-  submitTurn
+  submitTurn,
 );
 router.patch(
   "/:sessionId/complete",
   isSessionManager,
   sessionIdParamValidation(),
-  completeSession
+  completeSession,
 );
 router.get(
   "/:sessionId/prep",
   isSessionManager,
   sessionIdParamValidation(),
-  getTeacherPrep
+  getTeacherPrep,
 );
 
 export default router;

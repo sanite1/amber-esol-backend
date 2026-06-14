@@ -213,6 +213,7 @@ The report has three sections:
 3. **Summary** — total rows accepted, total errors, total warnings.
 
 For each entry, the report includes:
+
 - The row's ULN
 - The field name (e.g. `LearnAimRef`, `SOF`, `LLDDHealthProb`)
 - The error/warning code (e.g. `R56`, `W83`)
@@ -222,16 +223,16 @@ Cross-reference each entry with the platform's own validation output (the compan
 
 ### Common categories and where to fix
 
-| ESFA flag | Platform location to fix |
-|---|---|
-| `LearnAimRef not valid for this funding model` | `ComplianceConfig.rules.esol_level_to_aim_ref` — update the FALA code |
-| `SOF not in valid set for academic year` | `ComplianceConfig.rules.valid_sof_codes` — the 19-route mapping has shifted |
-| `LLDDHealthProb code retired` | `ComplianceConfig.rules.expired_llddt_codes` + `llddt_remapping` |
-| `EnglishProgType missing` | `User.english_prog_type` not set; fix the bulk importer + the wizard |
-| `Field name not recognised` | `ComplianceConfig.rules.field_name_overrides` (e.g. `SOC2000` rename) |
-| `Date in wrong format` | `formatIlrDate` in `ilrExport.service.ts` |
-| `Row contains a future date` | Bug in `formatIlrDate` or the source date field |
-| `Duplicate AimSeqNumber for learner` | Bug in `buildRowForSession` — the per-learner counter is broken |
+| ESFA flag                                      | Platform location to fix                                                    |
+| ---------------------------------------------- | --------------------------------------------------------------------------- |
+| `LearnAimRef not valid for this funding model` | `ComplianceConfig.rules.esol_level_to_aim_ref` — update the FALA code       |
+| `SOF not in valid set for academic year`       | `ComplianceConfig.rules.valid_sof_codes` — the 19-route mapping has shifted |
+| `LLDDHealthProb code retired`                  | `ComplianceConfig.rules.expired_llddt_codes` + `llddt_remapping`            |
+| `EnglishProgType missing`                      | `User.english_prog_type` not set; fix the bulk importer + the wizard        |
+| `Field name not recognised`                    | `ComplianceConfig.rules.field_name_overrides` (e.g. `SOC2000` rename)       |
+| `Date in wrong format`                         | `formatIlrDate` in `ilrExport.service.ts`                                   |
+| `Row contains a future date`                   | Bug in `formatIlrDate` or the source date field                             |
+| `Duplicate AimSeqNumber for learner`           | Bug in `buildRowForSession` — the per-learner counter is broken             |
 
 For categories not in the table, ask Joey before changing anything — some ESFA flags are advisory and the fix is documentation, not code.
 
@@ -282,13 +283,14 @@ The expected number of iterations on a first ever submission is **1–3**. More 
 > **Format per row:** `YYYY-MM-DD | <submission_id> | <result> | Joey: <initials> | MD: <initials>`
 >
 > Result is one of:
+>
 > - `PASS` — zero errors, zero warnings
 > - `FAIL-fix` — issues found, fix planned, resubmission required
 > - `FAIL-blocked` — issues found, fix requires external dependency (e.g. waiting on DfE config publication)
 
-| Date | Submission ID | Result | Joey | MD | Report PDF | Notes |
-|---|---|---|---|---|---|---|
-| _(awaiting first run)_ | | | | | | |
+| Date                   | Submission ID | Result | Joey | MD  | Report PDF | Notes |
+| ---------------------- | ------------- | ------ | ---- | --- | ---------- | ----- |
+| _(awaiting first run)_ |               |        |      |     |            |       |
 
 ---
 

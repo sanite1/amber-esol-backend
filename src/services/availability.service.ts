@@ -51,7 +51,7 @@ const minutesToTime = (mins: number): string => {
 const generateSlots = (
   blocks: ITimeBlock[],
   durationMinutes: number,
-  bufferMinutes: number
+  bufferMinutes: number,
 ): { startTime: string; endTime: string }[] => {
   const slots: { startTime: string; endTime: string }[] = [];
 
@@ -108,7 +108,7 @@ export const getAvailabilityService = async (tutorId: string) => {
 
 export const setScheduleService = async (
   tutorId: string,
-  data: ISetScheduleRequest
+  data: ISetScheduleRequest,
 ) => {
   // Validate that all 7 days are present and unique
   const days = data.weeklySchedule.map((d) => d.day);
@@ -116,7 +116,7 @@ export const setScheduleService = async (
   if (uniqueDays.size !== 7) {
     throw new ApiError(
       400,
-      "Weekly schedule must contain exactly 7 unique days"
+      "Weekly schedule must contain exactly 7 unique days",
     );
   }
 
@@ -128,14 +128,14 @@ export const setScheduleService = async (
       if (timeToMinutes(block.endTime) <= timeToMinutes(block.startTime)) {
         throw new ApiError(
           400,
-          `${daySchedule.day}: End time must be after start time (${block.startTime} - ${block.endTime})`
+          `${daySchedule.day}: End time must be after start time (${block.startTime} - ${block.endTime})`,
         );
       }
     }
 
     // Check for overlapping blocks
     const sorted = [...daySchedule.blocks].sort(
-      (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
+      (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime),
     );
     for (let i = 1; i < sorted.length; i++) {
       if (
@@ -144,7 +144,7 @@ export const setScheduleService = async (
       ) {
         throw new ApiError(
           400,
-          `${daySchedule.day}: Time blocks overlap (${sorted[i - 1].endTime} and ${sorted[i].startTime})`
+          `${daySchedule.day}: Time blocks overlap (${sorted[i - 1].endTime} and ${sorted[i].startTime})`,
         );
       }
     }
@@ -158,7 +158,7 @@ export const setScheduleService = async (
   const availability = await Availability.findOneAndUpdate(
     { tutorId },
     { $set: updateData },
-    { new: true, upsert: true, runValidators: true }
+    { new: true, upsert: true, runValidators: true },
   );
 
   return new ApiResponse(200, "Weekly schedule updated successfully", {
@@ -170,7 +170,7 @@ export const setScheduleService = async (
 
 export const updateSettingsService = async (
   tutorId: string,
-  data: IUpdateSettingsRequest
+  data: IUpdateSettingsRequest,
 ) => {
   const updateData: any = {};
   if (data.timezone !== undefined) updateData.timezone = data.timezone;
@@ -188,7 +188,7 @@ export const updateSettingsService = async (
   const availability = await Availability.findOneAndUpdate(
     { tutorId },
     { $set: updateData },
-    { new: true, upsert: true, runValidators: true }
+    { new: true, upsert: true, runValidators: true },
   );
 
   return new ApiResponse(200, "Booking settings updated successfully", {
@@ -200,7 +200,7 @@ export const updateSettingsService = async (
 
 export const createOverrideService = async (
   tutorId: string,
-  data: ICreateOverrideRequest
+  data: ICreateOverrideRequest,
 ) => {
   // Get tutor's timezone for accurate "today" check
   const availability = await Availability.findOne({ tutorId });
@@ -217,7 +217,7 @@ export const createOverrideService = async (
   if (existing) {
     throw new ApiError(
       400,
-      `An override already exists for ${data.date}. Please remove it first.`
+      `An override already exists for ${data.date}. Please remove it first.`,
     );
   }
 
@@ -226,7 +226,7 @@ export const createOverrideService = async (
     if (!data.blocks || data.blocks.length === 0) {
       throw new ApiError(
         400,
-        "Extra availability must include at least one time block"
+        "Extra availability must include at least one time block",
       );
     }
 
@@ -234,7 +234,7 @@ export const createOverrideService = async (
       if (timeToMinutes(block.endTime) <= timeToMinutes(block.startTime)) {
         throw new ApiError(
           400,
-          `End time must be after start time (${block.startTime} - ${block.endTime})`
+          `End time must be after start time (${block.startTime} - ${block.endTime})`,
         );
       }
     }
@@ -251,7 +251,7 @@ export const createOverrideService = async (
   return new ApiResponse(
     201,
     "Date override created successfully",
-    override.toJSON()
+    override.toJSON(),
   );
 };
 
@@ -259,7 +259,7 @@ export const createOverrideService = async (
 
 export const deleteOverrideService = async (
   tutorId: string,
-  overrideId: string
+  overrideId: string,
 ) => {
   const override = await DateOverride.findOneAndDelete({
     _id: overrideId,
@@ -277,7 +277,7 @@ export const deleteOverrideService = async (
 
 export const getAvailableSlotsService = async (
   tutorId: string,
-  query: IAvailableSlotsQuery
+  query: IAvailableSlotsQuery,
 ) => {
   // Verify tutor exists
   const tutor = await User.findById(tutorId);
@@ -339,20 +339,20 @@ export const getAvailableSlotsService = async (
     if (override.type === "extra" && override.blocks) {
       const dayOfWeek = getDayOfWeek(requestedDate);
       const regularDay = availability.weeklySchedule.find(
-        (d) => d.day === dayOfWeek
+        (d) => d.day === dayOfWeek,
       );
       const regularBlocks =
         regularDay && regularDay.enabled ? regularDay.blocks : [];
 
       const allBlocks = [...regularBlocks, ...override.blocks];
       allBlocks.sort(
-        (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
+        (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime),
       );
 
       let slots = generateSlots(
         allBlocks,
         durationMinutes,
-        availability.bufferMinutes
+        availability.bufferMinutes,
       );
 
       // Filter past slots if today
@@ -363,7 +363,7 @@ export const getAvailableSlotsService = async (
           availability.minBookingNotice * 60;
 
         slots = slots.filter(
-          (slot) => timeToMinutes(slot.startTime) >= nowMinutes
+          (slot) => timeToMinutes(slot.startTime) >= nowMinutes,
         );
       }
 
@@ -396,7 +396,7 @@ export const getAvailableSlotsService = async (
   // 3. Use regular weekly schedule
   const dayOfWeek = getDayOfWeek(requestedDate);
   const daySchedule = availability.weeklySchedule.find(
-    (d) => d.day === dayOfWeek
+    (d) => d.day === dayOfWeek,
   );
 
   if (!daySchedule || !daySchedule.enabled || daySchedule.blocks.length === 0) {
@@ -411,7 +411,7 @@ export const getAvailableSlotsService = async (
   const slots = generateSlots(
     daySchedule.blocks,
     durationMinutes,
-    availability.bufferMinutes
+    availability.bufferMinutes,
   );
 
   // 5. If the requested date is today, filter out past slots
@@ -424,7 +424,7 @@ export const getAvailableSlotsService = async (
       availability.minBookingNotice * 60;
 
     filteredSlots = slots.filter(
-      (slot) => timeToMinutes(slot.startTime) >= nowMinutes
+      (slot) => timeToMinutes(slot.startTime) >= nowMinutes,
     );
   }
 

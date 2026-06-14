@@ -28,7 +28,6 @@ export type TeacherPriorityLevel = "p1" | "p2" | "p3" | "p4";
 
 export type EsolAimType = "regulated" | "non_regulated";
 
-
 export interface ICertification {
   name: string;
   issuedBy: string;
@@ -223,6 +222,7 @@ export interface IUser extends Document {
   current_level?: string | null;
   assessment_score?: number | null;
   placement_confidence?: number | null;
+  placement_rationale?: string | null;
   skillWeaknessFlags?: string[];
 
   // NEW Phase 1.6 ESOL learner fields (snake_case per brief)
@@ -290,6 +290,18 @@ export interface IUser extends Document {
    * `/api/teacher/preferences/auto-re-engagement`.
    */
   auto_re_engagement_enabled?: boolean;
+
+  /**
+   * Teacher-only. Needs-based matching profile — level coverage,
+   * spoken languages, specialisms. Empty arrays = unspecified (the
+   * teacher stays eligible for everything). See
+   * teacherMatching.service.ts.
+   */
+  teaching_profile?: {
+    levels_taught: string[];
+    languages_spoken: string[];
+    specialisms: string[];
+  };
 
   // Timestamps
   createdAt: Date;

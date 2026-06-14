@@ -11,8 +11,12 @@ import {
  *
  * What's enforced:
  *   - All nine fields present (no `.optional()` anywhere)
- *   - No extra fields (`.strict()` — Gemini's structured-output mode
- *     occasionally invents fields under load; we reject)
+ *   - Extra fields STRIPPED, not rejected. Earlier this was
+ *     `.strict()` which rejected the whole turn whenever Gemini added
+ *     a helpful auxiliary field (`grammar_feedback`, `hint`, etc.) —
+ *     in practice that fired 502s on most turns. Stripping is the
+ *     same posture we already take for off-list `skill_codes_used`
+ *     and `vocabulary_items_used`: log + filter, don't reject.
  *   - `mode` ∈ the three-mode enum
  *   - `safeguarding_category` is either null or one of the six enum
  *     values
@@ -63,13 +67,16 @@ export const geminiTurnOutputSchema = z
         SAFEGUARDING_CATEGORIES as [
           GeminiSafeguardingCategory,
           ...GeminiSafeguardingCategory[],
-        ]
+        ],
       )
       .nullable(),
     session_complete: z.boolean(),
     session_summary: z.string().min(1).nullable(),
   })
-  .strict("Gemini returned an unexpected field — schema is closed")
+  // .strip() (the Zod default) drops unknown keys silently rather than
+  // erroring. Explicit here for the next reader who wonders why we
+  // moved off .strict().
+  .strip()
   // ── Cross-field invariants ────────────────────────────────────────
   .refine(
     (v) => (v.safeguarding_flag ? v.safeguarding_category !== null : true),
@@ -77,7 +84,7 @@ export const geminiTurnOutputSchema = z
       message:
         "safeguarding_category is required when safeguarding_flag is true",
       path: ["safeguarding_category"],
-    }
+    },
   )
   .refine(
     (v) => (!v.safeguarding_flag ? v.safeguarding_category === null : true),
@@ -85,7 +92,7 @@ export const geminiTurnOutputSchema = z
       message:
         "safeguarding_category must be null when safeguarding_flag is false",
       path: ["safeguarding_category"],
-    }
+    },
   )
   .refine(
     (v) =>
@@ -96,15 +103,12 @@ export const geminiTurnOutputSchema = z
       message:
         "session_summary is required (2–3 sentences) when session_complete is true",
       path: ["session_summary"],
-    }
+    },
   )
-  .refine(
-    (v) => (!v.session_complete ? v.session_summary === null : true),
-    {
-      message: "session_summary must be null when session_complete is false",
-      path: ["session_summary"],
-    }
-  );
+  .refine((v) => (!v.session_complete ? v.session_summary === null : true), {
+    message: "session_summary must be null when session_complete is false",
+    path: ["session_summary"],
+  });
 
 /**
  * Validate one Gemini turn output. Throws `Error` with a summarised
@@ -116,7 +120,7 @@ export const geminiTurnOutputSchema = z
  * a try/catch.
  */
 export const validateGeminiTurnOutput = (
-  parsed: unknown
+  parsed: unknown,
 ): IGeminiTurnOutput => {
   const result = geminiTurnOutputSchema.safeParse(parsed);
   if (!result.success) {

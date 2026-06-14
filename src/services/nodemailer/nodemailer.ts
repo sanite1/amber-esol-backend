@@ -31,8 +31,11 @@ if (IS_DEMO_MODE) {
   const original = transporter.sendMail.bind(transporter);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (transporter as any).sendMail = (options: any, cb?: any) => {
-    if (options && typeof options.subject === "string" &&
-        !options.subject.startsWith(DEMO_EMAIL_PREFIX)) {
+    if (
+      options &&
+      typeof options.subject === "string" &&
+      !options.subject.startsWith(DEMO_EMAIL_PREFIX)
+    ) {
       options = { ...options, subject: DEMO_EMAIL_PREFIX + options.subject };
     }
     return original(options, cb);

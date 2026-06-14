@@ -58,12 +58,12 @@ const main = async () => {
 
   if (LOCATION === "europe-west2") {
     log.warn(
-      "europe-west2 (London) does not host Gemini 2.5 Flash as of the brief (May 2026). Use europe-west4."
+      "europe-west2 (London) does not host Gemini 2.5 Flash as of the brief (May 2026). Use europe-west4.",
     );
   }
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     log.warn(
-      "GOOGLE_APPLICATION_CREDENTIALS not set — falling back to gcloud Application Default Credentials."
+      "GOOGLE_APPLICATION_CREDENTIALS not set — falling back to gcloud Application Default Credentials.",
     );
   }
 
@@ -80,7 +80,7 @@ const main = async () => {
   } catch (err) {
     return fail(
       `Could not resolve a GCP project ID: ${(err as Error).message}`,
-      "Set GCP_PROJECT_ID in .env, or ensure the credentials JSON contains a project_id field."
+      "Set GCP_PROJECT_ID in .env, or ensure the credentials JSON contains a project_id field.",
     );
   }
 
@@ -95,7 +95,7 @@ const main = async () => {
   } catch (err) {
     return fail(
       `Auth failed: ${(err as Error).message}`,
-      "Check GOOGLE_APPLICATION_CREDENTIALS points to a real JSON file, the file is well-formed, and the service account is not disabled."
+      "Check GOOGLE_APPLICATION_CREDENTIALS points to a real JSON file, the file is well-formed, and the service account is not disabled.",
     );
   }
 
@@ -137,19 +137,19 @@ const main = async () => {
     if (looksHtml && res.status === 404) {
       return fail(
         "Edge 404 (HTML response, not a Vertex AI JSON error).",
-        "Almost always means billing isn't active on the project, or the API has not finished propagating after enablement. Activate billing at https://console.cloud.google.com/billing and wait ~1 minute."
+        "Almost always means billing isn't active on the project, or the API has not finished propagating after enablement. Activate billing at https://console.cloud.google.com/billing and wait ~1 minute.",
       );
     }
     if (res.status === 403) {
       return fail(
         "Forbidden",
-        "Service account is missing 'Vertex AI User' role, or the Vertex AI API is not enabled."
+        "Service account is missing 'Vertex AI User' role, or the Vertex AI API is not enabled.",
       );
     }
     if (res.status === 404) {
       return fail(
         `${EXPECTED_MODEL} not found in ${LOCATION} for ${resolvedProject}.`,
-        "Model not yet published in this region, or you haven't accepted Gen AI terms. Open https://console.cloud.google.com/vertex-ai/studio once with this project selected to trigger the acceptance dialog."
+        "Model not yet published in this region, or you haven't accepted Gen AI terms. Open https://console.cloud.google.com/vertex-ai/studio once with this project selected to trigger the acceptance dialog.",
       );
     }
     return fail("Unexpected HTTP error — see body above.");
@@ -163,7 +163,9 @@ const main = async () => {
   }
 
   log.ok(`countTokens response: ${JSON.stringify(parsed)}`);
-  log.ok(`${EXPECTED_MODEL} is wired up in ${LOCATION} for ${resolvedProject}.`);
+  log.ok(
+    `${EXPECTED_MODEL} is wired up in ${LOCATION} for ${resolvedProject}.`,
+  );
   log.ok("Vertex AI connection confirmed.");
 };
 

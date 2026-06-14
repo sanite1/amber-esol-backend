@@ -27,7 +27,7 @@ export const listVocabValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const updateMasteryValidation = () =>
@@ -41,5 +41,5 @@ export const updateMasteryValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

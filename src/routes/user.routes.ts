@@ -43,7 +43,7 @@ router.post(
   parseJsonFields,
   authLimiter,
   registerStudentValidation(),
-  registerStudent
+  registerStudent,
 );
 
 router.post(
@@ -52,7 +52,7 @@ router.post(
   parseJsonFields,
   authLimiter,
   registerTutorValidation(),
-  registerTutor
+  registerTutor,
 );
 
 router.post(
@@ -60,7 +60,7 @@ router.post(
   upload.fields([{ name: "profilePicture", maxCount: 1 }]),
   authLimiter,
   registerAdminValidation(),
-  registerAdmin
+  registerAdmin,
 );
 
 // ── Auth ──
@@ -70,7 +70,7 @@ router.post(
   "/forgot-password",
   passwordResetLimiter,
   forgotPasswordValidation(),
-  forgotPassword
+  forgotPassword,
 );
 
 // ── Email Verification ──
@@ -78,7 +78,7 @@ router.get(
   "/verify/:id/:token",
   authLimiter,
   verifyEmailValidation(),
-  verifyEmail
+  verifyEmail,
 );
 
 // ── Password Reset ──
@@ -86,7 +86,7 @@ router.patch(
   "/reset-password/:id/:token",
   passwordResetLimiter,
   resetPasswordValidation(),
-  resetPassword
+  resetPassword,
 );
 
 // ── Password Update (authenticated) ──
@@ -94,7 +94,7 @@ router.patch(
   "/update-password",
   isAuthenticated,
   updatePasswordValidation(),
-  updatePassword
+  updatePassword,
 );
 
 // ── Tutor Listing (public) ──
@@ -109,14 +109,14 @@ router
     upload.fields([{ name: "profilePicture", maxCount: 1 }]),
     parseJsonFields,
     updateUserValidation(),
-    updateUser
+    updateUser,
   );
 
 router.delete(
   "/:id",
   isAuthenticated,
   deleteAccountValidation(),
-  deleteAccount
+  deleteAccount,
 );
 
 export default router;

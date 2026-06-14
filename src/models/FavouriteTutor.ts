@@ -21,7 +21,7 @@ const favouriteTutorSchema = new Schema<IFavouriteTutor>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // One favourite per student-tutor pair
@@ -32,7 +32,7 @@ favouriteTutorSchema.index({ studentId: 1, createdAt: -1 });
 
 const FavouriteTutor = model<IFavouriteTutor>(
   "FavouriteTutor",
-  favouriteTutorSchema
+  favouriteTutorSchema,
 );
 
 export default FavouriteTutor;

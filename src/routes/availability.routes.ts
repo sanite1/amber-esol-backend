@@ -34,7 +34,7 @@ router.patch(
   isAuthenticated,
   isTutor,
   updateSettingsValidation(),
-  updateSettings
+  updateSettings,
 );
 
 // ── Authenticated tutor: create date override ──
@@ -43,7 +43,7 @@ router.post(
   isAuthenticated,
   isTutor,
   createOverrideValidation(),
-  createOverride
+  createOverride,
 );
 
 // ── Authenticated tutor: delete date override ──
@@ -52,7 +52,7 @@ router.delete(
   isAuthenticated,
   isTutor,
   deleteOverrideValidation(),
-  deleteOverride
+  deleteOverride,
 );
 
 export default router;

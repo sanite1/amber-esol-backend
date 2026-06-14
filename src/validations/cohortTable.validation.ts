@@ -51,7 +51,8 @@ const cohortTableSchema = {
       .optional()
       .messages({
         "any.invalid": "limit must be an integer between 10 and 200",
-        "string.pattern.base": "limit must be a positive integer between 10 and 200",
+        "string.pattern.base":
+          "limit must be a positive integer between 10 and 200",
       }),
   })
     .unknown(false)

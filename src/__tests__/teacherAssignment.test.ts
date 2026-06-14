@@ -31,7 +31,8 @@
  *   AL5  Warning fires when post-assign count >= 80% of cap
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 import { Types } from "mongoose";
 import Organisation from "../models/Organisation";
@@ -130,20 +131,26 @@ describe("listOrgTeachersService", () => {
 
     const ok = await createTeacher({ orgId: orgA._id, lastname: "Approved" });
     const notApproved = await createTeacher({
-      orgId: orgA._id, lastname: "NotApproved", approved: false,
+      orgId: orgA._id,
+      lastname: "NotApproved",
+      approved: false,
     });
     const otherOrg = await createTeacher({
-      orgId: orgB._id, lastname: "OtherOrg",
+      orgId: orgB._id,
+      lastname: "OtherOrg",
     });
     const notInOrgList = await createTeacher({
-      orgId: orgA._id, lastname: "NotInOrgList",
+      orgId: orgA._id,
+      lastname: "NotInOrgList",
     });
 
     // Only OK + notApproved + notInOrgList are in orgA's assigned list,
     // but only OK satisfies ALL three conditions.
     await Organisation.updateOne(
       { _id: orgA._id },
-      { $set: { assigned_teacher_ids: [ok._id, notApproved._id, otherOrg._id] } },
+      {
+        $set: { assigned_teacher_ids: [ok._id, notApproved._id, otherOrg._id] },
+      },
     );
     // notInOrgList is in orgA but NOT in assigned_teacher_ids
     expect(notInOrgList).toBeTruthy();
@@ -195,12 +202,18 @@ describe("listOrgTeachersService", () => {
       await createLearner({ orgId: org._id, assignedTeacherId: teacher._id });
     }
     let res = await listOrgTeachersService(org._id.toString());
-    expect((res.data as { teachers: Array<{ near_capacity: boolean }> }).teachers[0].near_capacity).toBe(false);
+    expect(
+      (res.data as { teachers: Array<{ near_capacity: boolean }> }).teachers[0]
+        .near_capacity,
+    ).toBe(false);
 
     // Add one more → 80% → IS near capacity
     await createLearner({ orgId: org._id, assignedTeacherId: teacher._id });
     res = await listOrgTeachersService(org._id.toString());
-    expect((res.data as { teachers: Array<{ near_capacity: boolean }> }).teachers[0].near_capacity).toBe(true);
+    expect(
+      (res.data as { teachers: Array<{ near_capacity: boolean }> }).teachers[0]
+        .near_capacity,
+    ).toBe(true);
   });
 
   it("L4 — empty assigned_teacher_ids returns empty list", async () => {
@@ -220,8 +233,16 @@ describe("addTeacherToOrgService", () => {
     const teacher = await createTeacher({ orgId: org._id });
     const admin = await createOrgAdmin(org._id);
 
-    await addTeacherToOrgService(org._id.toString(), teacher._id.toString(), admin._id.toString());
-    await addTeacherToOrgService(org._id.toString(), teacher._id.toString(), admin._id.toString());
+    await addTeacherToOrgService(
+      org._id.toString(),
+      teacher._id.toString(),
+      admin._id.toString(),
+    );
+    await addTeacherToOrgService(
+      org._id.toString(),
+      teacher._id.toString(),
+      admin._id.toString(),
+    );
 
     const reloaded = await Organisation.findById(org._id).lean();
     const ids = (reloaded?.assigned_teacher_ids ?? []) as Types.ObjectId[];
@@ -235,7 +256,11 @@ describe("addTeacherToOrgService", () => {
     const admin = await createOrgAdmin(org._id);
 
     await expect(
-      addTeacherToOrgService(org._id.toString(), teacher._id.toString(), admin._id.toString()),
+      addTeacherToOrgService(
+        org._id.toString(),
+        teacher._id.toString(),
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -246,7 +271,11 @@ describe("addTeacherToOrgService", () => {
     const admin = await createOrgAdmin(orgMine._id);
 
     await expect(
-      addTeacherToOrgService(orgMine._id.toString(), teacherInOther._id.toString(), admin._id.toString()),
+      addTeacherToOrgService(
+        orgMine._id.toString(),
+        teacherInOther._id.toString(),
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 403 });
   });
 
@@ -256,7 +285,11 @@ describe("addTeacherToOrgService", () => {
     const admin = await createOrgAdmin(org._id);
 
     await expect(
-      addTeacherToOrgService(org._id.toString(), learner._id.toString(), admin._id.toString()),
+      addTeacherToOrgService(
+        org._id.toString(),
+        learner._id.toString(),
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -272,9 +305,14 @@ describe("addTeacherToOrgService", () => {
     }
 
     const res = await addTeacherToOrgService(
-      org._id.toString(), teacher._id.toString(), admin._id.toString(),
+      org._id.toString(),
+      teacher._id.toString(),
+      admin._id.toString(),
     );
-    const data = res.data as { warning_flag: boolean; warning_message?: string };
+    const data = res.data as {
+      warning_flag: boolean;
+      warning_message?: string;
+    };
     expect(data.warning_flag).toBe(true);
     expect(data.warning_message).toMatch(/80%|cap/i);
   });
@@ -301,19 +339,26 @@ describe("removeTeacherFromOrgService", () => {
 
     const admin = await createOrgAdmin(org._id);
     const res = await removeTeacherFromOrgService(
-      org._id.toString(), teacher._id.toString(), admin._id.toString(),
+      org._id.toString(),
+      teacher._id.toString(),
+      admin._id.toString(),
     );
 
     // RM3 — count of unassigned
-    expect((res.data as { learners_unassigned: number }).learners_unassigned).toBe(4);
+    expect(
+      (res.data as { learners_unassigned: number }).learners_unassigned,
+    ).toBe(4);
 
     // RM1 — teacher no longer in org.assigned_teacher_ids
     const reloadedOrg = await Organisation.findById(org._id).lean();
-    expect((reloadedOrg?.assigned_teacher_ids ?? []) as Types.ObjectId[]).toHaveLength(0);
+    expect(
+      (reloadedOrg?.assigned_teacher_ids ?? []) as Types.ObjectId[],
+    ).toHaveLength(0);
 
     // RM2 — every learner's assigned_teacher_id is now null
     const remaining = await User.countDocuments({
-      orgId: org._id, assigned_teacher_id: teacher._id,
+      orgId: org._id,
+      assigned_teacher_id: teacher._id,
     });
     expect(remaining).toBe(0);
   });
@@ -348,10 +393,13 @@ describe("assignTeacherToLearnerService", () => {
     expect(data.warning_flag).toBe(false);
 
     const reloaded = await User.findById(learner._id).lean();
-    expect(reloaded?.assigned_teacher_id?.toString()).toBe(teacher._id.toString());
+    expect(reloaded?.assigned_teacher_id?.toString()).toBe(
+      teacher._id.toString(),
+    );
 
     const audit = await AuditLog.findOne({
-      learner_id: learner._id, action: "learner_teacher_assigned",
+      learner_id: learner._id,
+      action: "learner_teacher_assigned",
     }).lean();
     expect(audit).toBeTruthy();
   });
@@ -396,7 +444,8 @@ describe("assignTeacherToLearnerService", () => {
       { $set: { orgId: org._id } },
     );
     const learner = await createLearner({
-      orgId: org._id, assignedTeacherId: teacher._id,
+      orgId: org._id,
+      assignedTeacherId: teacher._id,
     });
     const admin = await createOrgAdmin(org._id);
 
@@ -406,7 +455,9 @@ describe("assignTeacherToLearnerService", () => {
       { teacher_id: null },
       admin._id.toString(),
     );
-    expect((res.data as { assigned_teacher_id: string | null }).assigned_teacher_id).toBeNull();
+    expect(
+      (res.data as { assigned_teacher_id: string | null }).assigned_teacher_id,
+    ).toBeNull();
 
     const reloaded = await User.findById(learner._id).lean();
     expect(reloaded?.assigned_teacher_id).toBeNull();
@@ -435,7 +486,10 @@ describe("assignTeacherToLearnerService", () => {
       { teacher_id: teacher._id.toString() },
       admin._id.toString(),
     );
-    const data = res.data as { warning_flag: boolean; assigned_learner_count: number };
+    const data = res.data as {
+      warning_flag: boolean;
+      assigned_learner_count: number;
+    };
     expect(data.warning_flag).toBe(true);
     expect(data.assigned_learner_count).toBe(8);
   });

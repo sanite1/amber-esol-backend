@@ -70,9 +70,9 @@ export const options = {
     },
   },
   thresholds: {
-    "ilr_acceptance_ms": ["p(95)<500"],
-    "ilr_completion_ms": ["p(95)<60000"],
-    "http_req_failed":   ["rate<0.05"],
+    ilr_acceptance_ms: ["p(95)<500"],
+    ilr_completion_ms: ["p(95)<60000"],
+    http_req_failed: ["rate<0.05"],
   },
 };
 
@@ -125,7 +125,10 @@ export default function () {
     sleep(POLL_INTERVAL_S);
     const statusRes = http.get(
       `${BASE_URL}/api/org-admin/export/ilr/${jobId}/status`,
-      { headers, tags: { name: "GET /api/org-admin/export/ilr/:jobId/status" } },
+      {
+        headers,
+        tags: { name: "GET /api/org-admin/export/ilr/:jobId/status" },
+      },
     );
     if (statusRes.status !== 200) continue;
     finalStatus = statusRes.json("data.status");
@@ -143,16 +146,20 @@ export default function () {
   const downloadStart = Date.now();
   const download = http.get(
     `${BASE_URL}/api/org-admin/export/ilr/${exportId}/download`,
-    { headers, tags: { name: "GET /api/org-admin/export/ilr/:exportId/download" } },
+    {
+      headers,
+      tags: { name: "GET /api/org-admin/export/ilr/:exportId/download" },
+    },
   );
   downloadMs.add(Date.now() - downloadStart);
 
   check(download, {
     "download 200": (r) => r.status === 200,
     "content-type text/csv": (r) =>
-      (r.headers["Content-Type"] ?? r.headers["content-type"] ?? "").includes("text/csv"),
-    "CSV non-empty": (r) =>
-      typeof r.body === "string" && r.body.length > 0,
+      (r.headers["Content-Type"] ?? r.headers["content-type"] ?? "").includes(
+        "text/csv",
+      ),
+    "CSV non-empty": (r) => typeof r.body === "string" && r.body.length > 0,
     "CSV row count matches": (r) => {
       if (typeof r.body !== "string") return false;
       // Header + N data rows (filter out trailing newlines).

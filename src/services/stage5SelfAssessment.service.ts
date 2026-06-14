@@ -193,7 +193,10 @@ export const submitStage5SelfAssessmentService = async (
       );
     }
     const value = ratings[key];
-    if (typeof value !== "string" || !VALID_OBJECTIVE.includes(value as ObjectiveRating)) {
+    if (
+      typeof value !== "string" ||
+      !VALID_OBJECTIVE.includes(value as ObjectiveRating)
+    ) {
       throw new ApiError(
         400,
         `objective_ratings["${key}"] must be one of ${VALID_OBJECTIVE.join(", ")}`,

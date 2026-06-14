@@ -9,7 +9,8 @@ import {
 } from "../utils/geminiOutputValidator";
 
 const VALID = {
-  reply: "Great work — you used 'appointment' correctly. Try again with 'I have an appointment at 3pm'.",
+  reply:
+    "Great work — you used 'appointment' correctly. Try again with 'I have an appointment at 3pm'.",
   mode: "bridge" as const,
   skill_codes_used: ["Sc", "Lr"],
   turn_score: 0.78,
@@ -46,7 +47,7 @@ describe("validateGeminiTurnOutput — happy path", () => {
           ...VALID,
           safeguarding_flag: true,
           safeguarding_category: cat,
-        })
+        }),
       ).not.toThrow();
     }
   });
@@ -58,21 +59,21 @@ describe("validateGeminiTurnOutput — happy path", () => {
         session_complete: true,
         session_summary:
           "أحسنت — You learned how to book a GP appointment today. Next time we will practise repeat prescriptions.",
-      })
+      }),
     ).not.toThrow();
   });
 });
 
 describe("validateGeminiTurnOutput — field-level rejections", () => {
   it("rejects empty reply", () => {
-    expect(() =>
-      validateGeminiTurnOutput({ ...VALID, reply: "" })
-    ).toThrow(/reply/);
+    expect(() => validateGeminiTurnOutput({ ...VALID, reply: "" })).toThrow(
+      /reply/,
+    );
   });
 
   it("rejects invalid mode", () => {
     expect(() =>
-      validateGeminiTurnOutput({ ...VALID, mode: "DEEP_IMMERSION" })
+      validateGeminiTurnOutput({ ...VALID, mode: "DEEP_IMMERSION" }),
     ).toThrow(/mode/);
   });
 
@@ -80,9 +81,9 @@ describe("validateGeminiTurnOutput — field-level rejections", () => {
     "rejects turn_score out of [0, 1] (%s)",
     (score) => {
       expect(() =>
-        validateGeminiTurnOutput({ ...VALID, turn_score: score })
+        validateGeminiTurnOutput({ ...VALID, turn_score: score }),
       ).toThrow(/turn_score/);
-    }
+    },
   );
 
   it("rejects an unknown safeguarding_category", () => {
@@ -91,14 +92,24 @@ describe("validateGeminiTurnOutput — field-level rejections", () => {
         ...VALID,
         safeguarding_flag: true,
         safeguarding_category: "vague_distress",
-      })
+      }),
     ).toThrow(/safeguarding_category/);
   });
 
-  it("rejects extra fields (.strict)", () => {
-    expect(() =>
-      validateGeminiTurnOutput({ ...VALID, mood: "happy" } as any)
-    ).toThrow(/unexpected|unrecognized|strict/i);
+  it("silently strips unknown fields (was .strict, now .strip)", () => {
+    // .strict() used to reject Gemini turns whenever the model added
+    // an auxiliary field like `grammar_feedback` or `hint`. That fired
+    // 502s on most turns in practice. We now strip extras and return
+    // only the contracted fields. The mode change is documented in
+    // geminiOutputValidator.ts.
+    const result = validateGeminiTurnOutput({
+      ...VALID,
+      mood: "happy",
+      grammar_feedback: "Use 'have got' here",
+    } as any);
+    expect(result.reply).toBe(VALID.reply);
+    expect((result as any).mood).toBeUndefined();
+    expect((result as any).grammar_feedback).toBeUndefined();
   });
 
   it("rejects missing fields", () => {
@@ -108,10 +119,10 @@ describe("validateGeminiTurnOutput — field-level rejections", () => {
 
   it("rejects wrong-typed fields", () => {
     expect(() =>
-      validateGeminiTurnOutput({ ...VALID, turn_score: "0.5" } as any)
+      validateGeminiTurnOutput({ ...VALID, turn_score: "0.5" } as any),
     ).toThrow();
     expect(() =>
-      validateGeminiTurnOutput({ ...VALID, skill_codes_used: "Sc" } as any)
+      validateGeminiTurnOutput({ ...VALID, skill_codes_used: "Sc" } as any),
     ).toThrow();
   });
 });
@@ -123,7 +134,7 @@ describe("validateGeminiTurnOutput — cross-field invariants", () => {
         ...VALID,
         safeguarding_flag: true,
         safeguarding_category: null,
-      })
+      }),
     ).toThrow(/safeguarding_category is required/);
   });
 
@@ -133,7 +144,7 @@ describe("validateGeminiTurnOutput — cross-field invariants", () => {
         ...VALID,
         safeguarding_flag: false,
         safeguarding_category: "self_harm",
-      })
+      }),
     ).toThrow(/must be null/);
   });
 
@@ -143,7 +154,7 @@ describe("validateGeminiTurnOutput — cross-field invariants", () => {
         ...VALID,
         session_complete: true,
         session_summary: null,
-      })
+      }),
     ).toThrow(/session_summary is required/);
   });
 
@@ -153,7 +164,7 @@ describe("validateGeminiTurnOutput — cross-field invariants", () => {
         ...VALID,
         session_complete: false,
         session_summary: "Nice work today.",
-      })
+      }),
     ).toThrow(/must be null/);
   });
 });
@@ -194,7 +205,9 @@ describe("geminiTurnOutputSchema — safeParse surface", () => {
     const r = geminiTurnOutputSchema.safeParse({ ...VALID, turn_score: 2 });
     expect(r.success).toBe(false);
     if (!r.success) {
-      expect(r.error.issues.some((i) => i.path.includes("turn_score"))).toBe(true);
+      expect(r.error.issues.some((i) => i.path.includes("turn_score"))).toBe(
+        true,
+      );
     }
   });
 });

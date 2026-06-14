@@ -42,7 +42,8 @@
  *   - The priority-queue enqueue side effect — mocked out.
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 // Queues mocked wholesale so the enqueueLearnerPriorityRecalc
 // helper inside the service doesn't try to hit Redis. Match the
@@ -58,7 +59,9 @@ jest.mock("../queues", () => ({
   cacheRefreshQueue: { add: jest.fn().mockResolvedValue({ id: "fake" }) },
   rarpaEvidenceQueue: { add: jest.fn().mockResolvedValue({ id: "fake" }) },
   ilrExportQueue: { add: jest.fn().mockResolvedValue({ id: "fake" }) },
-  complianceValidationQueue: { add: jest.fn().mockResolvedValue({ id: "fake" }) },
+  complianceValidationQueue: {
+    add: jest.fn().mockResolvedValue({ id: "fake" }),
+  },
   misPushQueue: { add: jest.fn().mockResolvedValue({ id: "fake" }) },
 }));
 

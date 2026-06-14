@@ -29,7 +29,7 @@ export const generateInvoiceValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const listInvoicesValidation = () =>
@@ -45,14 +45,14 @@ export const listInvoicesValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const invoiceIdParamValidation = () =>
   validate(
     { params: Joi.object({ invoiceId: objectId.required() }) },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const markPaidValidation = () =>
@@ -65,5 +65,5 @@ export const markPaidValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

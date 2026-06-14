@@ -13,7 +13,10 @@ import { Types } from "mongoose";
 
 // Joi custom rule — defer ObjectId validation to mongoose so we don't
 // have to maintain a parallel regex.
-const objectIdRule = (value: string, helpers: { error: (code: string) => unknown }) => {
+const objectIdRule = (
+  value: string,
+  helpers: { error: (code: string) => unknown },
+) => {
   if (!Types.ObjectId.isValid(value)) return helpers.error("any.invalid");
   return value;
 };
@@ -39,8 +42,12 @@ const listAdminSchema = {
     category: Joi.string()
       .valid(...SAFEGUARDING_CATEGORIES)
       .optional(),
-    page: Joi.string().pattern(/^[1-9]\d*$/).optional(),
-    limit: Joi.string().pattern(/^[1-9]\d*$/).optional(),
+    page: Joi.string()
+      .pattern(/^[1-9]\d*$/)
+      .optional(),
+    limit: Joi.string()
+      .pattern(/^[1-9]\d*$/)
+      .optional(),
     // Function 15 To-Do 2 — `?summary=true` switches the response to
     // aggregate counts (by category, by org, >24h unresolved,
     // avg resolution time). `?days=N` narrows the window applied to

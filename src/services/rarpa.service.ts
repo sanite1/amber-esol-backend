@@ -2,10 +2,7 @@ import { randomUUID } from "crypto";
 
 import ApiError from "../errors/apiError";
 import User from "../models/User";
-import {
-  IUser,
-  IStage3Objective,
-} from "../interfaces/user.interface";
+import { IUser, IStage3Objective } from "../interfaces/user.interface";
 import {
   EsolLevel,
   IlrSkillCode,
@@ -52,10 +49,7 @@ import logger from "../config/logger";
  * their dashboard; teachers see them in the Stage 3 view; org admins
  * see them on the Ofsted-facing learner profile. One source of truth.
  */
-const DOMAIN_TEMPLATES: Record<
-  "Rt" | "Wt" | "Lr" | "Sc",
-  string
-> = {
+const DOMAIN_TEMPLATES: Record<"Rt" | "Wt" | "Lr" | "Sc", string> = {
   Sc: "Develop spoken English for everyday situations at {level}",
   Lr: "Develop listening comprehension for everyday situations at {level}",
   Rt: "Develop reading skills for everyday texts at {level}",
@@ -122,7 +116,7 @@ const render = (template: string, level: EsolLevel): string =>
  */
 export const buildStage3ObjectivesForPlacement = (
   esol_level: EsolLevel,
-  skill_weakness_flags: IlrSkillCode[]
+  skill_weakness_flags: IlrSkillCode[],
 ): IStage3Objective[] => {
   const now = new Date();
 
@@ -185,7 +179,7 @@ export const buildStage3ObjectivesForPlacement = (
 export const createStage3ObjectivesFromPlacement = async (
   learner_id: string,
   esol_level: EsolLevel,
-  skill_weakness_flags: IlrSkillCode[]
+  skill_weakness_flags: IlrSkillCode[],
 ): Promise<IStage3Objective[]> => {
   const learner = await User.findById(learner_id);
   if (!learner) {
@@ -194,21 +188,25 @@ export const createStage3ObjectivesFromPlacement = async (
   if (learner.role !== "student") {
     throw new ApiError(
       403,
-      `Cannot set Stage 3 objectives on a non-learner user (${learner_id})`
+      `Cannot set Stage 3 objectives on a non-learner user (${learner_id})`,
     );
   }
 
   const fresh = buildStage3ObjectivesForPlacement(
     esol_level,
-    skill_weakness_flags
+    skill_weakness_flags,
   );
 
   // Strip prior placement_assessment objectives; keep teacher overrides
   // and any other source.
   const existing: IStage3Objective[] = (learner.stage3_objectives ??
-    []) as IUser["stage3_objectives"] extends infer T ? T extends Array<infer E> ? E[] : never : never;
+    []) as IUser["stage3_objectives"] extends infer T
+    ? T extends Array<infer E>
+      ? E[]
+      : never
+    : never;
   const preserved = existing.filter(
-    (o) => o.set_from !== "placement_assessment"
+    (o) => o.set_from !== "placement_assessment",
   );
 
   learner.stage3_objectives = [...preserved, ...fresh];
@@ -222,7 +220,7 @@ export const createStage3ObjectivesFromPlacement = async (
       preservedCount: preserved.length,
       replacedCount: existing.length - preserved.length,
     },
-    "Stage 3 objectives rewritten from placement"
+    "Stage 3 objectives rewritten from placement",
   );
 
   return learner.stage3_objectives ?? [];
@@ -248,7 +246,7 @@ export const createStage3ObjectivesFromPlacement = async (
 export const createStage3ObjectivesOnLevelChange = async (
   learner_id: string,
   new_level: EsolLevel,
-  skill_weakness_flags: IlrSkillCode[]
+  skill_weakness_flags: IlrSkillCode[],
 ): Promise<IStage3Objective[]> => {
   const learner = await User.findById(learner_id);
   if (!learner) {
@@ -257,13 +255,13 @@ export const createStage3ObjectivesOnLevelChange = async (
   if (learner.role !== "student") {
     throw new ApiError(
       403,
-      `Cannot set Stage 3 objectives on a non-learner user (${learner_id})`
+      `Cannot set Stage 3 objectives on a non-learner user (${learner_id})`,
     );
   }
 
   const fresh = buildStage3ObjectivesForPlacement(
     new_level,
-    skill_weakness_flags
+    skill_weakness_flags,
   ).map((o) => ({ ...o, set_from: "level_change" }));
 
   const existing: IStage3Objective[] = (learner.stage3_objectives ??
@@ -284,7 +282,7 @@ export const createStage3ObjectivesOnLevelChange = async (
       addedCount: fresh.length,
       preservedCount: existing.length,
     },
-    "Stage 3 objectives appended for level change"
+    "Stage 3 objectives appended for level change",
   );
 
   return learner.stage3_objectives ?? [];

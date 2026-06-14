@@ -22,7 +22,13 @@ const organisationSchema = new Schema<IOrganisation>(
   {
     // ── Existing fields (preserved) ────────────────────────────────────
     name: { type: String, required: true, trim: true },
-    slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
     // contactEmail / contactName / adminUserId are optional at the schema
     // level so brief Function 1 can create an org BEFORE the org_admin user
     // exists. Existing /api/esol/organisations provisioning still requires
@@ -66,7 +72,12 @@ const organisationSchema = new Schema<IOrganisation>(
     },
     monthly_fee_per_head: { type: Number, default: null },
     esol_session_rate: { type: Number, default: null },
-    reporting_contact_email: { type: String, default: null, lowercase: true, trim: true },
+    reporting_contact_email: {
+      type: String,
+      default: null,
+      lowercase: true,
+      trim: true,
+    },
     billing_active: { type: Boolean, default: true },
     is_demo: { type: Boolean, default: false },
     is_employer: { type: Boolean, default: false },
@@ -79,6 +90,14 @@ const organisationSchema = new Schema<IOrganisation>(
       default: [],
     },
     max_learners_per_teacher: { type: Number, default: 150 },
+
+    // ── Phase 2 / Final Addendum §13 (BE-G) — onboarding embed ────────
+    // Stamps the moment the org_admin either submits the ROI calculator
+    // or explicitly skips it from the onboarding-embed path. Null while
+    // onboarding is pending; once stamped never re-blocks (the field
+    // exists for a future onboarding workflow that may chain off it —
+    // we deliberately did NOT name it `roi_calculator_completed_at`).
+    org_onboarding_completed_at: { type: Date, default: null },
 
     // ── Addendum §21 — MIS integration (encrypted credentials at rest) ─
     misType: {
@@ -100,7 +119,7 @@ const organisationSchema = new Schema<IOrganisation>(
         delete ret.misApiCredentials;
       },
     },
-  }
+  },
 );
 
 // ── Indexes ────────────────────────────────────────────────────────────

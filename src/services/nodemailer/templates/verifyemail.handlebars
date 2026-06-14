@@ -59,6 +59,36 @@
         <p>Hi {{name}},</p>
         <p>Thank you for registering with Amber Training. Please verify your
           email address by clicking the button below:</p>
+        {{#if placementLevel}}
+          <div
+            style="background: #fff8ee; border: 1px solid rgba(255,124,34,0.3); border-radius: 12px; padding: 16px 20px; margin: 16px 0;"
+          >
+            <p
+              style="margin: 0; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.08em; color: #ff7c22;"
+            >
+              Your placement result
+            </p>
+            <p
+              style="margin: 6px 0 0; font-size: 24px; font-weight: 800; color: #0b2343;"
+            >
+              {{placementLevel}}
+            </p>
+            {{#if placementRationale}}
+              <p
+                style="margin: 8px 0 0; font-size: 13px; color: #41506b; line-height: 1.5; font-style: italic;"
+              >
+                "{{placementRationale}}"
+              </p>
+            {{/if}}
+            <p
+              style="margin: 6px 0 0; font-size: 13px; color: #41506b; line-height: 1.5;"
+            >
+              Your lessons and practice scenarios will be matched to this level.
+              Your teacher reviews every placement, so it can be adjusted if
+              needed.
+            </p>
+          </div>
+        {{/if}}
         <p style="text-align: center;">
           <a href="{{url}}" class="btn">Verify Email</a>
         </p>

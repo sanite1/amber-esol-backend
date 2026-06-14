@@ -94,7 +94,7 @@ export const buildSafeguardingEmailBody = (args: {
  *   6. Log structured metric for the p95 dashboard.
  */
 export const sendSafeguardingAlertEmail = async (
-  job: SafeguardingAlertEmailJob
+  job: SafeguardingAlertEmailJob,
 ): Promise<SafeguardingEmailResult> => {
   const startedAt = Date.now();
 
@@ -132,12 +132,12 @@ export const sendSafeguardingAlertEmail = async (
   if (job.alert_id && Types.ObjectId.isValid(job.alert_id)) {
     SafeguardingAlert.updateOne(
       { _id: new Types.ObjectId(job.alert_id) },
-      { $set: { notificationSentAt: new Date() } }
+      { $set: { notificationSentAt: new Date() } },
     ).catch((err) =>
       logger.error(
         { err, alert_id: job.alert_id },
-        "Failed to stamp notificationSentAt on SafeguardingAlert"
-      )
+        "Failed to stamp notificationSentAt on SafeguardingAlert",
+      ),
     );
   }
 
@@ -160,10 +160,13 @@ export const sendSafeguardingAlertEmail = async (
     worker_latency_ms: workerLatencyMs,
   };
 
-  if (endToEndLatencyMs >= 0 && endToEndLatencyMs > DISPATCH_LATENCY_BUDGET_MS) {
+  if (
+    endToEndLatencyMs >= 0 &&
+    endToEndLatencyMs > DISPATCH_LATENCY_BUDGET_MS
+  ) {
     logger.warn(
       meta,
-      `Safeguarding alert email dispatch exceeded ${DISPATCH_LATENCY_BUDGET_MS}ms SLA`
+      `Safeguarding alert email dispatch exceeded ${DISPATCH_LATENCY_BUDGET_MS}ms SLA`,
     );
   } else {
     logger.info(meta, "Safeguarding alert email sent");

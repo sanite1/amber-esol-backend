@@ -74,7 +74,7 @@ const notificationSchema = new Schema<INotification>(
         return ret;
       },
     },
-  }
+  },
 );
 
 /* ── Indexes ── */
@@ -84,7 +84,7 @@ notificationSchema.index({ userId: 1, type: 1, createdAt: -1 });
 
 const Notification = mongoose.model<INotification>(
   "Notification",
-  notificationSchema
+  notificationSchema,
 );
 
 export default Notification;

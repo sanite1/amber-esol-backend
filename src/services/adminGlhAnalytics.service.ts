@@ -92,9 +92,7 @@ export interface GlhAnalyticsResponse {
   /** Echo of the resolved window — useful when the caller omitted from/to. */
   period: { from: string; to: string; days: number };
   totals: GlhBreakdown;
-  per_org: Array<
-    GlhBreakdown & { org_id: string; org_name: string }
-  >;
+  per_org: Array<GlhBreakdown & { org_id: string; org_name: string }>;
   /** Daily or weekly depending on window size; bucket interval echoed below. */
   trend: Array<GlhBreakdown & { bucket_start: string }>;
   /** "daily" | "weekly" — drives the chart x-axis label format. */
@@ -151,12 +149,19 @@ const resolveWindow = (
   // Include the full `to` day → set end to 23:59:59.999 UTC.
   const toEnd = new Date(to.getTime() + MS_PER_DAY - 1);
   const from =
-    parseIsoDate(query.from) ?? new Date(toEnd.getTime() - DEFAULT_WINDOW_DAYS * MS_PER_DAY);
+    parseIsoDate(query.from) ??
+    new Date(toEnd.getTime() - DEFAULT_WINDOW_DAYS * MS_PER_DAY);
 
   if (from > toEnd) {
-    throw new ApiError(400, `from (${toIsoDay(from)}) must be on or before to (${toIsoDay(to)})`);
+    throw new ApiError(
+      400,
+      `from (${toIsoDay(from)}) must be on or before to (${toIsoDay(to)})`,
+    );
   }
-  const days = Math.max(1, Math.ceil((toEnd.getTime() - from.getTime()) / MS_PER_DAY));
+  const days = Math.max(
+    1,
+    Math.ceil((toEnd.getTime() - from.getTime()) / MS_PER_DAY),
+  );
   return { from, to: toEnd, days };
 };
 
@@ -262,7 +267,11 @@ export const getGlhAnalyticsService = async (
   // separation is explicit.
   const sessionFacet = await AISession.aggregate<{
     totals: Array<{ ai_mins: number; pre_platform_mins: number }>;
-    per_org: Array<{ _id: Types.ObjectId; ai_mins: number; pre_platform_mins: number }>;
+    per_org: Array<{
+      _id: Types.ObjectId;
+      ai_mins: number;
+      pre_platform_mins: number;
+    }>;
     trend: Array<{ _id: Date; ai_mins: number; pre_platform_mins: number }>;
   }>([
     {
@@ -378,18 +387,25 @@ export const getGlhAnalyticsService = async (
   for (const r of reviewFacet[0]?.per_org ?? [])
     orgIds.add((r._id as Types.ObjectId).toString());
 
-  const orgs = orgIds.size > 0
-    ? await Organisation.find({ _id: { $in: Array.from(orgIds).map((id) => new Types.ObjectId(id)) } })
-        .select("name")
-        .lean()
-    : [];
+  const orgs =
+    orgIds.size > 0
+      ? await Organisation.find({
+          _id: { $in: Array.from(orgIds).map((id) => new Types.ObjectId(id)) },
+        })
+          .select("name")
+          .lean()
+      : [];
   const orgNameById = new Map<string, string>(
-    orgs.map((o) => [(o._id as Types.ObjectId).toString(), o.name ?? "(unnamed)"]),
+    orgs.map((o) => [
+      (o._id as Types.ObjectId).toString(),
+      o.name ?? "(unnamed)",
+    ]),
   );
 
   // ── Compose totals ────────────────────────────────────────────
   const totalAiMins = sessionFacet[0]?.totals[0]?.ai_mins ?? 0;
-  const totalPrePlatformMins = sessionFacet[0]?.totals[0]?.pre_platform_mins ?? 0;
+  const totalPrePlatformMins =
+    sessionFacet[0]?.totals[0]?.pre_platform_mins ?? 0;
   const totalTeacherMins = reviewFacet[0]?.totals[0]?.teacher_mins ?? 0;
 
   const totals = buildBreakdown(
@@ -481,11 +497,19 @@ export const getGlhAnalyticsService = async (
  * bucket-start (daily / Monday) so the JS merge can match keys
  * via `toIsoDay`.
  */
-const buildTrendPipeline = (interval: "daily" | "weekly"): PipelineStage.FacetPipelineStage[] => {
+const buildTrendPipeline = (
+  interval: "daily" | "weekly",
+): PipelineStage.FacetPipelineStage[] => {
   const dateTrunc =
     interval === "daily"
       ? { $dateTrunc: { date: "$createdAt", unit: "day" } }
-      : { $dateTrunc: { date: "$createdAt", unit: "week", startOfWeek: "monday" } };
+      : {
+          $dateTrunc: {
+            date: "$createdAt",
+            unit: "week",
+            startOfWeek: "monday",
+          },
+        };
 
   return [
     {
@@ -510,7 +534,13 @@ const buildReviewTrendPipeline = (
   const dateTrunc =
     interval === "daily"
       ? { $dateTrunc: { date: "$created_at", unit: "day" } }
-      : { $dateTrunc: { date: "$created_at", unit: "week", startOfWeek: "monday" } };
+      : {
+          $dateTrunc: {
+            date: "$created_at",
+            unit: "week",
+            startOfWeek: "monday",
+          },
+        };
 
   return [
     {

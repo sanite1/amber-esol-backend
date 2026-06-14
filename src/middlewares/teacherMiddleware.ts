@@ -49,7 +49,10 @@
 
 import { Types } from "mongoose";
 import ApiError from "../errors/apiError";
-import { ExpressFunction, ITeacherContext } from "../interfaces/helper.interface";
+import {
+  ExpressFunction,
+  ITeacherContext,
+} from "../interfaces/helper.interface";
 
 // ─────────────────────────────────────────────────────────────────────
 // Role gate — requireTeacherRole

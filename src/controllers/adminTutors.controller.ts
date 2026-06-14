@@ -13,11 +13,11 @@ import {
 export const getAdminTutors = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const result = await getAdminTutorsService(
-      req.query as unknown as IAdminTutorsQuery
+      req.query as unknown as IAdminTutorsQuery,
     );
     return res.status(result.statusCode).json({
       message: result.message,
@@ -33,12 +33,12 @@ export const getAdminTutors = async (
 export const updateTutorStatus = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const result = await adminUpdateTutorStatusService(
       req.params.id,
-      req.body as IAdminUpdateTutorStatusRequest
+      req.body as IAdminUpdateTutorStatusRequest,
     );
     return res.status(result.statusCode).json({
       message: result.message,

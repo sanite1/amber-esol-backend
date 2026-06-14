@@ -14,7 +14,7 @@ const getAdminTutorsSchema = {
         "inactive",
         "pending_approval",
         "rejected",
-        "banned"
+        "banned",
       )
       .optional(),
     sort: Joi.string()

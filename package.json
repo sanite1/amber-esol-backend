@@ -18,7 +18,8 @@
     "validate:safeguarding-messages": "ts-node --transpile-only src/scripts/validateSafeguardingMessages.ts",
     "test": "jest --runInBand --forceExit",
     "test:watch": "jest --runInBand --watch",
-    "audit:todo": "ts-node --transpile-only scripts/auditMergedTodo.ts"
+    "audit:todo": "ts-node --transpile-only scripts/auditMergedTodo.ts",
+    "seed:qa": "ts-node --transpile-only src/scripts/seedQaUsers.ts"
   },
   "keywords": [],
   "author": "",

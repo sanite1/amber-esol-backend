@@ -39,7 +39,7 @@ const getCryptr = (): Cryptr => {
     throw new Error(
       "MIS_CREDENTIALS_KEY is missing or too short. Generate a 32-byte hex key with " +
         `\`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"\` ` +
-        "and set it in .env (and Vercel project settings)."
+        "and set it in .env (and Vercel project settings).",
     );
   }
   _cryptr = new Cryptr(key);
@@ -71,7 +71,7 @@ export const encryptMisCredentials = (plaintext: string): string => {
  * corrupt — re-prompt the org admin").
  */
 export const decryptMisCredentials = (
-  org: Pick<IOrganisation, "misApiCredentials">
+  org: Pick<IOrganisation, "misApiCredentials">,
 ): string | null => {
   if (!org.misApiCredentials) return null;
   try {
@@ -79,7 +79,7 @@ export const decryptMisCredentials = (
   } catch (err) {
     throw new Error(
       `Failed to decrypt misApiCredentials: ${(err as Error).message}. ` +
-        "This usually means MIS_CREDENTIALS_KEY was rotated without re-encrypting stored values."
+        "This usually means MIS_CREDENTIALS_KEY was rotated without re-encrypting stored values.",
     );
   }
 };

@@ -44,28 +44,28 @@ router.patch("/:id", updateOrgValidation(), updateOrg);
 router.post(
   "/:id/referral-link",
   createReferralLinkValidation(),
-  createOrgReferralLink
+  createOrgReferralLink,
 );
 
 // List all referral tokens for an organisation (active + inactive)
 router.get(
   "/:id/referral-links",
   listReferralLinksValidation(),
-  listOrgReferralLinks
+  listOrgReferralLinks,
 );
 
 // Deactivate a referral token (sets isActive: false; row preserved for audit)
 router.delete(
   "/:id/referral-links/:tokenId",
   deactivateReferralLinkValidation(),
-  deactivateOrgReferralLink
+  deactivateOrgReferralLink,
 );
 
 // Create an org_admin user for this organisation
 router.post(
   "/:id/admin-user",
   createOrgAdminUserValidation(),
-  createOrgAdminUser
+  createOrgAdminUser,
 );
 
 export default router;

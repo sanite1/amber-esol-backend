@@ -64,9 +64,21 @@ const safeguardingScanMs = new Trend("safeguarding_scan_ms", true);
 // A realistic-ish sample of UK postcodes hitting a variety of MCAs
 // so the lookup isn't all hitting the same hash bucket.
 const POSTCODES = [
-  "SW1A 1AA", "EC1A 1BB", "M1 1AA", "B1 1HQ", "L1 8JQ",
-  "LS1 4AP", "G1 1QQ", "EH1 1YZ", "CF10 3RB", "BS1 4AE",
-  "NE1 7RU", "S1 2DE", "NG1 5DQ", "CB2 1TN", "OX1 2JD",
+  "SW1A 1AA",
+  "EC1A 1BB",
+  "M1 1AA",
+  "B1 1HQ",
+  "L1 8JQ",
+  "LS1 4AP",
+  "G1 1QQ",
+  "EH1 1YZ",
+  "CF10 3RB",
+  "BS1 4AE",
+  "NE1 7RU",
+  "S1 2DE",
+  "NG1 5DQ",
+  "CB2 1TN",
+  "OX1 2JD",
 ];
 
 // A spread of safeguarding-prone and safeguarding-clean inputs so
@@ -107,9 +119,9 @@ export const options = {
     },
   },
   thresholds: {
-    "postcode_lookup_ms":   ["p(95)<10"],
-    "safeguarding_scan_ms": ["p(95)<5"],
-    "http_req_failed":      ["rate<0.005"],
+    postcode_lookup_ms: ["p(95)<10"],
+    safeguarding_scan_ms: ["p(95)<5"],
+    http_req_failed: ["rate<0.005"],
   },
 };
 

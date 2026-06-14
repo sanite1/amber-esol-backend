@@ -28,6 +28,11 @@ import { verifyReferralToken } from "../controllers/esolReferral.controller";
  */
 const router = Router();
 
-router.post("/", referralTokenLimiter, verifyTokenBodyValidation(), verifyReferralToken);
+router.post(
+  "/",
+  referralTokenLimiter,
+  verifyTokenBodyValidation(),
+  verifyReferralToken,
+);
 
 export default router;

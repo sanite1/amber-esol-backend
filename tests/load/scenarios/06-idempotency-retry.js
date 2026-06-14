@@ -76,8 +76,8 @@ export const options = {
     },
   },
   thresholds: {
-    "trigger_ms":      ["p(95)<500"],
-    "http_req_failed": ["rate<0.01"],
+    trigger_ms: ["p(95)<500"],
+    http_req_failed: ["rate<0.01"],
   },
 };
 
@@ -106,8 +106,7 @@ export default function () {
 
   const ok = check(res, {
     "200 or 202": (r) => r.status === 200 || r.status === 202,
-    "carries export_id":
-      (r) => typeof r.json("data.export_id") === "string",
+    "carries export_id": (r) => typeof r.json("data.export_id") === "string",
   });
   if (!ok) return;
 

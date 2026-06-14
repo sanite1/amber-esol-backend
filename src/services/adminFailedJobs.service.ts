@@ -84,9 +84,7 @@ const VALID_QUEUE_NAMES = new Set(Object.keys(allQueues));
 // GET /api/admin/failed-jobs
 // ─────────────────────────────────────────────────────────────────────
 
-const buildFilter = (
-  query: ListFailedJobsQuery,
-): Record<string, unknown> => {
+const buildFilter = (query: ListFailedJobsQuery): Record<string, unknown> => {
   const filter: Record<string, unknown> = {};
 
   // Default: hide dismissed rows. Override with ?include_dismissed=true
@@ -132,7 +130,10 @@ export const listFailedJobsService = async (
   query: ListFailedJobsQuery,
 ): Promise<ApiResponse> => {
   const rawPage = Number.parseInt(query.page ?? "1", 10);
-  const rawLimit = Number.parseInt(query.limit ?? String(DEFAULT_PAGE_SIZE), 10);
+  const rawLimit = Number.parseInt(
+    query.limit ?? String(DEFAULT_PAGE_SIZE),
+    10,
+  );
   const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
   const limit = Math.min(
     Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : DEFAULT_PAGE_SIZE,
@@ -153,7 +154,11 @@ export const listFailedJobsService = async (
   // ?include_dismissed=true, the grouped summary should still report
   // the "needs attention" count.
   const [docs, total, byQueueAgg] = await Promise.all([
-    FailedJob.find(filter).sort({ created_at: -1 }).skip(skip).limit(limit).lean(),
+    FailedJob.find(filter)
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
     FailedJob.countDocuments(filter),
     FailedJob.aggregate([
       { $match: { dismissed: false } },
@@ -231,7 +236,7 @@ export const retryFailedJobService = async (
 
   // ── Guard: queue must exist on the running app ────────────────
   const queueName = failed.queue_name as QueueName;
-  const queue = (allQueues as Record<string, typeof allQueues[QueueName]>)[
+  const queue = (allQueues as Record<string, (typeof allQueues)[QueueName]>)[
     queueName
   ];
   if (!queue) {

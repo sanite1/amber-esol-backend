@@ -29,7 +29,7 @@ router.post(
   "/:id/reply",
   isAuthenticated,
   replyTicketValidation(),
-  userReplyTicket
+  userReplyTicket,
 );
 
 // ── Admin routes ──
@@ -38,7 +38,7 @@ router.get(
   isAuthenticated,
   isAdmin,
   getAdminTicketsValidation(),
-  getAdminTickets
+  getAdminTickets,
 );
 
 router.post(
@@ -46,7 +46,7 @@ router.post(
   isAuthenticated,
   isAdmin,
   replyTicketValidation(),
-  adminReplyTicket
+  adminReplyTicket,
 );
 
 router.patch(
@@ -54,7 +54,7 @@ router.patch(
   isAuthenticated,
   isAdmin,
   updateTicketStatusValidation(),
-  adminUpdateTicketStatus
+  adminUpdateTicketStatus,
 );
 
 router.patch(
@@ -62,7 +62,7 @@ router.patch(
   isAuthenticated,
   isAdmin,
   updateTicketPriorityValidation(),
-  adminUpdateTicketPriority
+  adminUpdateTicketPriority,
 );
 
 export default router;

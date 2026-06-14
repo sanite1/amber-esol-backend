@@ -50,7 +50,7 @@ describe("Booking Lifecycle", () => {
 
       const result = await confirmBookingService(
         booking._id.toString(),
-        tutor._id.toString()
+        tutor._id.toString(),
       );
 
       expect(result.statusCode).toBe(200);
@@ -66,7 +66,10 @@ describe("Booking Lifecycle", () => {
       });
 
       await expect(
-        confirmBookingService(booking._id.toString(), otherTutor._id.toString())
+        confirmBookingService(
+          booking._id.toString(),
+          otherTutor._id.toString(),
+        ),
       ).rejects.toThrow("not authorized");
     });
 
@@ -77,7 +80,7 @@ describe("Booking Lifecycle", () => {
       });
 
       await expect(
-        confirmBookingService(booking._id.toString(), tutor._id.toString())
+        confirmBookingService(booking._id.toString(), tutor._id.toString()),
       ).rejects.toThrow("payment has not been received");
     });
 
@@ -88,7 +91,7 @@ describe("Booking Lifecycle", () => {
       });
 
       await expect(
-        confirmBookingService(booking._id.toString(), tutor._id.toString())
+        confirmBookingService(booking._id.toString(), tutor._id.toString()),
       ).rejects.toThrow("Cannot confirm");
     });
 
@@ -100,7 +103,7 @@ describe("Booking Lifecycle", () => {
 
       await confirmBookingService(
         booking1._id.toString(),
-        tutor._id.toString()
+        tutor._id.toString(),
       );
       let updatedTutor = await User.findById(tutor._id);
       expect(updatedTutor!.totalStudents).toBe(1);
@@ -113,7 +116,7 @@ describe("Booking Lifecycle", () => {
 
       await confirmBookingService(
         booking2._id.toString(),
-        tutor._id.toString()
+        tutor._id.toString(),
       );
       updatedTutor = await User.findById(tutor._id);
       expect(updatedTutor!.totalStudents).toBe(1); // NOT 2
@@ -129,7 +132,7 @@ describe("Booking Lifecycle", () => {
       const result = await declineBookingService(
         booking._id.toString(),
         tutor._id.toString(),
-        { reason: "Schedule conflict" }
+        { reason: "Schedule conflict" },
       );
 
       expect(result.statusCode).toBe(200);
@@ -144,7 +147,7 @@ describe("Booking Lifecycle", () => {
       });
 
       await expect(
-        declineBookingService(booking._id.toString(), tutor._id.toString(), {})
+        declineBookingService(booking._id.toString(), tutor._id.toString(), {}),
       ).rejects.toThrow("Cannot decline");
     });
   });
@@ -159,7 +162,7 @@ describe("Booking Lifecycle", () => {
         booking._id.toString(),
         student._id.toString(),
         "student",
-        { reason: "Changed plans" }
+        { reason: "Changed plans" },
       );
 
       expect(result.statusCode).toBe(200);
@@ -178,8 +181,8 @@ describe("Booking Lifecycle", () => {
           booking._id.toString(),
           student._id.toString(),
           "student",
-          {}
-        )
+          {},
+        ),
       ).rejects.toThrow("Cannot cancel");
     });
 
@@ -194,8 +197,8 @@ describe("Booking Lifecycle", () => {
           booking._id.toString(),
           stranger._id.toString(),
           "student",
-          {}
-        )
+          {},
+        ),
       ).rejects.toThrow("not authorized");
     });
   });
@@ -209,7 +212,7 @@ describe("Booking Lifecycle", () => {
       const result = await completeBookingService(
         booking._id.toString(),
         tutor._id.toString(),
-        "tutor"
+        "tutor",
       );
 
       expect(result.statusCode).toBe(200);
@@ -234,8 +237,8 @@ describe("Booking Lifecycle", () => {
         completeBookingService(
           booking._id.toString(),
           tutor._id.toString(),
-          "tutor"
-        )
+          "tutor",
+        ),
       ).rejects.toThrow("Cannot complete");
     });
   });

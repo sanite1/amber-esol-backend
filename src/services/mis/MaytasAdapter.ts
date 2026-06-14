@@ -141,21 +141,21 @@ const MAYTAS_CSV_COLUMNS: Array<{
   platformField: keyof Omit<MISRecord, "raw_payload">;
   csvHeader: string;
 }> = [
-  { platformField: "uln",                  csvHeader: "ULN" },                  // TODO confirm
-  { platformField: "firstname",            csvHeader: "GivenNames" },           // TODO confirm
-  { platformField: "lastname",             csvHeader: "FamilyName" },           // TODO confirm
-  { platformField: "date_of_birth",        csvHeader: "DateOfBirth" },          // TODO confirm — format DD/MM/YYYY vs YYYY-MM-DD?
-  { platformField: "esol_level",           csvHeader: "ESOLLevel" },            // TODO confirm
-  { platformField: "learn_start_date",     csvHeader: "LearnStartDate" },       // TODO confirm
-  { platformField: "learn_plan_end_date",  csvHeader: "LearnPlanEndDate" },     // TODO confirm
-  { platformField: "learn_act_end_date",   csvHeader: "LearnActEndDate" },      // TODO confirm — empty cell or literal "NULL"?
-  { platformField: "outcome",              csvHeader: "Outcome" },              // TODO confirm
-  { platformField: "comp_status",          csvHeader: "CompStatus" },           // TODO confirm
-  { platformField: "sof",                  csvHeader: "SOF" },                  // TODO confirm
-  { platformField: "add_hours",            csvHeader: "AddHours" },             // TODO confirm
-  { platformField: "english_prog_type",    csvHeader: "EnglishProgType" },      // TODO confirm
-  { platformField: "total_glh",            csvHeader: "TotalGLH" },             // TODO confirm
-  { platformField: "skill_codes_covered",  csvHeader: "SkillCodes" },           // TODO confirm — pipe-separated? comma in a single cell?
+  { platformField: "uln", csvHeader: "ULN" }, // TODO confirm
+  { platformField: "firstname", csvHeader: "GivenNames" }, // TODO confirm
+  { platformField: "lastname", csvHeader: "FamilyName" }, // TODO confirm
+  { platformField: "date_of_birth", csvHeader: "DateOfBirth" }, // TODO confirm — format DD/MM/YYYY vs YYYY-MM-DD?
+  { platformField: "esol_level", csvHeader: "ESOLLevel" }, // TODO confirm
+  { platformField: "learn_start_date", csvHeader: "LearnStartDate" }, // TODO confirm
+  { platformField: "learn_plan_end_date", csvHeader: "LearnPlanEndDate" }, // TODO confirm
+  { platformField: "learn_act_end_date", csvHeader: "LearnActEndDate" }, // TODO confirm — empty cell or literal "NULL"?
+  { platformField: "outcome", csvHeader: "Outcome" }, // TODO confirm
+  { platformField: "comp_status", csvHeader: "CompStatus" }, // TODO confirm
+  { platformField: "sof", csvHeader: "SOF" }, // TODO confirm
+  { platformField: "add_hours", csvHeader: "AddHours" }, // TODO confirm
+  { platformField: "english_prog_type", csvHeader: "EnglishProgType" }, // TODO confirm
+  { platformField: "total_glh", csvHeader: "TotalGLH" }, // TODO confirm
+  { platformField: "skill_codes_covered", csvHeader: "SkillCodes" }, // TODO confirm — pipe-separated? comma in a single cell?
 ];
 
 // ─────────────────────────────────────────────────────────────────────
@@ -198,7 +198,9 @@ const buildCsvRow = (record: MISRecord): string =>
  * helper, differing only in row count.
  */
 const buildCsv = (records: MISRecord[]): string => {
-  const header = MAYTAS_CSV_COLUMNS.map((col) => csvCell(col.csvHeader)).join(",");
+  const header = MAYTAS_CSV_COLUMNS.map((col) => csvCell(col.csvHeader)).join(
+    ",",
+  );
   const rows = records.map(buildCsvRow);
   return [header, ...rows].join("\n");
 };

@@ -43,7 +43,7 @@ export interface ProgressionReadyEmailResult {
 const DOMAIN_NAME = process.env.DOMAIN_NAME ?? "";
 
 export const sendProgressionReadyEmail = async (
-  job: ProgressionReadyEmailJob
+  job: ProgressionReadyEmailJob,
 ): Promise<ProgressionReadyEmailResult> => {
   const startedAt = Date.now();
 
@@ -62,7 +62,7 @@ export const sendProgressionReadyEmail = async (
   if (!recipient) {
     logger.warn(
       { org_admin_user_id: job.org_admin_user_id, org_id: job.org_id },
-      "progression-ready-email: org admin email not resolvable — skipping send"
+      "progression-ready-email: org admin email not resolvable — skipping send",
     );
     return {
       sent: false,
@@ -113,7 +113,7 @@ export const sendProgressionReadyEmail = async (
   } catch (err) {
     logger.error(
       { err: (err as Error).message, recipient, org_id: job.org_id },
-      "progression-ready-email: SMTP send failed"
+      "progression-ready-email: SMTP send failed",
     );
     // Re-throw so BullMQ retries — the email is the org admin's
     // primary signal and we want at least one delivery attempt to
@@ -131,7 +131,7 @@ export const sendProgressionReadyEmail = async (
       message_id: messageId,
       dispatch_latency_ms: dispatchLatencyMs,
     },
-    "progression-ready-email sent"
+    "progression-ready-email sent",
   );
 
   return {

@@ -25,5 +25,5 @@ export const declareEligibilityValidation = () =>
       }).unknown(false),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

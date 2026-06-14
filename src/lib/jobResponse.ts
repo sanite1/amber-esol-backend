@@ -30,7 +30,7 @@ export const respondWithAcceptedJob = (
   res: Response,
   job: Job,
   queueName: QueueName,
-  message: string = "Job enqueued"
+  message: string = "Job enqueued",
 ): Response => {
   return res.status(202).json({
     statusCode: 202,

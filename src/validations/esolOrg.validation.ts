@@ -81,7 +81,7 @@ export const provisionOrgValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const updateOrgValidation = () =>
@@ -105,7 +105,7 @@ export const updateOrgValidation = () =>
       }).min(1),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const updateOrgStatusValidation = () =>
@@ -119,14 +119,14 @@ export const updateOrgStatusValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const getOrgValidation = () =>
   validate(
     { params: Joi.object({ orgId: objectId.required() }) },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const listOrgsValidation = () =>
@@ -140,5 +140,5 @@ export const listOrgsValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

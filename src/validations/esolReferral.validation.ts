@@ -27,7 +27,7 @@ export const createReferralValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const listReferralsValidation = () =>
@@ -41,7 +41,7 @@ export const listReferralsValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const validateTokenParamValidation = () =>
@@ -54,7 +54,7 @@ export const validateTokenParamValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const registerViaReferralValidation = () =>
@@ -86,7 +86,7 @@ export const registerViaReferralValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 /* ── POST /api/esol/verify-token (brief Function 2 To-Do 1) ─────────── */
@@ -101,5 +101,18 @@ export const verifyTokenBodyValidation = () =>
       }).unknown(false),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
+  );
+
+/* ── PATCH /:id/revoke + POST /:id/remind — shared param check ──────── */
+
+export const referralIdParamValidation = () =>
+  validate(
+    {
+      params: Joi.object({
+        id: objectId.required(),
+      }),
+    },
+    { context: true },
+    { abortEarly: false },
   );

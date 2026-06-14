@@ -22,7 +22,7 @@ export const confirmLevelChange: ExpressFunction = async (req, res, next) => {
     const callerId = req.user!.id.toString();
     const result = await confirmLevelChangeService(
       req.body as ConfirmLevelChangeBody,
-      callerId
+      callerId,
     );
     return res.status(result.statusCode).json({
       message: result.message,
@@ -42,7 +42,7 @@ export const rejectLevelChange: ExpressFunction = async (req, res, next) => {
     const callerId = req.user!.id.toString();
     const result = await rejectLevelChangeService(
       req.body as RejectLevelChangeBody,
-      callerId
+      callerId,
     );
     return res.status(result.statusCode).json({
       message: result.message,

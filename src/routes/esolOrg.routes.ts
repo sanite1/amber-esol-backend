@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { isAuthenticated, isAdmin, isOrgAdmin } from "../middlewares/authMiddleWare";
+import {
+  isAuthenticated,
+  isAdmin,
+  isOrgAdmin,
+} from "../middlewares/authMiddleWare";
 import { requireOrgMatch } from "../middlewares/orgScopingMiddleware";
 import {
   provisionOrgValidation,
@@ -34,6 +38,11 @@ router.get("/:orgId", isOrgAdmin, requireOrgMatch, getOrgValidation(), getOrg);
 router.patch("/:orgId", isAdmin, updateOrgValidation(), updateOrg);
 
 // Activate / deactivate org (platform admin only)
-router.patch("/:orgId/status", isAdmin, updateOrgStatusValidation(), updateOrgStatus);
+router.patch(
+  "/:orgId/status",
+  isAdmin,
+  updateOrgStatusValidation(),
+  updateOrgStatus,
+);
 
 export default router;

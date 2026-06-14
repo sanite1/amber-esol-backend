@@ -27,7 +27,10 @@ export function learnerIds() {
         "of ObjectIds from the staging Hillview cohort.",
     );
   }
-  return raw.split(",").map((s) => s.trim()).filter(Boolean);
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /** Single org ID — for ILR / dashboard / cache-clear scenarios. */
@@ -37,7 +40,9 @@ export function orgId() {
 
 /** Scenario ids that the AI tutor sessions can be launched against. */
 export function scenarioIds() {
-  return (__ENV.SCENARIO_IDS ?? "s1_gp_appointment,s2_payslip,s3_housing_rights")
+  return (
+    __ENV.SCENARIO_IDS ?? "s1_gp_appointment,s2_payslip,s3_housing_rights"
+  )
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -56,7 +61,10 @@ export function learnerTokens() {
       "LEARNER_TOKENS env var required. Comma-separated JWTs for the seeded learners.",
     );
   }
-  return raw.split(",").map((s) => s.trim()).filter(Boolean);
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 export function orgAdminTokens() {
@@ -66,7 +74,10 @@ export function orgAdminTokens() {
       "ORG_ADMIN_TOKENS env var required. Comma-separated JWTs for seeded org admins.",
     );
   }
-  return raw.split(",").map((s) => s.trim()).filter(Boolean);
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /**
@@ -100,7 +111,15 @@ export function generateLearnerCsv(vu) {
         // checksummed; the import flow accepts the demo format.
         `1${String(vu).padStart(3, "0")}${String(i).padStart(6, "0")}`,
         "SW1A 1AA",
-        i % 5 === 0 ? "arabic" : i % 5 === 1 ? "somali" : i % 5 === 2 ? "dari" : i % 5 === 3 ? "cantonese" : "english",
+        i % 5 === 0
+          ? "arabic"
+          : i % 5 === 1
+            ? "somali"
+            : i % 5 === 2
+              ? "dari"
+              : i % 5 === 3
+                ? "cantonese"
+                : "english",
       ].join(","),
     );
   }

@@ -137,9 +137,7 @@ const FIELD_MAP: Record<keyof Omit<MISRecord, "raw_payload">, string> = {
  * extras can override the typed fields (escape hatch for the rare
  * case the typed shape can't express what ProSolution needs).
  */
-const toProSolutionPayload = (
-  record: MISRecord,
-): Record<string, unknown> => {
+const toProSolutionPayload = (record: MISRecord): Record<string, unknown> => {
   const payload: Record<string, unknown> = {};
   for (const [platformField, wireField] of Object.entries(FIELD_MAP)) {
     const value = (record as unknown as Record<string, unknown>)[platformField];
@@ -355,9 +353,7 @@ export class ProSolutionAdapter implements IMISAdapter {
     return results;
   }
 
-  private async pushOneChunk(
-    chunk: MISRecord[],
-  ): Promise<MISPushResult[]> {
+  private async pushOneChunk(chunk: MISRecord[]): Promise<MISPushResult[]> {
     const startedAt = Date.now();
     const payload = {
       learners: chunk.map(toProSolutionPayload),
@@ -553,7 +549,13 @@ export class ProSolutionAdapter implements IMISAdapter {
       // Normal case — the MIS doesn't know this ULN yet. Caller
       // (delta-sync cron) treats null as "skip this learner".
       logger.info(
-        { org_id: this.org_id, provider: PROVIDER, uln, http_status: 404, latency_ms },
+        {
+          org_id: this.org_id,
+          provider: PROVIDER,
+          uln,
+          http_status: 404,
+          latency_ms,
+        },
         "ProSolution pull: learner not found",
       );
       return null;
@@ -670,7 +672,8 @@ export class ProSolutionAdapter implements IMISAdapter {
       );
       return {
         success: false,
-        error: data?.message ?? `ProSolution rejected the record (HTTP ${status})`,
+        error:
+          data?.message ?? `ProSolution rejected the record (HTTP ${status})`,
         ...(data?.warnings && data.warnings.length > 0
           ? { warnings: data.warnings }
           : {}),

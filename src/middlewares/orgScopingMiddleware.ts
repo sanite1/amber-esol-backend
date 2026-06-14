@@ -35,7 +35,7 @@ export const requireOrgContext: ExpressFunction = async (req, _res, next) => {
     const orgId = req.user?.orgId;
     if (!orgId) {
       return next(
-        new ApiError(403, "Organisation context required for this resource")
+        new ApiError(403, "Organisation context required for this resource"),
       );
     }
 
@@ -87,7 +87,7 @@ export const requireOrgMatch: ExpressFunction = async (req, _res, next) => {
     }
     if (req.user?.orgId !== paramOrgId) {
       return next(
-        new ApiError(403, "Access denied to this organisation's resources")
+        new ApiError(403, "Access denied to this organisation's resources"),
       );
     }
     next();

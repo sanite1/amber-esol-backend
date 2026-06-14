@@ -311,7 +311,7 @@ export const setDefaultPaymentMethodValidation = () =>
   validate(
     setDefaultPaymentMethodSchema,
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const monthlyChartValidation = () =>

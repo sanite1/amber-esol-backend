@@ -15,9 +15,9 @@ import { Types, Document } from "mongoose";
  */
 
 export type TurnServedPath =
-  | "safeguarding_precache"      // SafeguardingDetector matched, Gemini never called
-  | "gemini"                     // normal Gemini turn served
-  | "ai_only_safeguarding";      // Gemini flagged but keyword scan didn't — pre-cache served, alert raised
+  | "safeguarding_precache" // SafeguardingDetector matched, Gemini never called
+  | "gemini" // normal Gemini turn served
+  | "ai_only_safeguarding"; // Gemini flagged but keyword scan didn't — pre-cache served, alert raised
 
 export interface ITurnLog extends Document {
   _id: Types.ObjectId;

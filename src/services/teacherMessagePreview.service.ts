@@ -88,10 +88,7 @@ export const previewTeacherMessageTranslationService = async (
     throw new ApiError(400, "message_text is required");
   }
   if (messageText.length > 300) {
-    throw new ApiError(
-      400,
-      "message_text must be 300 characters or fewer",
-    );
+    throw new ApiError(400, "message_text must be 300 characters or fewer");
   }
   if (targetLanguage.length === 0) {
     throw new ApiError(400, "target_language is required");

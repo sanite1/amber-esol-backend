@@ -11,7 +11,7 @@ cloudinary.config({
 export const cloudinaryImageUpload = (
   imageBuffer: Buffer,
   folder?: string,
-  resource_type?: "image" | "video" | "raw" | "auto"
+  resource_type?: "image" | "video" | "raw" | "auto",
 ): Promise<UploadApiResponse> => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
@@ -26,7 +26,7 @@ export const cloudinaryImageUpload = (
         } else {
           if (result) resolve(result);
         }
-      }
+      },
     );
 
     const bufferStream = new Readable();

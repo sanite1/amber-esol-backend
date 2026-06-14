@@ -28,7 +28,7 @@ const listMyTutorsSchema = {
 export const listMyTutorsValidation = validate(
   listMyTutorsSchema,
   { context: true },
-  { abortEarly: false }
+  { abortEarly: false },
 );
 
 /* ══════════════════════════════════════════════
@@ -45,7 +45,7 @@ const toggleFavouriteSchema = {
 export const toggleFavouriteValidation = validate(
   toggleFavouriteSchema,
   { context: true },
-  { abortEarly: false }
+  { abortEarly: false },
 );
 
 /* ══════════════════════════════════════════════
@@ -62,5 +62,5 @@ const getMyTutorDetailSchema = {
 export const getMyTutorDetailValidation = validate(
   getMyTutorDetailSchema,
   { context: true },
-  { abortEarly: false }
+  { abortEarly: false },
 );

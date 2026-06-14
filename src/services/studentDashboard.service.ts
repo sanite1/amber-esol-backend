@@ -16,7 +16,7 @@ import { hasLessonStarted, todayInTz } from "../utils/timezone";
 
 export const getStudentDashboardService = async (
   studentId: string,
-  query: IStudentDashboardQuery
+  query: IStudentDashboardQuery,
 ) => {
   await completeStaleBookings(studentId, "student");
 
@@ -67,7 +67,7 @@ export const getStudentDashboardService = async (
     })
       .populate(
         "tutorId",
-        "firstname lastname profilePicture specializations hourlyRate"
+        "firstname lastname profilePicture specializations hourlyRate",
       )
       .sort({ date: 1, startTime: 1 })
       .limit(upcomingLimit),
@@ -119,7 +119,7 @@ export const getStudentDashboardService = async (
     })
       .populate(
         "participants",
-        "firstname lastname profilePicture role specializations slug onlineStatus lastSeen"
+        "firstname lastname profilePicture role specializations slug onlineStatus lastSeen",
       )
       .sort({ lastMessageAt: -1 })
       .limit(messagesLimit),
@@ -140,11 +140,11 @@ export const getStudentDashboardService = async (
   const totalSpent = allPaidBookings.reduce((sum, b) => sum + b.price, 0);
   const thisMonthSpent = thisMonthCompletedBookings.reduce(
     (sum, b) => sum + b.price,
-    0
+    0,
   );
   const upcomingLessonsValue = upcomingValueBookings.reduce(
     (sum, b) => sum + b.price,
-    0
+    0,
   );
   const totalHoursBooked = allPaidBookings.length; // 1 booking = 1 hour
 
@@ -202,7 +202,7 @@ export const getStudentDashboardService = async (
   const recentMessagesData = conversations.map((conv) => {
     // Find the other participant (not the student)
     const otherParticipant = (conv.participants as any[]).find(
-      (p: any) => p._id.toString() !== studentId
+      (p: any) => p._id.toString() !== studentId,
     );
 
     const name = otherParticipant
@@ -239,7 +239,7 @@ export const getStudentDashboardService = async (
     _id: { $nin: bookedTutorIds },
   })
     .select(
-      "firstname lastname profilePicture specializations averageRating numberOfReviews hourlyRate slug"
+      "firstname lastname profilePicture specializations averageRating numberOfReviews hourlyRate slug",
     )
     .sort({ averageRating: -1, numberOfReviews: -1 })
     .limit(recommendedLimit);
@@ -290,7 +290,7 @@ export const getStudentDashboardService = async (
         hourlyRate: tutor.hourlyRate || 0,
         nextAvailable,
       };
-    })
+    }),
   );
 
   /* ── Find next lesson time for welcome banner ── */

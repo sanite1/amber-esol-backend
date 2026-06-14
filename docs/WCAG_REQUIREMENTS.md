@@ -8,10 +8,10 @@ The standards below are the floor, not the ceiling. Retrofitting accessibility i
 
 ## Sign-off
 
-| Role  | Name              | Date       | Status      |
-|-------|-------------------|------------|-------------|
-| Owner | Joey              | _pending_  | Not signed  |
-| Dev   | Collins Sanni     | _pending_  | Not signed  |
+| Role  | Name          | Date      | Status     |
+| ----- | ------------- | --------- | ---------- |
+| Owner | Joey          | _pending_ | Not signed |
+| Dev   | Collins Sanni | _pending_ | Not signed |
 
 This document must be checked in to the repo with both signatures before any new learner-facing screen is merged.
 
@@ -23,20 +23,21 @@ WCAG 2.1 AA requires a 4.5:1 contrast ratio for body text (under 18 pt) and 3:1 
 
 **Approved Tailwind colour pairs** (pre-verified ≥ 4.5:1; see [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/)):
 
-| Context              | Background           | Text                  | Ratio  |
-|----------------------|----------------------|-----------------------|--------|
-| Primary body text    | `bg-white`           | `text-[#0B2343]`      | ~14:1  |
-| Muted helper text    | `bg-white`           | `text-[#0B2343]/60`   | ~6:1   |
-| **Disabled text** ⚠  | `bg-white`           | `text-[#0B2343]/40`   | ~3.8:1 — only valid on text ≥ 18 pt or as decoration |
-| Primary CTA          | `bg-[#ff7c22]`       | `text-white`          | ~3.2:1 — **fails 4.5:1 for body**; only valid on text ≥ 18 pt / 14 pt bold |
-| Error                | `bg-red-50`          | `text-red-700`        | ~7.2:1 |
-| Success              | `bg-emerald-50`      | `text-emerald-700`    | ~6.4:1 |
+| Context              | Background      | Text                | Ratio                                                                      |
+| -------------------- | --------------- | ------------------- | -------------------------------------------------------------------------- |
+| Primary body text    | `bg-white`      | `text-[#0B2343]`    | ~14:1                                                                      |
+| Muted helper text    | `bg-white`      | `text-[#0B2343]/60` | ~6:1                                                                       |
+| **Disabled text** ⚠ | `bg-white`      | `text-[#0B2343]/40` | ~3.8:1 — only valid on text ≥ 18 pt or as decoration                       |
+| Primary CTA          | `bg-[#ff7c22]`  | `text-white`        | ~3.2:1 — **fails 4.5:1 for body**; only valid on text ≥ 18 pt / 14 pt bold |
+| Error                | `bg-red-50`     | `text-red-700`      | ~7.2:1                                                                     |
+| Success              | `bg-emerald-50` | `text-emerald-700`  | ~6.4:1                                                                     |
 
 **Pattern**: every new screen runs the WebAIM contrast checker on each text-on-background pair before merge. The orange CTA combo passes only because button text is set to `font-bold text-base` (≥ 14 pt bold) — if a smaller weight is used the colour pair changes.
 
 **Tailwind utilities to avoid for body text**: anything with opacity < `/60` over white, `text-gray-400` on white (3.0:1), `text-slate-500` on white (4.0:1).
 
 **Enforcement**:
+
 - Component `<MutedText>` wraps `text-[#0B2343]/60` — use instead of inventing new muted shades
 - axe DevTools scan (see Definition of Done) catches violations at review time
 
@@ -68,6 +69,7 @@ Every interactive element must have an accessible name. The accessible name come
 **Shared component**: a `<Field label required>{children}</Field>` wrapper is in [`EsolOnboardingWizard.tsx`](../../amber-esol-mvp/src/modules/dashboard/components/onboarding/EsolOnboardingWizard.tsx) — every form input must use it (or be wrapped in an equivalent label-linked pattern).
 
 **Enforcement**:
+
 - ESLint plugin `eslint-plugin-jsx-a11y` rules `label-has-associated-control` and `interactive-supports-focus` block merges if violated
 - axe DevTools `name-role-value` rule catches missed cases at review
 
@@ -144,7 +146,10 @@ Learners have a control to scale the page font size. Implementation: a context p
 // src/modules/dashboard/lib/contexts/FontSizeContext.tsx
 type FontSize = "sm" | "md" | "lg" | "xl";
 const SIZES: Record<FontSize, string> = {
-  sm: "14px", md: "16px", lg: "18px", xl: "20px",
+  sm: "14px",
+  md: "16px",
+  lg: "18px",
+  xl: "20px",
 };
 
 // Apply on mount and on change:
@@ -181,6 +186,7 @@ useDocumentLang(learner?.l1Language);
 ```
 
 Acceptable values:
+
 - `"en"` — English
 - `"ar"` — Arabic
 - `"so"` — Somali
@@ -206,14 +212,14 @@ document.documentElement.dir = lang && RTL_LANGUAGES.has(lang) ? "rtl" : "ltr";
 
 **Tailwind utilities — use logical properties**:
 
-| Don't use         | Do use                | Notes                          |
-|-------------------|-----------------------|--------------------------------|
-| `ml-4` / `mr-4`   | `ms-4` / `me-4`       | margin-inline-start/end        |
-| `pl-2` / `pr-2`   | `ps-2` / `pe-2`       | padding-inline-start/end       |
-| `border-l-2`      | `border-s-2`          | border-inline-start            |
-| `rounded-l-md`    | `rounded-s-md`        | border-radius logical          |
-| `left-0` / `right-0` | `start-0` / `end-0` | inset-inline-start/end         |
-| `text-left`       | `text-start`          | follows document direction     |
+| Don't use            | Do use              | Notes                      |
+| -------------------- | ------------------- | -------------------------- |
+| `ml-4` / `mr-4`      | `ms-4` / `me-4`     | margin-inline-start/end    |
+| `pl-2` / `pr-2`      | `ps-2` / `pe-2`     | padding-inline-start/end   |
+| `border-l-2`         | `border-s-2`        | border-inline-start        |
+| `rounded-l-md`       | `rounded-s-md`      | border-radius logical      |
+| `left-0` / `right-0` | `start-0` / `end-0` | inset-inline-start/end     |
+| `text-left`          | `text-start`        | follows document direction |
 
 **Tailwind `rtl:` modifier** for things logical properties don't cover (icon flips):
 

@@ -41,7 +41,7 @@ export const createTutor = async (overrides = {}) => {
 export const createBooking = async (
   studentId: string,
   tutorId: string,
-  overrides = {}
+  overrides = {},
 ) => {
   return Booking.create({
     studentId,
@@ -63,7 +63,7 @@ export const createTransaction = async (
   bookingId: string | Types.ObjectId,
   studentId: string,
   tutorId: string,
-  overrides = {}
+  overrides = {},
 ) => {
   return Transaction.create({
     bookingId,

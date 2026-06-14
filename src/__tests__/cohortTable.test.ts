@@ -21,7 +21,8 @@
  *  T15   non-student + inactive learners excluded
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 import { Types } from "mongoose";
 import Organisation from "../models/Organisation";
@@ -92,7 +93,7 @@ const seedSession = async (
     durationMins?: number;
     passed?: boolean;
     createdAt?: Date;
-  } = {}
+  } = {},
 ) => {
   const session = await AISession.create({
     learnerId,
@@ -113,7 +114,7 @@ const seedSession = async (
   if (args.createdAt) {
     await AISession.collection.updateOne(
       { _id: session._id as unknown as never },
-      { $set: { createdAt: args.createdAt } }
+      { $set: { createdAt: args.createdAt } },
     );
   }
   return session;
@@ -154,15 +155,26 @@ describe("getCohortTableService — derived columns", () => {
     });
 
     // 90 mins live + 60 mins live = 2.5 hrs ai
-    await seedSession(learner._id, org._id, { source: "ai_tutor", durationMins: 90, passed: true });
     await seedSession(learner._id, org._id, {
-      source: "teacher_consolidation", durationMins: 60, passed: true,
+      source: "ai_tutor",
+      durationMins: 90,
+      passed: true,
+    });
+    await seedSession(learner._id, org._id, {
+      source: "teacher_consolidation",
+      durationMins: 60,
+      passed: true,
     });
     // 180 mins pre-platform = 3.0 hrs imported
-    await seedSession(learner._id, org._id, { source: "pre_platform", durationMins: 180 });
+    await seedSession(learner._id, org._id, {
+      source: "pre_platform",
+      durationMins: 180,
+    });
     // A non-passing live session shouldn't increment scenarios_passed
     await seedSession(learner._id, org._id, {
-      source: "ai_tutor", durationMins: 30, passed: false,
+      source: "ai_tutor",
+      durationMins: 30,
+      passed: false,
     });
 
     const res = await getCohortTableService(org._id.toString(), {});
@@ -179,8 +191,8 @@ describe("getCohortTableService — derived columns", () => {
     expect(row.total_ai_hours).toBe(3.0);
     expect(row.imported_hours).toBe(3.0);
     expect(row.teacher_contact_hours).toBe(4.5);
-    expect(row.total_glh).toBe(10.5);              // 3.0 + 3.0 + 4.5
-    expect(row.scenarios_passed).toBe(2);          // only the two passed=true
+    expect(row.total_glh).toBe(10.5); // 3.0 + 3.0 + 4.5
+    expect(row.scenarios_passed).toBe(2); // only the two passed=true
     expect(row.last_active).toMatch(/^\d{4}-/);
     expect(row.status).toBe("active");
     expect(row.uln_status).toBe("recorded");
@@ -229,14 +241,34 @@ describe("pagination", () => {
     // Brief: limit must be 10–200. Use 10 (the minimum) for a clean
     // three-page check.
     const p1 = await getCohortTableService(org._id.toString(), {
-      page: "1", limit: "10",
+      page: "1",
+      limit: "10",
     });
-    const d1 = p1.data as { rows: CohortTableRow[]; pagination: { page: number; limit: number; total: number; total_pages: number } };
+    const d1 = p1.data as {
+      rows: CohortTableRow[];
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        total_pages: number;
+      };
+    };
     expect(d1.rows).toHaveLength(10);
-    expect(d1.pagination).toEqual({ page: 1, limit: 10, total: 22, total_pages: 3 });
+    expect(d1.pagination).toEqual({
+      page: 1,
+      limit: 10,
+      total: 22,
+      total_pages: 3,
+    });
 
-    const p3 = await getCohortTableService(org._id.toString(), { page: "3", limit: "10" });
-    const d3 = p3.data as { rows: CohortTableRow[]; pagination: { page: number } };
+    const p3 = await getCohortTableService(org._id.toString(), {
+      page: "3",
+      limit: "10",
+    });
+    const d3 = p3.data as {
+      rows: CohortTableRow[];
+      pagination: { page: number };
+    };
     expect(d3.rows).toHaveLength(2); // 22 - 20 = 2
     expect(d3.pagination.page).toBe(3);
   });
@@ -246,37 +278,39 @@ describe("pagination", () => {
     await createLearner({ orgId: org._id });
 
     const def = await getCohortTableService(org._id.toString(), {});
-    expect((def.data as { pagination: { limit: number } }).pagination.limit).toBe(50);
+    expect(
+      (def.data as { pagination: { limit: number } }).pagination.limit,
+    ).toBe(50);
   });
 
   // ── Refinement tests: brief Function 12 pagination bounds ──────
   it("R1 — limit below MIN_PAGE_SIZE (10) → 400", async () => {
     const org = await createOrg();
     await expect(
-      getCohortTableService(org._id.toString(), { limit: "5" })
+      getCohortTableService(org._id.toString(), { limit: "5" }),
     ).rejects.toMatchObject({ statusCode: 400 });
     await expect(
-      getCohortTableService(org._id.toString(), { limit: "9" })
+      getCohortTableService(org._id.toString(), { limit: "9" }),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it("R2 — limit above MAX_PAGE_SIZE (200) → 400", async () => {
     const org = await createOrg();
     await expect(
-      getCohortTableService(org._id.toString(), { limit: "201" })
+      getCohortTableService(org._id.toString(), { limit: "201" }),
     ).rejects.toMatchObject({ statusCode: 400 });
     await expect(
-      getCohortTableService(org._id.toString(), { limit: "9999" })
+      getCohortTableService(org._id.toString(), { limit: "9999" }),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it("R3 — page < 1 → 400 (covers '0' and non-numeric)", async () => {
     const org = await createOrg();
     await expect(
-      getCohortTableService(org._id.toString(), { page: "0" })
+      getCohortTableService(org._id.toString(), { page: "0" }),
     ).rejects.toMatchObject({ statusCode: 400 });
     await expect(
-      getCohortTableService(org._id.toString(), { page: "abc" })
+      getCohortTableService(org._id.toString(), { page: "abc" }),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -285,10 +319,16 @@ describe("pagination", () => {
     await createLearner({ orgId: org._id });
 
     const lo = await getCohortTableService(org._id.toString(), { limit: "10" });
-    expect((lo.data as { pagination: { limit: number } }).pagination.limit).toBe(10);
+    expect(
+      (lo.data as { pagination: { limit: number } }).pagination.limit,
+    ).toBe(10);
 
-    const hi = await getCohortTableService(org._id.toString(), { limit: "200" });
-    expect((hi.data as { pagination: { limit: number } }).pagination.limit).toBe(200);
+    const hi = await getCohortTableService(org._id.toString(), {
+      limit: "200",
+    });
+    expect(
+      (hi.data as { pagination: { limit: number } }).pagination.limit,
+    ).toBe(200);
   });
 });
 
@@ -301,16 +341,22 @@ describe("refinements: status + search interaction", () => {
     const org = await createOrg();
     // Two "Ahmed"s — one active, one dormant
     await createLearner({
-      orgId: org._id, firstname: "Ahmed", lastname: "Active",
+      orgId: org._id,
+      firstname: "Ahmed",
+      lastname: "Active",
       cohortStatus: "active",
     });
     await createLearner({
-      orgId: org._id, firstname: "Ahmed", lastname: "Dormant",
+      orgId: org._id,
+      firstname: "Ahmed",
+      lastname: "Dormant",
       cohortStatus: "dormant",
     });
     // Distractor with a different name + matching status
     await createLearner({
-      orgId: org._id, firstname: "Beatrice", lastname: "Active",
+      orgId: org._id,
+      firstname: "Beatrice",
+      lastname: "Active",
       cohortStatus: "active",
     });
 
@@ -332,8 +378,12 @@ describe("refinements: status + search interaction", () => {
     await createLearner({ orgId: org._id, firstname: "Bob" });
 
     // 1-char "a" would match Alice via regex but the service drops it.
-    const res = await getCohortTableService(org._id.toString(), { search: "a" });
-    expect((res.data as { pagination: { total: number } }).pagination.total).toBe(2);
+    const res = await getCohortTableService(org._id.toString(), {
+      search: "a",
+    });
+    expect(
+      (res.data as { pagination: { total: number } }).pagination.total,
+    ).toBe(2);
   });
 
   it("R7 — whitespace-only search is treated as no search", async () => {
@@ -341,8 +391,12 @@ describe("refinements: status + search interaction", () => {
     await createLearner({ orgId: org._id, firstname: "Alice" });
     await createLearner({ orgId: org._id, firstname: "Bob" });
 
-    const res = await getCohortTableService(org._id.toString(), { search: "   " });
-    expect((res.data as { pagination: { total: number } }).pagination.total).toBe(2);
+    const res = await getCohortTableService(org._id.toString(), {
+      search: "   ",
+    });
+    expect(
+      (res.data as { pagination: { total: number } }).pagination.total,
+    ).toBe(2);
   });
 });
 
@@ -357,40 +411,85 @@ describe("filters", () => {
     await createLearner({ orgId: org._id, esolLevel: "e3", lastname: "AtE3" });
     await createLearner({ orgId: org._id, esolLevel: "e3", lastname: "AtE3b" });
 
-    const res = await getCohortTableService(org._id.toString(), { level: "e3" });
-    const data = res.data as { rows: CohortTableRow[]; pagination: { total: number } };
+    const res = await getCohortTableService(org._id.toString(), {
+      level: "e3",
+    });
+    const data = res.data as {
+      rows: CohortTableRow[];
+      pagination: { total: number };
+    };
     expect(data.pagination.total).toBe(2);
     expect(data.rows.every((r) => r.esol_level === "e3")).toBe(true);
   });
 
   it("T6 — aim_type filter", async () => {
     const org = await createOrg();
-    await createLearner({ orgId: org._id, aimType: "regulated", lastname: "R" });
-    await createLearner({ orgId: org._id, aimType: "non_regulated", lastname: "NR" });
+    await createLearner({
+      orgId: org._id,
+      aimType: "regulated",
+      lastname: "R",
+    });
+    await createLearner({
+      orgId: org._id,
+      aimType: "non_regulated",
+      lastname: "NR",
+    });
     await createLearner({ orgId: org._id, aimType: null, lastname: "Null" });
 
-    const reg = await getCohortTableService(org._id.toString(), { aim_type: "regulated" });
-    expect((reg.data as { pagination: { total: number } }).pagination.total).toBe(1);
-    const nr = await getCohortTableService(org._id.toString(), { aim_type: "non_regulated" });
-    expect((nr.data as { pagination: { total: number } }).pagination.total).toBe(1);
+    const reg = await getCohortTableService(org._id.toString(), {
+      aim_type: "regulated",
+    });
+    expect(
+      (reg.data as { pagination: { total: number } }).pagination.total,
+    ).toBe(1);
+    const nr = await getCohortTableService(org._id.toString(), {
+      aim_type: "non_regulated",
+    });
+    expect(
+      (nr.data as { pagination: { total: number } }).pagination.total,
+    ).toBe(1);
   });
 
   it("T7 — search matches firstname OR lastname, case-insensitively, escape-safe", async () => {
     const org = await createOrg();
-    await createLearner({ orgId: org._id, firstname: "Ahmed", lastname: "Said" });
-    await createLearner({ orgId: org._id, firstname: "Beatrice", lastname: "Aiyad" });
-    await createLearner({ orgId: org._id, firstname: "Charlie", lastname: "Ord" });
+    await createLearner({
+      orgId: org._id,
+      firstname: "Ahmed",
+      lastname: "Said",
+    });
+    await createLearner({
+      orgId: org._id,
+      firstname: "Beatrice",
+      lastname: "Aiyad",
+    });
+    await createLearner({
+      orgId: org._id,
+      firstname: "Charlie",
+      lastname: "Ord",
+    });
 
-    const ahm = await getCohortTableService(org._id.toString(), { search: "ahm" });
-    expect((ahm.data as { pagination: { total: number } }).pagination.total).toBe(1);
+    const ahm = await getCohortTableService(org._id.toString(), {
+      search: "ahm",
+    });
+    expect(
+      (ahm.data as { pagination: { total: number } }).pagination.total,
+    ).toBe(1);
 
     // Case insensitive lastname match
-    const aiy = await getCohortTableService(org._id.toString(), { search: "AIY" });
-    expect((aiy.data as { pagination: { total: number } }).pagination.total).toBe(1);
+    const aiy = await getCohortTableService(org._id.toString(), {
+      search: "AIY",
+    });
+    expect(
+      (aiy.data as { pagination: { total: number } }).pagination.total,
+    ).toBe(1);
 
     // Regex specials must be escaped — a dot shouldn't act as wildcard
-    const dot = await getCohortTableService(org._id.toString(), { search: "A.med" });
-    expect((dot.data as { pagination: { total: number } }).pagination.total).toBe(0);
+    const dot = await getCohortTableService(org._id.toString(), {
+      search: "A.med",
+    });
+    expect(
+      (dot.data as { pagination: { total: number } }).pagination.total,
+    ).toBe(0);
   });
 });
 
@@ -402,27 +501,41 @@ describe("status derivation", () => {
   it("T8 — prefers cron-precomputed cohort_status", async () => {
     const org = await createOrg();
     await createLearner({
-      orgId: org._id, lastname: "ActA", cohortStatus: "active",
+      orgId: org._id,
+      lastname: "ActA",
+      cohortStatus: "active",
     });
     await createLearner({
-      orgId: org._id, lastname: "InactiveMild", cohortStatus: "inactive_mild",
+      orgId: org._id,
+      lastname: "InactiveMild",
+      cohortStatus: "inactive_mild",
     });
     await createLearner({
-      orgId: org._id, lastname: "DormantD", cohortStatus: "dormant",
+      orgId: org._id,
+      lastname: "DormantD",
+      cohortStatus: "dormant",
     });
 
-    const act = await getCohortTableService(org._id.toString(), { status: "active" });
-    expect((act.data as { rows: CohortTableRow[] }).rows.map((r) => r.lastname)).toEqual(["ActA"]);
+    const act = await getCohortTableService(org._id.toString(), {
+      status: "active",
+    });
+    expect(
+      (act.data as { rows: CohortTableRow[] }).rows.map((r) => r.lastname),
+    ).toEqual(["ActA"]);
 
-    const inact = await getCohortTableService(org._id.toString(), { status: "inactive" });
-    expect((inact.data as { rows: CohortTableRow[] }).rows.map((r) => r.lastname)).toEqual([
-      "InactiveMild",
-    ]);
+    const inact = await getCohortTableService(org._id.toString(), {
+      status: "inactive",
+    });
+    expect(
+      (inact.data as { rows: CohortTableRow[] }).rows.map((r) => r.lastname),
+    ).toEqual(["InactiveMild"]);
 
-    const dorm = await getCohortTableService(org._id.toString(), { status: "dormant" });
-    expect((dorm.data as { rows: CohortTableRow[] }).rows.map((r) => r.lastname)).toEqual([
-      "DormantD",
-    ]);
+    const dorm = await getCohortTableService(org._id.toString(), {
+      status: "dormant",
+    });
+    expect(
+      (dorm.data as { rows: CohortTableRow[] }).rows.map((r) => r.lastname),
+    ).toEqual(["DormantD"]);
   });
 
   it("T9 — falls back to live calculation when cohort_status is null", async () => {
@@ -443,7 +556,10 @@ describe("status derivation", () => {
       createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000), // 20 days ago
     });
 
-    const neverActive = await createLearner({ orgId: org._id, lastname: "NeverActive" });
+    const neverActive = await createLearner({
+      orgId: org._id,
+      lastname: "NeverActive",
+    });
     expect(neverActive).toBeTruthy();
 
     const all = await getCohortTableService(org._id.toString(), {});
@@ -463,21 +579,27 @@ describe("starting_level derivation", () => {
   it("T10 — uses earliest LevelChange.fromLevel, falls back to User.starting_level", async () => {
     const org = await createOrg();
     const a = await createLearner({
-      orgId: org._id, lastname: "A_HasChange",
-      esolLevel: "e3", startingLevel: "e1",
+      orgId: org._id,
+      lastname: "A_HasChange",
+      esolLevel: "e3",
+      startingLevel: "e1",
     });
     // Earliest LevelChange says fromLevel e2; that should override starting_level
     await LevelChange.create({
-      learnerId: a._id, orgId: org._id,
-      fromLevel: "e2", toLevel: "e3",
+      learnerId: a._id,
+      orgId: org._id,
+      fromLevel: "e2",
+      toLevel: "e3",
       changedBy: new Types.ObjectId(),
       reason: "promotion",
       effectiveDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     });
 
     const b = await createLearner({
-      orgId: org._id, lastname: "B_NoChange",
-      esolLevel: "e1", startingLevel: "e1",
+      orgId: org._id,
+      lastname: "B_NoChange",
+      esolLevel: "e1",
+      startingLevel: "e1",
     });
     expect(b).toBeTruthy();
 
@@ -517,21 +639,30 @@ describe("assigned_teacher", () => {
   it("T12 — name populated, null when no teacher assigned", async () => {
     const org = await createOrg();
     const teacher = await User.create({
-      firstname: "Sara", lastname: "Stage",
+      firstname: "Sara",
+      lastname: "Stage",
       email: `s-${Date.now()}@cohort.local`,
-      password: "x", phoneNumber: "07000000002",
-      role: "tutor", orgId: org._id,
-      isActive: true, status: "active", verified: true,
+      password: "x",
+      phoneNumber: "07000000002",
+      role: "tutor",
+      orgId: org._id,
+      isActive: true,
+      status: "active",
+      verified: true,
     });
     await createLearner({
-      orgId: org._id, lastname: "WithTeacher", assignedTeacherId: teacher._id,
+      orgId: org._id,
+      lastname: "WithTeacher",
+      assignedTeacherId: teacher._id,
     });
     await createLearner({ orgId: org._id, lastname: "NoTeacher" });
 
     const res = await getCohortTableService(org._id.toString(), {});
     const rows = (res.data as { rows: CohortTableRow[] }).rows;
     const byName = new Map(rows.map((r) => [r.lastname, r]));
-    expect(byName.get("WithTeacher")?.assigned_teacher_id).toBe(teacher._id.toString());
+    expect(byName.get("WithTeacher")?.assigned_teacher_id).toBe(
+      teacher._id.toString(),
+    );
     expect(byName.get("WithTeacher")?.assigned_teacher_name).toBe("Sara Stage");
     expect(byName.get("NoTeacher")?.assigned_teacher_id).toBeNull();
     expect(byName.get("NoTeacher")?.assigned_teacher_name).toBeNull();
@@ -550,10 +681,12 @@ describe("total_glh", () => {
       glhTeacherContact: 2.0,
     });
     await seedSession(learner._id, org._id, {
-      source: "ai_tutor", durationMins: 60,
+      source: "ai_tutor",
+      durationMins: 60,
     });
     await seedSession(learner._id, org._id, {
-      source: "pre_platform", durationMins: 90,
+      source: "pre_platform",
+      durationMins: 90,
     });
 
     const res = await getCohortTableService(org._id.toString(), {});
@@ -587,7 +720,7 @@ describe("teacher_last_reviewed_at — Final Addendum §12", () => {
     const rows = (res.data as { rows: CohortTableRow[] }).rows;
     const byName = new Map(rows.map((r) => [r.lastname, r]));
     expect(byName.get("WithReview")?.teacher_last_reviewed_at).toBe(
-      reviewedAt.toISOString()
+      reviewedAt.toISOString(),
     );
     expect(byName.get("NoReview")?.teacher_last_reviewed_at).toBeNull();
   });
@@ -600,20 +733,20 @@ describe("teacher_last_reviewed_at — Final Addendum §12", () => {
 describe("validation", () => {
   it("T14 — invalid orgId → 400", async () => {
     await expect(
-      getCohortTableService("not-an-objectid", {})
+      getCohortTableService("not-an-objectid", {}),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it("T14.b — unknown filter values → 400", async () => {
     const org = await createOrg();
     await expect(
-      getCohortTableService(org._id.toString(), { status: "weird" })
+      getCohortTableService(org._id.toString(), { status: "weird" }),
     ).rejects.toMatchObject({ statusCode: 400 });
     await expect(
-      getCohortTableService(org._id.toString(), { level: "e7" })
+      getCohortTableService(org._id.toString(), { level: "e7" }),
     ).rejects.toMatchObject({ statusCode: 400 });
     await expect(
-      getCohortTableService(org._id.toString(), { aim_type: "tax-free" })
+      getCohortTableService(org._id.toString(), { aim_type: "tax-free" }),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 });
@@ -626,8 +759,16 @@ describe("cohort membership", () => {
   it("T15 — non-student + isActive=false excluded", async () => {
     const org = await createOrg();
     await createLearner({ orgId: org._id, lastname: "Active" });
-    await createLearner({ orgId: org._id, lastname: "Deactivated", isActive: false });
-    await createLearner({ orgId: org._id, lastname: "TutorImpostor", role: "tutor" });
+    await createLearner({
+      orgId: org._id,
+      lastname: "Deactivated",
+      isActive: false,
+    });
+    await createLearner({
+      orgId: org._id,
+      lastname: "TutorImpostor",
+      role: "tutor",
+    });
 
     const res = await getCohortTableService(org._id.toString(), {});
     const rows = (res.data as { rows: CohortTableRow[] }).rows;

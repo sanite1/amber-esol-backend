@@ -22,7 +22,8 @@
  *   W3   GLH breakdown splits ai vs pre_platform vs teacher_contact correctly
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 // Isolate the export dir per test process so concurrent runs don't
 // collide on /tmp/ilr-exports/.
@@ -82,7 +83,11 @@ import {
   authoriseDownloadService,
 } from "../services/ilrExportRoutes.service";
 import { processIlrExport } from "../services/queueProcessors";
-import { EXPORT_DIR, serialiseRowsToCsv, computeGlhBreakdown } from "../services/ilrCsvWriter.service";
+import {
+  EXPORT_DIR,
+  serialiseRowsToCsv,
+  computeGlhBreakdown,
+} from "../services/ilrCsvWriter.service";
 import { computeExportIdempotencyKey } from "../services/ilrExport.service";
 import type { IlrRow } from "../services/ilrExport.service";
 
@@ -95,20 +100,34 @@ const PERIOD_END = "2026-07-31";
 // ─────────────────────────────────────────────────────────────────────
 
 const seedConfig = async () => {
-  await ComplianceConfig.deleteMany({ domain: "ilr", academic_year: ACADEMIC_YEAR });
+  await ComplianceConfig.deleteMany({
+    domain: "ilr",
+    academic_year: ACADEMIC_YEAR,
+  });
   await ComplianceConfig.create({
-    domain: "ilr", academic_year: ACADEMIC_YEAR, version: 1, active: true,
+    domain: "ilr",
+    academic_year: ACADEMIC_YEAR,
+    version: 1,
+    active: true,
     rules: {
       field_name_overrides: { SOC2000: "SOC" },
       valid_sof_codes: ["105"],
-      expired_llddt_codes: [], llddt_remapping: {},
-      fund_model: 38, aim_type_default: 4,
+      expired_llddt_codes: [],
+      llddt_remapping: {},
+      fund_model: 38,
+      aim_type_default: 4,
       esol_level_to_aim_ref: { e2: "60139572" },
       english_prog_type_default: "25",
-      add_hours_suppression_rule: { regulated: "claim", non_regulated: "suppress", missing: "suppress" },
+      add_hours_suppression_rule: {
+        regulated: "claim",
+        non_regulated: "suppress",
+        missing: "suppress",
+      },
       valid_dam_codes: ["SOF"],
     },
-    updated_by: null, updated_at: new Date(), changelog: "seed",
+    updated_by: null,
+    updated_at: new Date(),
+    changelog: "seed",
   });
   await ComplianceConfigService.loadAll();
 };
@@ -126,28 +145,46 @@ const createOrg = async (overrides: Record<string, unknown> = {}) =>
 
 const createLearner = async (orgId: unknown) =>
   User.create({
-    firstname: "Jane", lastname: "Doe",
+    firstname: "Jane",
+    lastname: "Doe",
     email: `j-${Date.now()}-${Math.random().toString(16).slice(2)}@nfe.local`,
-    password: "x", phoneNumber: "07000000000",
-    role: "student", orgId,
-    isActive: true, status: "active", verified: true,
-    dateOfBirth: new Date("1990-01-01"), sex: 2,
+    password: "x",
+    phoneNumber: "07000000000",
+    role: "student",
+    orgId,
+    isActive: true,
+    status: "active",
+    verified: true,
+    dateOfBirth: new Date("1990-01-01"),
+    sex: 2,
     esolOnboardedAt: new Date("2025-09-01"),
     uln: "9999999999",
     esol_aim_type: "regulated",
-    esolLevel: "e2", sof_code: "105",
-    lldd_health_prob: 9, english_prog_type: "25",
+    esolLevel: "e2",
+    sof_code: "105",
+    lldd_health_prob: 9,
+    english_prog_type: "25",
     postcode_prior: "NE1 1AA",
     glh_teacher_contact: 2,
   });
 
-const seedSession = (learnerId: unknown, orgId: unknown, source: "ai_tutor" | "pre_platform" = "ai_tutor") =>
+const seedSession = (
+  learnerId: unknown,
+  orgId: unknown,
+  source: "ai_tutor" | "pre_platform" = "ai_tutor",
+) =>
   AISession.create({
-    learnerId, orgId,
-    sessionMode: "BRIDGE", esolLevel: "e2",
-    turns: [], safeguardingFlagged: false, vocabIntroduced: [],
-    session_source: source, duration_mins: 60,
-    turn_scores: [], teaching_mode_sequence: [],
+    learnerId,
+    orgId,
+    sessionMode: "BRIDGE",
+    esolLevel: "e2",
+    turns: [],
+    safeguardingFlagged: false,
+    vocabIntroduced: [],
+    session_source: source,
+    duration_mins: 60,
+    turn_scores: [],
+    teaching_mode_sequence: [],
     start_time: new Date("2025-11-01T10:00:00Z"),
   });
 
@@ -173,7 +210,8 @@ describe("triggerIlrExportService", () => {
         org_id: org._id.toString(),
         caller_id: new Types.ObjectId().toString(),
         academic_year: ACADEMIC_YEAR,
-        period_start: PERIOD_START, period_end: PERIOD_END,
+        period_start: PERIOD_START,
+        period_end: PERIOD_END,
         force_refresh: false,
       }),
     ).rejects.toMatchObject({ statusCode: 403 });
@@ -186,11 +224,16 @@ describe("triggerIlrExportService", () => {
       org_id: org._id.toString(),
       caller_id: new Types.ObjectId().toString(),
       academic_year: ACADEMIC_YEAR,
-      period_start: PERIOD_START, period_end: PERIOD_END,
+      period_start: PERIOD_START,
+      period_end: PERIOD_END,
       force_refresh: false,
     });
     expect(res.statusCode).toBe(202);
-    const data = res.data as { export_id: string; job_id: string; status_url: string };
+    const data = res.data as {
+      export_id: string;
+      job_id: string;
+      status_url: string;
+    };
     expect(data.export_id).toMatch(/^[0-9a-f]{64}$/);
     expect(data.job_id).toBe("fake-job-1");
     expect(data.status_url).toMatch(/\/status$/);
@@ -202,17 +245,24 @@ describe("triggerIlrExportService", () => {
     const org = await createOrg();
     const callerId = new Types.ObjectId().toString();
     const exportId = computeExportIdempotencyKey({
-      org_id: org._id.toString(), academic_year: ACADEMIC_YEAR,
-      period_start: PERIOD_START, period_end: PERIOD_END,
+      org_id: org._id.toString(),
+      academic_year: ACADEMIC_YEAR,
+      period_start: PERIOD_START,
+      period_end: PERIOD_END,
     });
     await IdempotencyKey.create({
-      key: exportId, operation: "ilr-export", status: "completed",
-      result: { ok: true }, org_id: org._id,
+      key: exportId,
+      operation: "ilr-export",
+      status: "completed",
+      result: { ok: true },
+      org_id: org._id,
     });
     const res = await triggerIlrExportService({
-      org_id: org._id.toString(), caller_id: callerId,
+      org_id: org._id.toString(),
+      caller_id: callerId,
       academic_year: ACADEMIC_YEAR,
-      period_start: PERIOD_START, period_end: PERIOD_END,
+      period_start: PERIOD_START,
+      period_end: PERIOD_END,
       force_refresh: false,
     });
     expect(res.statusCode).toBe(200);
@@ -224,18 +274,25 @@ describe("triggerIlrExportService", () => {
     const org = await createOrg();
     const callerId = new Types.ObjectId().toString();
     const exportId = computeExportIdempotencyKey({
-      org_id: org._id.toString(), academic_year: ACADEMIC_YEAR,
-      period_start: PERIOD_START, period_end: PERIOD_END,
+      org_id: org._id.toString(),
+      academic_year: ACADEMIC_YEAR,
+      period_start: PERIOD_START,
+      period_end: PERIOD_END,
     });
     await IdempotencyKey.create({
-      key: exportId, operation: "ilr-export", status: "completed",
-      result: { ok: true }, org_id: org._id,
+      key: exportId,
+      operation: "ilr-export",
+      status: "completed",
+      result: { ok: true },
+      org_id: org._id,
     });
 
     const res = await triggerIlrExportService({
-      org_id: org._id.toString(), caller_id: callerId,
+      org_id: org._id.toString(),
+      caller_id: callerId,
       academic_year: ACADEMIC_YEAR,
-      period_start: PERIOD_START, period_end: PERIOD_END,
+      period_start: PERIOD_START,
+      period_end: PERIOD_END,
       force_refresh: true,
     });
     expect(res.statusCode).toBe(202);
@@ -250,9 +307,11 @@ describe("triggerIlrExportService", () => {
     const org = await createOrg();
     const callerId = new Types.ObjectId().toString();
     const base = {
-      org_id: org._id.toString(), caller_id: callerId,
+      org_id: org._id.toString(),
+      caller_id: callerId,
       academic_year: ACADEMIC_YEAR,
-      period_start: PERIOD_START, period_end: PERIOD_END,
+      period_start: PERIOD_START,
+      period_end: PERIOD_END,
       force_refresh: false,
     };
     await expect(
@@ -260,7 +319,9 @@ describe("triggerIlrExportService", () => {
     ).rejects.toMatchObject({ statusCode: 400 });
     await expect(
       triggerIlrExportService({
-        ...base, period_start: "2026-07-31", period_end: "2025-08-01",
+        ...base,
+        period_start: "2026-07-31",
+        period_end: "2025-08-01",
       }),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
@@ -279,7 +340,9 @@ describe("getIlrExportStatusService", () => {
       progress: 100,
       returnvalue: {
         export_id: "abc123",
-        rows_exported: 7, rows_blocked: 1, warnings_count: 3,
+        rows_exported: 7,
+        rows_blocked: 1,
+        warnings_count: 3,
         download_url: "/api/org-admin/export/ilr/abc123/download",
         json_url: "/api/org-admin/export/ilr/abc123/download?format=json",
       },
@@ -320,10 +383,13 @@ describe("authoriseDownloadService", () => {
     const orgMine = await createOrg();
     const orgOther = await createOrg();
     await IdempotencyKey.create({
-      key: "x".repeat(64), operation: "ilr-export", status: "completed",
+      key: "x".repeat(64),
+      operation: "ilr-export",
+      status: "completed",
       result: {
         academic_year: ACADEMIC_YEAR,
-        period_start: PERIOD_START, period_end: PERIOD_END,
+        period_start: PERIOD_START,
+        period_end: PERIOD_END,
       },
       org_id: orgOther._id,
     });
@@ -335,8 +401,11 @@ describe("authoriseDownloadService", () => {
   it("D4 — unfinished export → 409", async () => {
     const org = await createOrg();
     await IdempotencyKey.create({
-      key: "p".repeat(64), operation: "ilr-export", status: "processing",
-      result: null, org_id: org._id,
+      key: "p".repeat(64),
+      operation: "ilr-export",
+      status: "processing",
+      result: null,
+      org_id: org._id,
     });
     await expect(
       authoriseDownloadService("p".repeat(64), org._id.toString()),
@@ -351,18 +420,28 @@ describe("authoriseDownloadService", () => {
 describe("processIlrExport worker", () => {
   it("W1 — progress 50→75→100; AuditLog written; download URLs in result", async () => {
     const org = await createOrg();
-    const callerId = (await User.create({
-      firstname: "Org", lastname: "Admin",
-      email: `oa-${Date.now()}@nfe.local`, password: "x",
-      phoneNumber: "07000000111", role: "org_admin",
-      orgId: org._id, isActive: true, status: "active", verified: true,
-    }))._id.toString();
+    const callerId = (
+      await User.create({
+        firstname: "Org",
+        lastname: "Admin",
+        email: `oa-${Date.now()}@nfe.local`,
+        password: "x",
+        phoneNumber: "07000000111",
+        role: "org_admin",
+        orgId: org._id,
+        isActive: true,
+        status: "active",
+        verified: true,
+      })
+    )._id.toString();
     const learner = await createLearner(org._id);
     await seedSession(learner._id, org._id);
 
     const exportId = computeExportIdempotencyKey({
-      org_id: org._id.toString(), academic_year: ACADEMIC_YEAR,
-      period_start: PERIOD_START, period_end: PERIOD_END,
+      org_id: org._id.toString(),
+      academic_year: ACADEMIC_YEAR,
+      period_start: PERIOD_START,
+      period_end: PERIOD_END,
     });
 
     const progressUpdates: number[] = [];
@@ -376,7 +455,9 @@ describe("processIlrExport worker", () => {
         requestedBy: callerId,
         exportId,
       },
-      updateProgress: async (n: number) => { progressUpdates.push(n); },
+      updateProgress: async (n: number) => {
+        progressUpdates.push(n);
+      },
     } as never;
 
     const result = await processIlrExport(fakeJob);
@@ -412,27 +493,49 @@ describe("processIlrExport worker", () => {
   });
 
   it("W2 — CSV headers use field_name_overrides (canonical → renamed)", () => {
-    const rows: IlrRow[] = [{
-      ULN: "9999999999", FamilyName: "X", GivenNames: "Y",
-      DateOfBirth: "1990-01-01", Sex: 1, Ethnicity: null,
-      LLDDHealthProb: 9, LearnerEntryDate: "2025-09-01",
-      PostcodePrior: "NE1 1AA", NINumber: "",
-      LearnAimRef: "60139572", AimType: 4, AimSeqNumber: 1,
-      LearnStartDate: "2025-11-01", LearnPlanEndDate: null,
-      LearnActEndDate: null, Outcome: null, CompStatus: 1,
-      FundModel: 38, SOF: "105", AddHours: 5, EnglishProgType: "25",
-      LearnDelFAM: [{ Type: "SOF", Code: "105" }],
-      _session_id: "s1", _session_source: "ai_tutor", _learner_id: "l1",
-      _total_glh_hours: 5, _skill_domains_covered: [], _aim_invalid: false,
-      _suppression_notes: [], _warnings: [], _skip_row: false,
-    }];
+    const rows: IlrRow[] = [
+      {
+        ULN: "9999999999",
+        FamilyName: "X",
+        GivenNames: "Y",
+        DateOfBirth: "1990-01-01",
+        Sex: 1,
+        Ethnicity: null,
+        LLDDHealthProb: 9,
+        LearnerEntryDate: "2025-09-01",
+        PostcodePrior: "NE1 1AA",
+        NINumber: "",
+        LearnAimRef: "60139572",
+        AimType: 4,
+        AimSeqNumber: 1,
+        LearnStartDate: "2025-11-01",
+        LearnPlanEndDate: null,
+        LearnActEndDate: null,
+        Outcome: null,
+        CompStatus: 1,
+        FundModel: 38,
+        SOF: "105",
+        AddHours: 5,
+        EnglishProgType: "25",
+        LearnDelFAM: [{ Type: "SOF", Code: "105" }],
+        _session_id: "s1",
+        _session_source: "ai_tutor",
+        _learner_id: "l1",
+        _total_glh_hours: 5,
+        _skill_domains_covered: [],
+        _aim_invalid: false,
+        _suppression_notes: [],
+        _warnings: [],
+        _skip_row: false,
+      },
+    ];
 
     // SOC2000 isn't a canonical column here, but verify the renaming
     // mechanism by overriding ULN → LearnerULN as a stand-in.
     const csv = serialiseRowsToCsv(rows, { ULN: "LearnerULN" });
     const headerLine = csv.split("\r\n")[0];
     expect(headerLine).toMatch(/"LearnerULN"/); // renamed
-    expect(headerLine).not.toMatch(/"ULN"/);    // canonical replaced
+    expect(headerLine).not.toMatch(/"ULN"/); // canonical replaced
   });
 
   it("W3 — GLH breakdown splits ai vs pre_platform vs teacher_contact", () => {
@@ -442,27 +545,48 @@ describe("processIlrExport worker", () => {
     //   ai row:  1.0 + 2.0 = 3.0
     //   pre row: 1.5 + 2.0 = 3.5
     const learnerId = "abc";
-    const mkRow = (source: "ai_tutor" | "pre_platform", hours: number): IlrRow => ({
-      ULN: null, FamilyName: "", GivenNames: "", DateOfBirth: null, Sex: null,
-      Ethnicity: null, LLDDHealthProb: null, LearnerEntryDate: null,
-      PostcodePrior: null, NINumber: "",
-      LearnAimRef: null, AimType: 4, AimSeqNumber: 1,
-      LearnStartDate: null, LearnPlanEndDate: null, LearnActEndDate: null,
-      Outcome: null, CompStatus: 1, FundModel: 38, SOF: null,
-      AddHours: null, EnglishProgType: null, LearnDelFAM: [],
-      _session_id: source, _session_source: source, _learner_id: learnerId,
-      _total_glh_hours: hours, _skill_domains_covered: [],
-      _aim_invalid: false, _suppression_notes: [],
-      _warnings: [], _skip_row: false,
+    const mkRow = (
+      source: "ai_tutor" | "pre_platform",
+      hours: number,
+    ): IlrRow => ({
+      ULN: null,
+      FamilyName: "",
+      GivenNames: "",
+      DateOfBirth: null,
+      Sex: null,
+      Ethnicity: null,
+      LLDDHealthProb: null,
+      LearnerEntryDate: null,
+      PostcodePrior: null,
+      NINumber: "",
+      LearnAimRef: null,
+      AimType: 4,
+      AimSeqNumber: 1,
+      LearnStartDate: null,
+      LearnPlanEndDate: null,
+      LearnActEndDate: null,
+      Outcome: null,
+      CompStatus: 1,
+      FundModel: 38,
+      SOF: null,
+      AddHours: null,
+      EnglishProgType: null,
+      LearnDelFAM: [],
+      _session_id: source,
+      _session_source: source,
+      _learner_id: learnerId,
+      _total_glh_hours: hours,
+      _skill_domains_covered: [],
+      _aim_invalid: false,
+      _suppression_notes: [],
+      _warnings: [],
+      _skip_row: false,
     });
     const rows = [mkRow("ai_tutor", 3.0), mkRow("pre_platform", 3.5)];
 
-    const breakdown = computeGlhBreakdown(
-      rows,
-      new Map([[learnerId, 2.0]]),
-    );
-    expect(breakdown.ai_glh).toBe(1.0);             // 3.0 - 2.0
-    expect(breakdown.pre_platform_glh).toBe(1.5);   // 3.5 - 2.0
+    const breakdown = computeGlhBreakdown(rows, new Map([[learnerId, 2.0]]));
+    expect(breakdown.ai_glh).toBe(1.0); // 3.0 - 2.0
+    expect(breakdown.pre_platform_glh).toBe(1.5); // 3.5 - 2.0
     expect(breakdown.teacher_contact_glh).toBe(2.0); // once per learner
     expect(breakdown.total_glh).toBe(4.5);
   });

@@ -48,7 +48,10 @@ export type SafeguardingBankCategory =
 
 export type SafeguardingBankLanguage = "en" | "ar" | "so" | "fa" | "zh";
 
-type Bank = Record<SafeguardingBankCategory, Record<SafeguardingBankLanguage, string>>;
+type Bank = Record<
+  SafeguardingBankCategory,
+  Record<SafeguardingBankLanguage, string>
+>;
 
 const LAST_RESORT_EN = `Thank you for sharing that with me. Help is available — please consider:
 • NHS 111 (free, 24/7) for urgent medical or mental health support
@@ -65,7 +68,7 @@ const loadBank = (): Bank | null => {
   } catch (err) {
     logger.error(
       { err, path: MESSAGES_PATH },
-      "Safeguarding messages bank failed to load — falling back to last-resort English string"
+      "Safeguarding messages bank failed to load — falling back to last-resort English string",
     );
     return null;
   }
@@ -77,6 +80,81 @@ bank = loadBank();
 export const __reloadSafeguardingBankForTests = (): void => {
   bank = loadBank();
 };
+
+// ─────────────────────────────────────────────────────────────────────
+// MongoDB-backed bank (Final Addendum §2 — admin CMS)
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Rebuild the in-memory bank from the SafeguardingMessage collection.
+ *
+ * Seeding: on first run (empty collection) the static JSON file is
+ * written INTO Mongo so the CMS starts from the authored texts. From
+ * then on Mongo is the source of truth and the file is only the
+ * fail-safe (Mongo unreachable → keep whatever bank we already have,
+ * which at minimum is the module-load file copy).
+ *
+ * Called at server boot (src/index.ts) and after every admin edit —
+ * "reloads without deployment" per the brief.
+ */
+export const reloadSafeguardingBankFromDb = async (): Promise<void> => {
+  // Lazy import dodges a circular dependency risk at module load.
+  const { default: SafeguardingMessage } = await import(
+    "../models/SafeguardingMessage"
+  );
+
+  try {
+    let rows = await SafeguardingMessage.find({}).lean();
+
+    if (rows.length === 0) {
+      const fileBank = loadBank();
+      if (fileBank) {
+        const seed: Array<{
+          category: string;
+          language: string;
+          text: string;
+        }> = [];
+        for (const [category, langs] of Object.entries(fileBank)) {
+          for (const [language, text] of Object.entries(langs)) {
+            seed.push({ category, language, text: text ?? "" });
+          }
+        }
+        await SafeguardingMessage.insertMany(seed, { ordered: false }).catch(
+          () => undefined, // unique-index races on parallel boots are fine
+        );
+        rows = await SafeguardingMessage.find({}).lean();
+        logger.info(
+          { seeded: seed.length },
+          "Safeguarding messages seeded into Mongo from JSON file",
+        );
+      }
+    }
+
+    if (rows.length > 0) {
+      const next = {} as Bank;
+      for (const r of rows) {
+        const cat = r.category as SafeguardingBankCategory;
+        const lang = r.language as SafeguardingBankLanguage;
+        if (!next[cat])
+          next[cat] = {} as Record<SafeguardingBankLanguage, string>;
+        next[cat][lang] = r.text ?? "";
+      }
+      bank = next;
+      logger.info(
+        { entries: rows.length },
+        "Safeguarding message bank loaded from Mongo",
+      );
+    }
+  } catch (err) {
+    logger.error(
+      { err: (err as Error).message },
+      "Safeguarding bank DB load failed — keeping current in-memory bank",
+    );
+  }
+};
+
+/** Read-only snapshot for the admin CMS editor. */
+export const getSafeguardingBankSnapshot = (): Bank | null => bank;
 
 // ─────────────────────────────────────────────────────────────────────
 // L1 language → bank language code mapping
@@ -92,7 +170,7 @@ export const __reloadSafeguardingBankForTests = (): void => {
  * Case-insensitive, whitespace-tolerant.
  */
 export const mapL1ToLanguageCode = (
-  l1Language: string | null | undefined
+  l1Language: string | null | undefined,
 ): SafeguardingBankLanguage => {
   if (!l1Language) return "en";
   const norm = String(l1Language).trim().toLowerCase();
@@ -142,7 +220,12 @@ export const mapL1ToLanguageCode = (
  * lives here as the single bridging point.
  */
 export const mapCategoryToBankKey = (
-  category: SafeguardingCategory | GeminiSafeguardingCategory | string | null | undefined
+  category:
+    | SafeguardingCategory
+    | GeminiSafeguardingCategory
+    | string
+    | null
+    | undefined,
 ): SafeguardingBankCategory | null => {
   if (!category) return null;
   const c = String(category).toLowerCase();
@@ -181,8 +264,13 @@ export const mapCategoryToBankKey = (
  * a learner in crisis.
  */
 export const loadSafeguardingMessage = (
-  category: SafeguardingCategory | GeminiSafeguardingCategory | string | null | undefined,
-  l1Language: string | null | undefined
+  category:
+    | SafeguardingCategory
+    | GeminiSafeguardingCategory
+    | string
+    | null
+    | undefined,
+  l1Language: string | null | undefined,
 ): string => {
   if (!bank) return LAST_RESORT_EN;
 
@@ -200,7 +288,7 @@ export const loadSafeguardingMessage = (
       if (langCode !== "en") {
         logger.warn(
           { category: bankCategory, langCode },
-          "Safeguarding message not yet translated — serving English fallback (per SAFEGUARDING_REVIEW.md Step 5)"
+          "Safeguarding message not yet translated — serving English fallback (per SAFEGUARDING_REVIEW.md Step 5)",
         );
       }
       return enSlot;
@@ -212,7 +300,7 @@ export const loadSafeguardingMessage = (
   if (typeof generic === "string" && generic.trim().length > 0) {
     logger.warn(
       { category, langCode },
-      "Safeguarding category unrecognised — serving generic mental_health_crisis English message"
+      "Safeguarding category unrecognised — serving generic mental_health_crisis English message",
     );
     return generic;
   }

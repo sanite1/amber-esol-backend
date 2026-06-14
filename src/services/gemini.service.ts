@@ -31,8 +31,8 @@ import logger from "../config/logger";
 // Tunables
 // ─────────────────────────────────────────────────────────────────────
 
-const DEFAULT_TIMEOUT_MS = 30_000;          // 30 s per call
-const RETRY_DELAY_MS = 1_000;               // brief: 1 s after first failure
+const DEFAULT_TIMEOUT_MS = 30_000; // 30 s per call
+const RETRY_DELAY_MS = 1_000; // brief: 1 s after first failure
 const DEFAULT_TEMPERATURE = 0.7;
 const DEFAULT_MAX_OUTPUT_TOKENS = 2_048;
 
@@ -122,7 +122,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const withTimeout = async <T>(
   promise: Promise<T>,
   ms: number,
-  startedAt: number
+  startedAt: number,
 ): Promise<T> => {
   let timer: NodeJS.Timeout | null = null;
   const timeout = new Promise<never>((_resolve, reject) => {
@@ -131,10 +131,10 @@ const withTimeout = async <T>(
         reject(
           new GeminiTimeoutError(
             `Gemini call did not complete within ${ms} ms`,
-            Date.now() - startedAt
-          )
+            Date.now() - startedAt,
+          ),
         ),
-      ms
+      ms,
     );
   });
   try {
@@ -156,7 +156,12 @@ const withTimeout = async <T>(
 const isRetriableError = (err: unknown): boolean => {
   if (err instanceof GeminiTimeoutError) return true;
   if (!err || typeof err !== "object") return false;
-  const e = err as { code?: unknown; status?: unknown; statusCode?: unknown; message?: unknown };
+  const e = err as {
+    code?: unknown;
+    status?: unknown;
+    statusCode?: unknown;
+    message?: unknown;
+  };
   // Numeric HTTP status
   const status =
     typeof e.statusCode === "number"
@@ -196,7 +201,7 @@ const extractStatusCode = (err: unknown): number | undefined => {
  */
 const callOnce = async (
   args: GenerateTurnArgs,
-  startedAt: number
+  startedAt: number,
 ): Promise<{
   rawText: string;
   inputTokens: number;
@@ -213,13 +218,16 @@ const callOnce = async (
       // Per the singleton contract: responseMimeType is set HERE,
       // per-call, never at client level.
       responseMimeType: "application/json",
-      ...(args.responseSchema && { responseSchema: args.responseSchema as any }),
+      ...(args.responseSchema && {
+        responseSchema: args.responseSchema as any,
+      }),
       temperature: args.temperature ?? DEFAULT_TEMPERATURE,
       maxOutputTokens: args.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
     },
     // cachedContent ties the static prefix to a Vertex cache resource.
     // When undefined, the call proceeds without caching.
-    ...(args.cachedContentId && { cachedContent: args.cachedContentId } as any),
+    ...(args.cachedContentId &&
+      ({ cachedContent: args.cachedContentId } as any)),
   });
 
   const contents = [
@@ -233,7 +241,7 @@ const callOnce = async (
   const result = await withTimeout(
     model.generateContent({ contents }),
     args.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-    startedAt
+    startedAt,
   );
 
   const rawText =
@@ -249,7 +257,7 @@ const callOnce = async (
 };
 
 const toObjectIdOrNull = (
-  v: string | Types.ObjectId | null
+  v: string | Types.ObjectId | null,
 ): Types.ObjectId | null => {
   if (!v) return null;
   if (v instanceof Types.ObjectId) return v;
@@ -269,7 +277,7 @@ const recordUsage = (
     cachedTokens: number;
     latencyMs: number;
     retried: boolean;
-  }
+  },
 ): void => {
   AIUsage.create({
     org_id: toObjectIdOrNull(args.tracking.orgId),
@@ -277,7 +285,7 @@ const recordUsage = (
     session_id:
       typeof args.tracking.sessionId === "string"
         ? args.tracking.sessionId
-        : args.tracking.sessionId ?? null,
+        : (args.tracking.sessionId ?? null),
     input_tokens: usage.inputTokens,
     output_tokens: usage.outputTokens,
     cached_tokens: usage.cachedTokens,
@@ -293,8 +301,8 @@ const recordUsage = (
         orgId: args.tracking.orgId,
         learnerId: args.tracking.learnerId,
       },
-      "AIUsage ledger write failed — call succeeded, billing row missing"
-    )
+      "AIUsage ledger write failed — call succeeded, billing row missing",
+    ),
   );
 };
 
@@ -329,7 +337,7 @@ const recordUsage = (
  *   - Failed call → no row (we don't bill for failures).
  */
 export const generateTurn = async <T = unknown>(
-  args: GenerateTurnArgs
+  args: GenerateTurnArgs,
 ): Promise<GenerateTurnResult<T>> => {
   const startedAt = Date.now();
   let attempt = 1;
@@ -351,7 +359,7 @@ export const generateTurn = async <T = unknown>(
       } catch {
         throw new GeminiSchemaError(
           `Gemini returned non-JSON body (length ${out.rawText.length})`,
-          out.rawText
+          out.rawText,
         );
       }
 
@@ -377,7 +385,7 @@ export const generateTurn = async <T = unknown>(
               raw_output_preview: out.rawText.slice(0, 500),
               raw_output_length: out.rawText.length,
             },
-            "gemini output failed schema validation"
+            "gemini output failed schema validation",
           );
           throw new GeminiSchemaError(issueMessage, out.rawText);
         }
@@ -396,7 +404,7 @@ export const generateTurn = async <T = unknown>(
           cache_hit_ratio: cacheHitRatio,
           retried,
         },
-        "gemini call complete"
+        "gemini call complete",
       );
 
       recordUsage(args, {
@@ -429,7 +437,7 @@ export const generateTurn = async <T = unknown>(
             latency_ms: Date.now() - startedAt,
             err,
           },
-          "gemini call returned non-JSON body"
+          "gemini call returned non-JSON body",
         );
         throw err;
       }
@@ -441,9 +449,12 @@ export const generateTurn = async <T = unknown>(
           session_id: args.tracking.sessionId,
           attempt,
           willRetry: canRetry,
-          err: err instanceof Error ? { name: err.name, message: err.message } : err,
+          err:
+            err instanceof Error
+              ? { name: err.name, message: err.message }
+              : err,
         },
-        "gemini call failed"
+        "gemini call failed",
       );
 
       if (!canRetry) break;
@@ -465,25 +476,22 @@ export const generateTurn = async <T = unknown>(
           ? { name: lastError.name, message: lastError.message }
           : lastError,
     },
-    "gemini call failed after retries"
+    "gemini call failed after retries",
   );
 
   if (lastError instanceof GeminiTimeoutError) {
     // Surface as GeminiApiError so callers have a single "did the
     // upstream API give up" exception to catch. The original timeout
     // sits in `.cause` for diagnostics.
-    throw new GeminiApiError(
-      "Gemini call timed out after retry",
-      { cause: lastError }
-    );
+    throw new GeminiApiError("Gemini call timed out after retry", {
+      cause: lastError,
+    });
   }
 
   const statusCode = extractStatusCode(lastError);
   throw new GeminiApiError(
-    lastError instanceof Error
-      ? lastError.message
-      : "Gemini call failed",
-    { statusCode, cause: lastError }
+    lastError instanceof Error ? lastError.message : "Gemini call failed",
+    { statusCode, cause: lastError },
   );
 };
 

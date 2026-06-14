@@ -53,7 +53,7 @@ export const createPaymentIntent: ExpressFunction<
 export const listTransactions = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -62,7 +62,7 @@ export const listTransactions = async (
     const data = await listTransactionsService(
       userId,
       role,
-      req.query as unknown as ITransactionQuery
+      req.query as unknown as ITransactionQuery,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -75,7 +75,7 @@ export const listTransactions = async (
 export const getTransactionById = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -93,7 +93,7 @@ export const getTransactionById = async (
 export const paymentSummary = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -111,7 +111,7 @@ export const paymentSummary = async (
 export const getWallet = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -128,7 +128,7 @@ export const getWallet = async (
 export const requestPayout: ExpressFunction<IRequestPayoutRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const userId = req.user?.id?.toString();
@@ -145,7 +145,7 @@ export const requestPayout: ExpressFunction<IRequestPayoutRequest> = async (
 export const listPayouts = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -154,7 +154,7 @@ export const listPayouts = async (
     const data = await listPayoutsService(
       userId,
       role,
-      req.query as unknown as IPayoutQuery
+      req.query as unknown as IPayoutQuery,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -167,7 +167,7 @@ export const listPayouts = async (
 export const approvePayout: ExpressFunction<IApprovePayoutRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const data = await approvePayoutService(req.params.id, req.body);
@@ -182,7 +182,7 @@ export const approvePayout: ExpressFunction<IApprovePayoutRequest> = async (
 export const rejectPayout: ExpressFunction<IRejectPayoutRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const data = await rejectPayoutService(req.params.id, req.body);
@@ -197,7 +197,7 @@ export const rejectPayout: ExpressFunction<IRejectPayoutRequest> = async (
 export const completePayout: ExpressFunction<ICompletePayoutRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const data = await completePayoutService(req.params.id, req.body);
@@ -212,7 +212,7 @@ export const completePayout: ExpressFunction<ICompletePayoutRequest> = async (
 export const refundTransaction: ExpressFunction<IRefundRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -222,7 +222,7 @@ export const refundTransaction: ExpressFunction<IRefundRequest> = async (
       req.params.transactionId,
       userId,
       role,
-      req.body
+      req.body,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -235,7 +235,7 @@ export const refundTransaction: ExpressFunction<IRefundRequest> = async (
 export const flagTransaction: ExpressFunction<IFlagTransactionRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const data = await flagTransactionService(req.params.id, req.body);
@@ -250,7 +250,7 @@ export const flagTransaction: ExpressFunction<IFlagTransactionRequest> = async (
 export const listPaymentMethods = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -282,7 +282,7 @@ export const addPaymentMethod: ExpressFunction<
 export const removePaymentMethod = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -299,7 +299,7 @@ export const removePaymentMethod = async (
 export const setDefaultPaymentMethod = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -316,7 +316,7 @@ export const setDefaultPaymentMethod = async (
 export const monthlyChart = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -325,7 +325,7 @@ export const monthlyChart = async (
     const data = await monthlyChartService(
       userId,
       role,
-      req.query as unknown as IMonthlyChartQuery
+      req.query as unknown as IMonthlyChartQuery,
     );
     return res.status(200).json(data);
   } catch (error) {

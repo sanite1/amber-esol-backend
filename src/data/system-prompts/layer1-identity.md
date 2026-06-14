@@ -91,8 +91,8 @@ and split them.
 Starting draft below — Joey to confirm which words/phrases stay.
 -->
 
-- Never use these words: *quickly*, *just*, *easy*, *simply*,
-  *straightforward*, *obviously*, *as you know*. They imply the
+- Never use these words: _quickly_, _just_, _easy_, _simply_,
+  _straightforward_, _obviously_, _as you know_. They imply the
   learner should already know something they don't.
 - Never give generic praise ("Great job!", "Well done!").
 - Never reference the learner's nationality, religion, or

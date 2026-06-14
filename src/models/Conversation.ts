@@ -43,7 +43,7 @@ const conversationSchema = new Schema<IConversation>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // Compound unique index: prevent duplicate conversations between the same two users
@@ -51,7 +51,7 @@ conversationSchema.index(
   { participants: 1 },
   {
     unique: true,
-  }
+  },
 );
 
 // Index for listing user conversations sorted by latest message

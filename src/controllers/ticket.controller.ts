@@ -14,7 +14,7 @@ import { IAdminTicketsQuery } from "../interfaces/ticket.interface";
 export const createTicket = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id;
@@ -32,7 +32,7 @@ export const createTicket = async (
 export const getMyTickets = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id;
@@ -50,14 +50,14 @@ export const getMyTickets = async (
 export const userReplyTicket = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id;
     const result = await userReplyTicketService(
       userId,
       req.params.id,
-      req.body
+      req.body,
     );
     return res.status(result.statusCode).json({
       message: result.message,
@@ -72,11 +72,11 @@ export const userReplyTicket = async (
 export const getAdminTickets = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const result = await getAdminTicketsService(
-      req.query as unknown as IAdminTicketsQuery
+      req.query as unknown as IAdminTicketsQuery,
     );
     return res.status(result.statusCode).json({
       message: result.message,
@@ -91,14 +91,14 @@ export const getAdminTickets = async (
 export const adminReplyTicket = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const adminId = (req as any).user?.id;
     const result = await adminReplyTicketService(
       adminId,
       req.params.id,
-      req.body
+      req.body,
     );
     return res.status(result.statusCode).json({
       message: result.message,
@@ -113,12 +113,12 @@ export const adminReplyTicket = async (
 export const adminUpdateTicketStatus = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const result = await adminUpdateTicketStatusService(
       req.params.id,
-      req.body
+      req.body,
     );
     return res.status(result.statusCode).json({
       message: result.message,
@@ -133,12 +133,12 @@ export const adminUpdateTicketStatus = async (
 export const adminUpdateTicketPriority = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const result = await adminUpdateTicketPriorityService(
       req.params.id,
-      req.body
+      req.body,
     );
     return res.status(result.statusCode).json({
       message: result.message,

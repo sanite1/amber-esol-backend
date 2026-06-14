@@ -123,7 +123,7 @@ export const esolRegisterService = async (data: EsolRegisterPayload) => {
   } catch (err) {
     logger.warn(
       { err, postcode: data.postcode_prior },
-      "Postcode lookup failed during registration — falling back to manual_review"
+      "Postcode lookup failed during registration — falling back to manual_review",
     );
   }
   const fundingStatus: "fundable" | "manual_review" = sofCode
@@ -198,13 +198,13 @@ export const esolRegisterService = async (data: EsolRegisterPayload) => {
       esol_level: null,
     },
     jwtSecret,
-    { expiresIn: "5h" }
+    { expiresIn: "5h" },
   );
 
   // ── 6. Increment ReferralToken.usage_count (atomic) ─────────────
   await ReferralToken.updateOne(
     { _id: tokenRow._id },
-    { $inc: { usage_count: 1 } }
+    { $inc: { usage_count: 1 } },
   );
 
   // ── 7. AuditLog (compliance trail) ──────────────────────────────
@@ -233,8 +233,8 @@ export const esolRegisterService = async (data: EsolRegisterPayload) => {
     // A missing audit row is recoverable; a failed registration is not.
     logger.error(
       { err, learnerId: learner._id, orgId: org._id },
-      "AuditLog write failed for learner_registered"
-    )
+      "AuditLog write failed for learner_registered",
+    ),
   );
 
   // ── 8. Manual-review notification (brief D1-T6) ─────────────────
@@ -260,15 +260,15 @@ export const esolRegisterService = async (data: EsolRegisterPayload) => {
                 org_id: orgIdStr,
                 reason: "postcode_not_in_dataset",
               },
-            })
-          )
-        )
+            }),
+          ),
+        ),
       )
       .catch((err) =>
         logger.error(
           { err, learnerId: learner._id, orgId: org._id },
-          "Manual-review notification fan-out failed"
-        )
+          "Manual-review notification fan-out failed",
+        ),
       );
   }
 

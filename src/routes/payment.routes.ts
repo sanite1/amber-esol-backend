@@ -51,7 +51,7 @@ router.post(
   "/create-intent",
   isAuthenticated,
   createPaymentIntentValidation(),
-  createPaymentIntent
+  createPaymentIntent,
 );
 
 // ── Authenticated: Transaction history ──
@@ -59,7 +59,7 @@ router.get(
   "/transactions",
   isAuthenticated,
   listTransactionsValidation(),
-  listTransactions
+  listTransactions,
 );
 
 // ── Authenticated: Payment summary ──
@@ -70,7 +70,7 @@ router.get(
   "/chart/monthly",
   isAuthenticated,
   monthlyChartValidation(),
-  monthlyChart
+  monthlyChart,
 );
 
 // ── Authenticated: Tutor wallet ──
@@ -82,19 +82,19 @@ router.post(
   "/methods",
   isAuthenticated,
   addPaymentMethodValidation(),
-  addPaymentMethod
+  addPaymentMethod,
 );
 router.delete(
   "/methods/:id",
   isAuthenticated,
   removePaymentMethodValidation(),
-  removePaymentMethod
+  removePaymentMethod,
 );
 router.patch(
   "/methods/:id/default",
   isAuthenticated,
   setDefaultPaymentMethodValidation(),
-  setDefaultPaymentMethod
+  setDefaultPaymentMethod,
 );
 
 // ── Authenticated: Payouts (tutor requests, admin manages) ──
@@ -103,7 +103,7 @@ router.post(
   isAuthenticated,
   isTutor,
   requestPayoutValidation(),
-  requestPayout
+  requestPayout,
 );
 router.get("/payouts", isAuthenticated, listPayoutsValidation(), listPayouts);
 router.patch(
@@ -111,21 +111,21 @@ router.patch(
   isAuthenticated,
   isAdmin,
   approvePayoutValidation(),
-  approvePayout
+  approvePayout,
 );
 router.patch(
   "/payouts/:id/reject",
   isAuthenticated,
   isAdmin,
   rejectPayoutValidation(),
-  rejectPayout
+  rejectPayout,
 );
 router.patch(
   "/payouts/:id/complete",
   isAuthenticated,
   isAdmin,
   completePayoutValidation(),
-  completePayout
+  completePayout,
 );
 
 // ── Authenticated: Refund ──
@@ -133,7 +133,7 @@ router.post(
   "/refund/:transactionId",
   isAuthenticated,
   refundTransactionValidation(),
-  refundTransaction
+  refundTransaction,
 );
 
 // ── Admin: Flag transaction ──
@@ -142,7 +142,7 @@ router.patch(
   isAuthenticated,
   isAdmin,
   flagTransactionValidation(),
-  flagTransaction
+  flagTransaction,
 );
 
 // ── Authenticated: Transaction detail (must be after /transactions routes) ──
@@ -150,7 +150,7 @@ router.get(
   "/transactions/:id",
   isAuthenticated,
   getTransactionByIdValidation(),
-  getTransactionById
+  getTransactionById,
 );
 
 export default router;

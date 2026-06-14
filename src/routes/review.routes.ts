@@ -50,7 +50,7 @@ router.post(
   isAuthenticated,
   isStudent,
   createReviewValidation(),
-  createReview
+  createReview,
 );
 
 // ── Authenticated: My reviews (student's own reviews) ──
@@ -68,7 +68,7 @@ router.patch(
   isAuthenticated,
   isStudent,
   updateReviewValidation(),
-  updateReview
+  updateReview,
 );
 
 // ── Student: Delete own review ──
@@ -77,7 +77,7 @@ router.delete(
   isAuthenticated,
   isStudent,
   deleteReviewValidation(),
-  deleteReview
+  deleteReview,
 );
 
 // ── Tutor: Reply CRUD ──
@@ -86,21 +86,21 @@ router.post(
   isAuthenticated,
   isTutor,
   addReplyValidation(),
-  addReply
+  addReply,
 );
 router.patch(
   "/:id/reply",
   isAuthenticated,
   isTutor,
   updateReplyValidation(),
-  updateReply
+  updateReply,
 );
 router.delete(
   "/:id/reply",
   isAuthenticated,
   isTutor,
   deleteReplyValidation(),
-  deleteReply
+  deleteReply,
 );
 
 // ── Authenticated: Report a review ──
@@ -108,7 +108,7 @@ router.post(
   "/:id/report",
   isAuthenticated,
   reportReviewValidation(),
-  reportReview
+  reportReview,
 );
 
 // ── Authenticated: Toggle helpful ──
@@ -116,7 +116,7 @@ router.post(
   "/:id/helpful",
   isAuthenticated,
   helpfulReviewValidation(),
-  toggleHelpful
+  toggleHelpful,
 );
 
 // ── Admin: List all reviews ──
@@ -125,7 +125,7 @@ router.get(
   isAuthenticated,
   isAdmin,
   adminListReviewsValidation(),
-  adminListReviews
+  adminListReviews,
 );
 
 // ── Admin: Hide / Unhide / Remove / Restore ──
@@ -134,28 +134,28 @@ router.patch(
   isAuthenticated,
   isAdmin,
   adminReviewActionValidation(),
-  adminHideReview
+  adminHideReview,
 );
 router.patch(
   "/:id/unhide",
   isAuthenticated,
   isAdmin,
   adminReviewActionValidation(),
-  adminUnhideReview
+  adminUnhideReview,
 );
 router.patch(
   "/:id/remove",
   isAuthenticated,
   isAdmin,
   adminReviewActionValidation(),
-  adminRemoveReview
+  adminRemoveReview,
 );
 router.patch(
   "/:id/restore",
   isAuthenticated,
   isAdmin,
   adminReviewActionValidation(),
-  adminRestoreReview
+  adminRestoreReview,
 );
 
 // ── Admin: Handle individual report ──
@@ -164,7 +164,7 @@ router.patch(
   isAuthenticated,
   isAdmin,
   adminReportActionValidation(),
-  adminHandleReport
+  adminHandleReport,
 );
 // ── Admin: Review stats ──
 router.get("/admin/stats", isAuthenticated, isAdmin, adminReviewStats);

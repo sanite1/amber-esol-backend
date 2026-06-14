@@ -37,7 +37,7 @@ const calibrationLogSchema = new Schema<ICalibrationLog>(
   {
     versionKey: false,
     timestamps: { createdAt: false, updatedAt: false },
-  }
+  },
 );
 
 // "Show me the latest calibration run" — query by bank_version + time.
@@ -50,20 +50,20 @@ const blockMutation = function (next: (err?: Error) => void) {
   next(
     new Error(
       "CalibrationLog is append-only — updates are not permitted. " +
-        "If a row is wrong, DELETE it and append a corrected one."
-    )
+        "If a row is wrong, DELETE it and append a corrected one.",
+    ),
   );
 };
 calibrationLogSchema.pre(
   ["updateOne", "findOneAndUpdate", "updateMany"] as any,
-  blockMutation
+  blockMutation,
 );
 calibrationLogSchema.pre("save", function (next) {
   if (!this.isNew) {
     return next(
       new Error(
-        "CalibrationLog is append-only — re-saving an existing document is not permitted."
-      )
+        "CalibrationLog is append-only — re-saving an existing document is not permitted.",
+      ),
     );
   }
   next();
@@ -71,7 +71,7 @@ calibrationLogSchema.pre("save", function (next) {
 
 const CalibrationLog = model<ICalibrationLog>(
   "CalibrationLog",
-  calibrationLogSchema
+  calibrationLogSchema,
 );
 
 export default CalibrationLog;

@@ -38,7 +38,10 @@ export class GeminiApiError extends Error {
   public readonly retriable = false;
   public readonly statusCode?: number;
   public readonly cause?: unknown;
-  constructor(message: string, opts: { statusCode?: number; cause?: unknown } = {}) {
+  constructor(
+    message: string,
+    opts: { statusCode?: number; cause?: unknown } = {},
+  ) {
     super(message);
     this.name = "GeminiApiError";
     this.statusCode = opts.statusCode;

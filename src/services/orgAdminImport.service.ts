@@ -40,8 +40,8 @@ const SALT_ROUNDS = 13;
 // ─────────────────────────────────────────────────────────────────────
 
 export interface ImportRowIssue {
-  row: number;     // 1-indexed from first data row
-  field: string;   // CSV column name; "*" for whole-row errors
+  row: number; // 1-indexed from first data row
+  field: string; // CSV column name; "*" for whole-row errors
   message: string; // plain English — surfaced verbatim to org admin
 }
 
@@ -141,7 +141,11 @@ const MIN_ENROLMENT_AGE_YEARS = 16;
 const isBlank = (v: unknown): boolean =>
   v === undefined || v === null || (typeof v === "string" && v.trim() === "");
 
-const mkError = (row: number, field: string, message: string): ImportRowIssue => ({
+const mkError = (
+  row: number,
+  field: string,
+  message: string,
+): ImportRowIssue => ({
   row,
   field,
   message,
@@ -150,14 +154,14 @@ const mkError = (row: number, field: string, message: string): ImportRowIssue =>
 export const validateRequired = (
   raw: unknown,
   field: string,
-  row: number
+  row: number,
 ): ImportRowIssue | null =>
   isBlank(raw) ? mkError(row, field, `${field} is required`) : null;
 
 export const validateIsoDate = (
   raw: unknown,
   field: string,
-  row: number
+  row: number,
 ): ImportRowIssue | null => {
   if (typeof raw !== "string" || !ISO_DATE_RE.test(raw)) {
     return mkError(row, field, `${field} must be in YYYY-MM-DD format`);
@@ -173,7 +177,7 @@ export const validateEnum = <T extends string>(
   raw: unknown,
   field: string,
   allowed: readonly T[],
-  row: number
+  row: number,
 ): ImportRowIssue | null => {
   if (typeof raw !== "string") {
     return mkError(row, field, `${field} is required`);
@@ -182,7 +186,7 @@ export const validateEnum = <T extends string>(
     return mkError(
       row,
       field,
-      `${field} must be one of: ${allowed.join(", ")}`
+      `${field} must be one of: ${allowed.join(", ")}`,
     );
   }
   return null;
@@ -190,13 +194,13 @@ export const validateEnum = <T extends string>(
 
 export const validateUkPostcode = (
   raw: unknown,
-  row: number
+  row: number,
 ): ImportRowIssue | null => {
   if (typeof raw !== "string" || !UK_POSTCODE_RE.test(raw.trim())) {
     return mkError(
       row,
       "postcode_prior",
-      "postcode_prior must be a valid UK postcode (e.g. M1 1AE)"
+      "postcode_prior must be a valid UK postcode (e.g. M1 1AE)",
     );
   }
   return null;
@@ -204,16 +208,12 @@ export const validateUkPostcode = (
 
 export const validateUln = (
   raw: unknown,
-  row: number
+  row: number,
 ): ImportRowIssue | null => {
   // ULN is optional. Blank/missing → fine. If present, must be 10 digits.
   if (isBlank(raw)) return null;
   if (typeof raw !== "string" || !ULN_RE.test(raw.trim())) {
-    return mkError(
-      row,
-      "uln",
-      "uln must be exactly 10 digits when provided"
-    );
+    return mkError(row, "uln", "uln must be exactly 10 digits when provided");
   }
   return null;
 };
@@ -225,13 +225,13 @@ export const validateUln = (
  */
 export const validateLlddHealthProb = (
   raw: unknown,
-  row: number
+  row: number,
 ): ImportRowIssue | null => {
   if (isBlank(raw)) {
     return mkError(
       row,
       "lldd_health_prob",
-      "lldd_health_prob is required — must be sourced from the learner, never defaulted"
+      "lldd_health_prob is required — must be sourced from the learner, never defaulted",
     );
   }
   const n = typeof raw === "number" ? raw : Number(String(raw).trim());
@@ -239,7 +239,7 @@ export const validateLlddHealthProb = (
     return mkError(
       row,
       "lldd_health_prob",
-      "lldd_health_prob must be 1 (yes), 2 (no), or 9 (prefer not to say)"
+      "lldd_health_prob must be 1 (yes), 2 (no), or 9 (prefer not to say)",
     );
   }
   return null;
@@ -247,7 +247,7 @@ export const validateLlddHealthProb = (
 
 export const validateEmail = (
   raw: unknown,
-  row: number
+  row: number,
 ): ImportRowIssue | null => {
   // Email is optional. Blank = use placeholder downstream.
   if (isBlank(raw)) return null;
@@ -266,7 +266,7 @@ export const validateEmail = (
 export const validateAgeAtEnrolment = (
   dob: string | undefined,
   enrolDate: string | undefined,
-  row: number
+  row: number,
 ): ImportRowIssue | null => {
   if (!dob || !enrolDate) return null;
   const dobD = new Date(dob);
@@ -280,7 +280,7 @@ export const validateAgeAtEnrolment = (
     return mkError(
       row,
       "date_of_birth",
-      `learner must be at least ${MIN_ENROLMENT_AGE_YEARS} years old on enrolment_date`
+      `learner must be at least ${MIN_ENROLMENT_AGE_YEARS} years old on enrolment_date`,
     );
   }
   return null;
@@ -303,7 +303,7 @@ export interface RowValidationResult {
  */
 export const validateRow = (
   raw: RawCsvRow,
-  row: number
+  row: number,
 ): RowValidationResult => {
   const errors: ImportRowIssue[] = [];
 
@@ -330,7 +330,7 @@ export const validateRow = (
     const ageErr = validateAgeAtEnrolment(
       raw.date_of_birth,
       raw.enrolment_date,
-      row
+      row,
     );
     if (ageErr) errors.push(ageErr);
   }
@@ -342,16 +342,12 @@ export const validateRow = (
   if (l1Err) errors.push(l1Err);
 
   const levelErr =
-    validateRequired(
-      raw.esol_level_at_import,
-      "esol_level_at_import",
-      row
-    ) ||
+    validateRequired(raw.esol_level_at_import, "esol_level_at_import", row) ||
     validateEnum(
       raw.esol_level_at_import,
       "esol_level_at_import",
       ESOL_LEVELS,
-      row
+      row,
     );
   if (levelErr) errors.push(levelErr);
 
@@ -361,7 +357,7 @@ export const validateRow = (
       raw.employment_status,
       "employment_status",
       EMPLOYMENT_STATUSES,
-      row
+      row,
     );
   if (empErr) errors.push(empErr);
 
@@ -454,7 +450,7 @@ const bufferToStream = (buf: Buffer): Readable => {
  */
 const lookupSofWithWarning = async (
   postcode: string,
-  row: number
+  row: number,
 ): Promise<{ sofCode: string | null; warning: ImportRowIssue | null }> => {
   try {
     const routing = await PostcodeRouter.lookup(postcode);
@@ -464,20 +460,20 @@ const lookupSofWithWarning = async (
       warning: mkError(
         row,
         "postcode_prior",
-        "postcode not found — manual SOF review required"
+        "postcode not found — manual SOF review required",
       ),
     };
   } catch (err) {
     logger.warn(
       { err, postcode, row },
-      "Postcode lookup threw during bulk import — treating as soft warning"
+      "Postcode lookup threw during bulk import — treating as soft warning",
     );
     return {
       sofCode: null,
       warning: mkError(
         row,
         "postcode_prior",
-        "postcode lookup failed — manual SOF review required"
+        "postcode lookup failed — manual SOF review required",
       ),
     };
   }
@@ -491,7 +487,7 @@ const importOneLearner = async (
   row: ValidatedRow,
   sofCode: string | null,
   orgId: string,
-  actorId: string
+  actorId: string,
 ): Promise<{ learnerId: string; replayed: boolean; manualReview: boolean }> => {
   const hasEmail = !!row.email;
   const resolvedEmail = hasEmail ? (row.email as string) : placeholderEmail();
@@ -508,7 +504,7 @@ const importOneLearner = async (
         if (existing) {
           throw new ApiError(
             409,
-            `A learner with email ${resolvedEmail} already exists`
+            `A learner with email ${resolvedEmail} already exists`,
           );
         }
       }
@@ -574,8 +570,8 @@ const importOneLearner = async (
       }).catch((err) =>
         logger.error(
           { err, learnerId: learner._id, orgId },
-          "AuditLog write failed for learner_bulk_imported"
-        )
+          "AuditLog write failed for learner_bulk_imported",
+        ),
       );
 
       return {
@@ -583,7 +579,7 @@ const importOneLearner = async (
         manualReview: fundingStatus === "manual_review",
       };
     },
-    { org_id: orgId }
+    { org_id: orgId },
   );
 
   return {
@@ -596,7 +592,7 @@ const importOneLearner = async (
 const notifyManualReviewBatch = async (
   orgId: string,
   count: number,
-  jobSummary: BulkImportSummary
+  jobSummary: BulkImportSummary,
 ) => {
   if (count === 0) return;
   const admins = await User.find({
@@ -622,8 +618,8 @@ const notifyManualReviewBatch = async (
           imported: jobSummary.imported,
           failed: jobSummary.failed,
         },
-      })
-    )
+      }),
+    ),
   );
 };
 
@@ -634,10 +630,10 @@ const notifyManualReviewBatch = async (
  * yielded as row 1 — matches the brief's "1-indexed from data row".
  */
 async function* streamRows(
-  buf: Buffer
+  buf: Buffer,
 ): AsyncGenerator<
-  { row: number; value: ValidatedRow; errors: null } |
-  { row: number; value: null; errors: ImportRowIssue[] }
+  | { row: number; value: ValidatedRow; errors: null }
+  | { row: number; value: null; errors: ImportRowIssue[] }
 > {
   const parser = bufferToStream(buf).pipe(
     parse({
@@ -646,7 +642,7 @@ async function* streamRows(
       skip_empty_lines: true,
       relax_quotes: true,
       bom: true,
-    })
+    }),
   );
 
   let rowNumber = 0; // header occupies the slot before the first data row
@@ -668,7 +664,7 @@ async function* streamRows(
 export const importLearnersService = async (
   file: Express.Multer.File | undefined,
   orgId: string,
-  actorId: string
+  actorId: string,
 ): Promise<ApiResponse> => {
   if (!file) {
     throw new ApiError(400, "CSV file is required (multipart field 'file')");
@@ -702,7 +698,7 @@ export const importLearnersService = async (
       // Soft postcode lookup → may produce a warning. Row still imports.
       const { sofCode, warning } = await lookupSofWithWarning(
         out.value.postcode_prior,
-        out.row
+        out.row,
       );
       if (warning) summary.warnings.push(warning);
 
@@ -711,7 +707,7 @@ export const importLearnersService = async (
           out.value,
           sofCode,
           orgId,
-          actorId
+          actorId,
         );
         if (result.replayed) {
           summary.duplicate += 1;
@@ -734,15 +730,16 @@ export const importLearnersService = async (
     logger.error({ err, orgId }, "CSV parse aborted during bulk import");
     throw new ApiError(
       400,
-      `CSV parse failed: ${err instanceof Error ? err.message : "unknown error"}`
+      `CSV parse failed: ${err instanceof Error ? err.message : "unknown error"}`,
     );
   }
 
-  await notifyManualReviewBatch(orgId, manualReviewCount, summary).catch((err) =>
-    logger.error(
-      { err, orgId, manualReviewCount },
-      "Manual-review batch notification failed"
-    )
+  await notifyManualReviewBatch(orgId, manualReviewCount, summary).catch(
+    (err) =>
+      logger.error(
+        { err, orgId, manualReviewCount },
+        "Manual-review batch notification failed",
+      ),
   );
 
   return new ApiResponse(200, "Bulk import complete", summary);

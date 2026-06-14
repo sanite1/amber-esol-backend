@@ -30,13 +30,13 @@ router.use(isAuthenticated, isAdmin);
 router.patch(
   "/:id/approve-esol-teacher",
   adminApproveEsolValidation(),
-  adminApproveEsolTeacher
+  adminApproveEsolTeacher,
 );
 
 router.patch(
   "/:id/reject-esol-teacher",
   rejectTeacherValidation(),
-  adminRejectEsolTeacher
+  adminRejectEsolTeacher,
 );
 
 export default router;

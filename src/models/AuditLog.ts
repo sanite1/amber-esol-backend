@@ -110,6 +110,8 @@ const auditLogSchema = new Schema<IAuditLog>(
         "teacher_added_to_org",
         "teacher_removed_from_org",
         "learner_teacher_assigned",
+        // Final Addendum §2 — safeguarding response-text CMS
+        "safeguarding_message_updated",
         // Function 13 To-Do 4 — ILR export pipeline completion
         "ilr_export_completed",
         // Function 14 — evidence-report PDF lifecycle
@@ -126,6 +128,9 @@ const auditLogSchema = new Schema<IAuditLog>(
         // Final Addendum §1 — failed-job review actions
         "failed_job_retried",
         "failed_job_dismissed",
+        // Phase 2 / Final Addendum §13 (BE-G) — org_admin completed
+        // (or explicitly skipped) the ROI-calculator onboarding embed.
+        "org_onboarding_completed",
       ],
       required: true,
     },
@@ -184,7 +189,7 @@ const auditLogSchema = new Schema<IAuditLog>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // Compound indexes for the two dominant query shapes:
@@ -198,23 +203,25 @@ const blockMutation = function (next: (err?: Error) => void) {
   next(
     new Error(
       "AuditLog is append-only — updates and deletes are not permitted. " +
-        "If a row is wrong, append a corrective row with `reason` explaining the correction."
-    )
+        "If a row is wrong, append a corrective row with `reason` explaining the correction.",
+    ),
   );
 };
 
 auditLogSchema.pre(
   ["updateOne", "findOneAndUpdate", "updateMany"] as any,
-  blockMutation
+  blockMutation,
 );
 auditLogSchema.pre(
   ["deleteOne", "findOneAndDelete", "deleteMany"] as any,
-  blockMutation
+  blockMutation,
 );
 auditLogSchema.pre("save", function (next) {
   if (!this.isNew) {
     return next(
-      new Error("AuditLog is append-only — re-saving an existing document is not permitted.")
+      new Error(
+        "AuditLog is append-only — re-saving an existing document is not permitted.",
+      ),
     );
   }
   next();

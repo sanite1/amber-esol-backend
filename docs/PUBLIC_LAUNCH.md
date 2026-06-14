@@ -23,19 +23,19 @@ Update this table as each item flips green. Public launch
 unblocks when every cell reads ✅ and the sign-off block at the
 bottom carries signatures.
 
-| #  | Gate                                              | Status | Owner | Notes |
-|----|---------------------------------------------------|--------|-------|-------|
-| 1  | Pilot retrospective with green light              | ☐     | Joey  |       |
-| 2  | Compliance gate (Phase 2)                         | ☐     | Joey + compliance reviewer | |
-| 3  | Performance baseline met (Phase 20.1)             | ☐     | Engineering | |
-| 4  | Security audit passed (Phase 20.2)                | ☐     | Engineering + Joey | |
-| 5  | Content authoring (Phase 19) signed off           | ☐     | Joey + ESOL practitioner + safeguarding professional + translators | |
-| 6  | WCAG 2.1 AA audit clean                           | ☐     | Engineering + accessibility reviewer | |
-| 7  | ICO registered, UKPRN issued, insurance in place  | ☐     | Joey | |
-| 8  | All 8 BullMQ workers running in prod with monitoring [ADDENDUM] | ☐ | Engineering | |
-| 9  | ComplianceConfig 2025/26 active in prod [ADDENDUM] | ☐    | Joey (compliance lead) | |
-| 10 | Launch announcement: LinkedIn, press, NATECLA/AELP/Holex outreach | ☐ | Joey | |
-| 11 | G-Cloud 15 listing application (September 2026 window) | ☐ | Joey | Soft gate — see item |
+| #   | Gate                                                              | Status | Owner                                                              | Notes                |
+| --- | ----------------------------------------------------------------- | ------ | ------------------------------------------------------------------ | -------------------- |
+| 1   | Pilot retrospective with green light                              | ☐      | Joey                                                               |                      |
+| 2   | Compliance gate (Phase 2)                                         | ☐      | Joey + compliance reviewer                                         |                      |
+| 3   | Performance baseline met (Phase 20.1)                             | ☐      | Engineering                                                        |                      |
+| 4   | Security audit passed (Phase 20.2)                                | ☐      | Engineering + Joey                                                 |                      |
+| 5   | Content authoring (Phase 19) signed off                           | ☐      | Joey + ESOL practitioner + safeguarding professional + translators |                      |
+| 6   | WCAG 2.1 AA audit clean                                           | ☐      | Engineering + accessibility reviewer                               |                      |
+| 7   | ICO registered, UKPRN issued, insurance in place                  | ☐      | Joey                                                               |                      |
+| 8   | All 8 BullMQ workers running in prod with monitoring [ADDENDUM]   | ☐      | Engineering                                                        |                      |
+| 9   | ComplianceConfig 2025/26 active in prod [ADDENDUM]                | ☐      | Joey (compliance lead)                                             |                      |
+| 10  | Launch announcement: LinkedIn, press, NATECLA/AELP/Holex outreach | ☐      | Joey                                                               |                      |
+| 11  | G-Cloud 15 listing application (September 2026 window)            | ☐      | Joey                                                               | Soft gate — see item |
 
 ---
 
@@ -188,7 +188,7 @@ shows status `complete` with the required signatures.
   flagged) have been incorporated, signed off, and live in
   production.
 - Engineering re-runs the content validation scripts (`npm run
-  validate:scenarios`, `npm run validate:placement-bank`,
+validate:scenarios`, `npm run validate:placement-bank`,
   `npm run validate:safeguarding-messages`) and they pass.
 
 ### Cross-references
@@ -366,7 +366,7 @@ Joey as compliance lead.
   2. EnglishProgType field change
   3. SOC2000 → SOC mapping
   4. LLDDT code 15 expired remapping
-  (Spot-check via the ILR export test cohort.)
+     (Spot-check via the ILR export test cohort.)
 - **Annual renewal calendar entry** for **1 August 2027** in
   Joey's calendar — next academic year needs the same exercise.
 
@@ -624,11 +624,11 @@ Public launch requires **all three signatures** below. None of
 them may sign in advance of the others — the signatures must
 be sequential, with the date of the previous signature visible.
 
-| Order | Role | Date | Name | Signature |
-|-------|------|------|------|-----------|
-| 1 | Engineering lead — confirms items 3, 4, 6, 8 | | | |
-| 2 | Joey — confirms items 1, 2, 5, 7, 9, 10, 11 | | | |
-| 3 | External advisor — confirms the overall posture | | | |
+| Order | Role                                            | Date | Name | Signature |
+| ----- | ----------------------------------------------- | ---- | ---- | --------- |
+| 1     | Engineering lead — confirms items 3, 4, 6, 8    |      |      |           |
+| 2     | Joey — confirms items 1, 2, 5, 7, 9, 10, 11     |      |      |           |
+| 3     | External advisor — confirms the overall posture |      |      |           |
 
 **Public launch unblocks** when all three signatures are in
 place AND the Public Launch Decision Note records **Go**.

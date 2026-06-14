@@ -43,7 +43,7 @@ router.post(
   isAuthenticated,
   requireEsolLearner,
   requireOrgContext,
-  submitPlacement
+  submitPlacement,
 );
 
 export default router;

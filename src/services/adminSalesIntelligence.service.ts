@@ -45,7 +45,7 @@ export interface ListRoiSubmissionsQuery {
   /** "true" → contacted_at IS NOT NULL; "false" → contacted_at IS NULL. */
   contacted?: string;
   from?: string; // ISO date YYYY-MM-DD
-  to?: string;   // ISO date YYYY-MM-DD (inclusive)
+  to?: string; // ISO date YYYY-MM-DD (inclusive)
   org_type?: string;
   page?: string;
   limit?: string;
@@ -151,7 +151,10 @@ export const listRoiSubmissionsService = async (
 
   const page = Math.max(1, parseInt(query.page ?? "1", 10) || 1);
   const limitRaw = parseInt(query.limit ?? String(DEFAULT_PAGE_SIZE), 10);
-  const limit = Math.max(1, Math.min(MAX_PAGE_SIZE, limitRaw || DEFAULT_PAGE_SIZE));
+  const limit = Math.max(
+    1,
+    Math.min(MAX_PAGE_SIZE, limitRaw || DEFAULT_PAGE_SIZE),
+  );
   const skip = (page - 1) * limit;
 
   // Build the Mongo filter once; reused by find + countDocuments
@@ -212,7 +215,11 @@ export const listRoiSubmissionsService = async (
   const contactedByIds = Array.from(
     new Set(
       docs
-        .map((d) => (d as { contacted_by?: Types.ObjectId | null }).contacted_by?.toString())
+        .map((d) =>
+          (
+            d as { contacted_by?: Types.ObjectId | null }
+          ).contacted_by?.toString(),
+        )
         .filter((id): id is string => Boolean(id)),
     ),
   ).map((id) => new Types.ObjectId(id));
@@ -232,9 +239,8 @@ export const listRoiSubmissionsService = async (
 
   // ── Project to the response shape ───────────────────────────
   const submissions: RoiSubmissionRow[] = docs.map((d) => {
-    const contactedByRaw = (
-      d as { contacted_by?: Types.ObjectId | null }
-    ).contacted_by;
+    const contactedByRaw = (d as { contacted_by?: Types.ObjectId | null })
+      .contacted_by;
     return {
       _id: (d._id as Types.ObjectId).toString(),
       org_name: (d as { org_name?: string | null }).org_name ?? null,
@@ -254,9 +260,10 @@ export const listRoiSubmissionsService = async (
         (d as { contact_name?: string | null }).contact_name ?? null,
       submitted_at: (d as { submitted_at: Date }).submitted_at.toISOString(),
       contacted_at:
-        (d as { contacted_at?: Date | null }).contacted_at?.toISOString() ?? null,
+        (d as { contacted_at?: Date | null }).contacted_at?.toISOString() ??
+        null,
       contacted_by_name: contactedByRaw
-        ? adminNameById.get(contactedByRaw.toString()) ?? null
+        ? (adminNameById.get(contactedByRaw.toString()) ?? null)
         : null,
     };
   });
@@ -355,7 +362,9 @@ export const markRoiSubmissionContactedService = async (
   return new ApiResponse(200, "Already marked as contacted", {
     submission_id: input.submission_id,
     contacted_at:
-      (existing as { contacted_at?: Date | null }).contacted_at?.toISOString() ?? null,
+      (
+        existing as { contacted_at?: Date | null }
+      ).contacted_at?.toISOString() ?? null,
     newly_marked: false,
   });
 };

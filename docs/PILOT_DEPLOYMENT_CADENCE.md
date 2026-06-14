@@ -13,11 +13,11 @@
 
 ## TL;DR
 
-| Severity | Definition | SLA | Branch | Comms |
-|---|---|---|---|---|
-| **P0** | Data loss, security gap, compliance failure, total feature blocker | **24 hours** to deploy fix | `hotfix/*` → `main` | Slack channel within 1 hour; weekly email noting the fix |
-| **P1** | Functional bug blocking a workflow; significant UX confusion | **7 days** to deploy fix | `fix/*` → `develop` → `main` | Slack acknowledgement within 1 working day; weekly email |
-| **P2** | Polish, copy, nice-to-have | Batched weekly | `chore/*` → `develop` → batched `main` release | Weekly email only |
+| Severity | Definition                                                         | SLA                        | Branch                                         | Comms                                                    |
+| -------- | ------------------------------------------------------------------ | -------------------------- | ---------------------------------------------- | -------------------------------------------------------- |
+| **P0**   | Data loss, security gap, compliance failure, total feature blocker | **24 hours** to deploy fix | `hotfix/*` → `main`                            | Slack channel within 1 hour; weekly email noting the fix |
+| **P1**   | Functional bug blocking a workflow; significant UX confusion       | **7 days** to deploy fix   | `fix/*` → `develop` → `main`                   | Slack acknowledgement within 1 working day; weekly email |
+| **P2**   | Polish, copy, nice-to-have                                         | Batched weekly             | `chore/*` → `develop` → batched `main` release | Weekly email only                                        |
 
 Engineering on-call (`docs/ON_CALL_ROTA.md`) owns P0 from page to
 deploy. Joey owns triage + the weekly email. The pilot org
@@ -302,13 +302,13 @@ material.
 These are the numbers the pilot retrospective (`PILOT_LAUNCH.md`
 §9) leans on. Engineering runs the report; Joey reviews.
 
-| Metric | Target |
-|---|---|
-| % of P0 issues deployed within 24h | 100% |
-| % of P1 issues deployed within 7 days | ≥ 90% |
-| Median triage time (issue created → labels applied) | < 4 working hours |
-| % of weekly emails sent by 16:00 Friday | 100% |
-| Number of P1 → P0 escalations triggered by age | tracked, no target — surfaces a triage-discipline problem |
+| Metric                                                         | Target                                                     |
+| -------------------------------------------------------------- | ---------------------------------------------------------- |
+| % of P0 issues deployed within 24h                             | 100%                                                       |
+| % of P1 issues deployed within 7 days                          | ≥ 90%                                                      |
+| Median triage time (issue created → labels applied)            | < 4 working hours                                          |
+| % of weekly emails sent by 16:00 Friday                        | 100%                                                       |
+| Number of P1 → P0 escalations triggered by age                 | tracked, no target — surfaces a triage-discipline problem  |
 | Number of pilot Slack acknowledgements within their tier's SLA | tracked, no target — surfaces a process-discipline problem |
 
 ---
@@ -341,7 +341,7 @@ Joey for the pilot duration. Changes during the pilot are filed
 as a `pilot-feedback` issue against this document and signed off
 by both before taking effect.
 
-| Role | Date | Name | Signature |
-|---|---|---|---|
-| Engineering lead | | | |
-| Joey (Amber Training) | | | |
+| Role                  | Date | Name | Signature |
+| --------------------- | ---- | ---- | --------- |
+| Engineering lead      |      |      |           |
+| Joey (Amber Training) |      |      |           |

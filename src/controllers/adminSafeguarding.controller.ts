@@ -27,7 +27,7 @@ import {
 export const listAdminSafeguardingAlerts: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const query = req.query as unknown as AdminListSafeguardingQuery;
@@ -61,7 +61,7 @@ export const listAdminSafeguardingAlerts: ExpressFunction = async (
 export const getAdminSafeguardingAlert: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const { id } = req.params as { id: string };
@@ -82,7 +82,7 @@ export const getAdminSafeguardingAlert: ExpressFunction = async (
 export const resolveAdminSafeguardingAlert: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const { id } = req.params as { id: string };
@@ -90,7 +90,7 @@ export const resolveAdminSafeguardingAlert: ExpressFunction = async (
     const result = await resolveAdminSafeguardingAlertService(
       id,
       req.body as ResolveAdminSafeguardingBody,
-      callerId
+      callerId,
     );
     return res.status(result.statusCode).json({
       message: result.message,
@@ -108,13 +108,13 @@ export const resolveAdminSafeguardingAlert: ExpressFunction = async (
 export const getOrgAdminSafeguardingCount: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const orgId = req.user!.orgId ?? null;
     const result = await getOrgAdminSafeguardingCountService(
       orgId,
-      req.query as unknown as OrgAdminCountQuery
+      req.query as unknown as OrgAdminCountQuery,
     );
     return res.status(result.statusCode).json({
       message: result.message,

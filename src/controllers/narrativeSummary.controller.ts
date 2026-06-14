@@ -13,7 +13,7 @@ import { getCohortNarrativeService } from "../services/narrativeSummary.service"
 export const getCohortNarrativeSummary: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const orgId =

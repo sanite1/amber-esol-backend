@@ -235,7 +235,7 @@ async function enrichTutor(t: any) {
     advanced: "C1",
   };
   const cefrLevels = (t.teachingPreferences?.preferredLevels || []).map(
-    (l: string) => levelMap[l] || l.toUpperCase()
+    (l: string) => levelMap[l] || l.toUpperCase(),
   );
 
   return {
@@ -273,7 +273,7 @@ async function enrichTutor(t: any) {
 /* ── Helper: map DB user status to frontend tutor status ── */
 
 function mapTutorStatus(
-  user: any
+  user: any,
 ): "active" | "inactive" | "pending_approval" | "rejected" | "banned" {
   if (!user.isActive && user.status === "suspended") return "banned";
   if (user.status === "terminated") return "rejected";
@@ -297,7 +297,7 @@ function mapTutorStatus(
 
 export const adminUpdateTutorStatusService = async (
   tutorId: string,
-  data: IAdminUpdateTutorStatusRequest
+  data: IAdminUpdateTutorStatusRequest,
 ) => {
   const user = await User.findById(tutorId);
   if (!user) {
@@ -353,7 +353,7 @@ export const adminUpdateTutorStatusService = async (
           deactivatedAt: new Date().toISOString(),
         },
       }).catch((err) =>
-        logger.error({ err }, "Error creating deactivation notification")
+        logger.error({ err }, "Error creating deactivation notification"),
       );
       break;
     }
@@ -376,7 +376,7 @@ export const adminUpdateTutorStatusService = async (
           rejectedAt: new Date().toISOString(),
         },
       }).catch((err) =>
-        logger.error({ err }, "Error creating rejection notification")
+        logger.error({ err }, "Error creating rejection notification"),
       );
       break;
     }
@@ -401,7 +401,7 @@ export const adminUpdateTutorStatusService = async (
           suspendedAt: user.suspendedAt.toISOString(),
         },
       }).catch((err) =>
-        logger.error({ err }, "Error creating ban notification")
+        logger.error({ err }, "Error creating ban notification"),
       );
       break;
     }

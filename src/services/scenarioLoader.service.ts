@@ -14,7 +14,7 @@ const L1_CODE_MAP: Record<string, "ar" | "so" | "fa" | "ti" | "zh"> = {
 
 export const loadScenario = (
   scenarioIdOrTopic: string,
-  l1Language: string
+  l1Language: string,
 ): ScenarioContext | undefined => {
   // Match by scenarioId first; fall back to topic matching
   const id = scenarioIdOrTopic.toLowerCase().replace(/\s+/g, "_");

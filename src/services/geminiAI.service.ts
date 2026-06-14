@@ -34,11 +34,16 @@ SAFEGUARDING: If the learner expresses self-harm, domestic abuse, radicalisation
 
 const buildLevelLayer = (level: string, l1Language: string): string => {
   const ratios: Record<string, string> = {
-    "Entry 1": "60% L1 (the learner's first language) / 40% English. All explanations in L1 first, then English alongside. Maximum 5–8 words per sentence. One idea per message. Maximum 3 sentences per response (HARD LIMIT). No idioms or phrasal verbs. Yes/no questions only.",
-    "Entry 2": "40% L1 / 60% English. L1 for new vocabulary, grammar explanations, and on confusion signal. Up to 12 words per sentence. Simple connectives (and, but, so, because). Maximum 4 sentences. Short-phrase responses expected.",
-    "Entry 3": "20% L1 / 80% English. L1 available on confusion signal or explicit learner request only. Natural conversational pace. Past and future tense introduced. Sentence-length responses expected.",
-    "Level 1": "5% L1 / 95% English. L1 only on explicit learner request for a specific concept. Peer-like tone. Idiomatic language introduced with explanation. Formal vs informal registers discussed.",
-    "Level 2": "English only. L1 available on explicit request — confirm in L1 but respond in English. Complex scenarios. Challenger questions requiring argument or persuasion. Explicit preparation for formal assessment.",
+    "Entry 1":
+      "60% L1 (the learner's first language) / 40% English. All explanations in L1 first, then English alongside. Maximum 5–8 words per sentence. One idea per message. Maximum 3 sentences per response (HARD LIMIT). No idioms or phrasal verbs. Yes/no questions only.",
+    "Entry 2":
+      "40% L1 / 60% English. L1 for new vocabulary, grammar explanations, and on confusion signal. Up to 12 words per sentence. Simple connectives (and, but, so, because). Maximum 4 sentences. Short-phrase responses expected.",
+    "Entry 3":
+      "20% L1 / 80% English. L1 available on confusion signal or explicit learner request only. Natural conversational pace. Past and future tense introduced. Sentence-length responses expected.",
+    "Level 1":
+      "5% L1 / 95% English. L1 only on explicit learner request for a specific concept. Peer-like tone. Idiomatic language introduced with explanation. Formal vs informal registers discussed.",
+    "Level 2":
+      "English only. L1 available on explicit request — confirm in L1 but respond in English. Complex scenarios. Challenger questions requiring argument or persuasion. Explicit preparation for formal assessment.",
   };
   const ratio = ratios[level] ?? ratios["Entry 2"];
   return `LEARNER LEVEL: ${level}.
@@ -51,7 +56,10 @@ const buildScenarioLayer = (scenario: ScenarioContext | undefined): string => {
     return `SCENARIO: General English conversation practice. The learner can ask about anything they need help with.`;
   }
   const vocabList = scenario.vocabulary
-    .map((v) => `- ${v.word}: ${v.definition}${v.translations?.[scenario.l1Code] ? ` (${scenario.l1Code}: ${v.translations[scenario.l1Code]})` : ""}`)
+    .map(
+      (v) =>
+        `- ${v.word}: ${v.definition}${v.translations?.[scenario.l1Code] ? ` (${scenario.l1Code}: ${v.translations[scenario.l1Code]})` : ""}`,
+    )
     .join("\n");
   return `SCENARIO: ${scenario.title} (id: ${scenario.scenarioId}).
 ROLEPLAY SETUP: ${scenario.roleplayPrompt}
@@ -186,7 +194,6 @@ export const processTurn = async (params: {
   learner: LearnerContext;
   history: DialogueHistoryEntry[];
 }): Promise<TurnResponse> => {
-
   const systemInstruction = [
     LAYER_1_IDENTITY,
     LAYER_2_HARD_RULES,
@@ -203,16 +210,31 @@ export const processTurn = async (params: {
       responseMimeType: "application/json",
       responseSchema: RESPONSE_SCHEMA as any,
       temperature: 0.7,
-      maxOutputTokens: 1024,
+      // 2.5-flash thinking tokens count against this budget — see the
+      // placement scorer note. 1024 risked mid-JSON truncation on the
+      // core tutor turn.
+      maxOutputTokens: 2048,
     },
     safetySettings: [
       // Lower thresholds — we WANT to receive flagged content so we can
       // log it as a safeguarding concern rather than have Gemini refuse
       // outright. We handle safety policy via our own safeguarding layer.
-      { category: "HARM_CATEGORY_HARASSMENT" as any, threshold: "BLOCK_ONLY_HIGH" as any },
-      { category: "HARM_CATEGORY_HATE_SPEECH" as any, threshold: "BLOCK_ONLY_HIGH" as any },
-      { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT" as any, threshold: "BLOCK_ONLY_HIGH" as any },
-      { category: "HARM_CATEGORY_DANGEROUS_CONTENT" as any, threshold: "BLOCK_ONLY_HIGH" as any },
+      {
+        category: "HARM_CATEGORY_HARASSMENT" as any,
+        threshold: "BLOCK_ONLY_HIGH" as any,
+      },
+      {
+        category: "HARM_CATEGORY_HATE_SPEECH" as any,
+        threshold: "BLOCK_ONLY_HIGH" as any,
+      },
+      {
+        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT" as any,
+        threshold: "BLOCK_ONLY_HIGH" as any,
+      },
+      {
+        category: "HARM_CATEGORY_DANGEROUS_CONTENT" as any,
+        threshold: "BLOCK_ONLY_HIGH" as any,
+      },
     ] as any,
   });
 
@@ -249,7 +271,7 @@ export const processTurn = async (params: {
     logger.error({ err }, "Gemini processTurn failed");
     throw new ApiError(
       503,
-      "The AI tutor is temporarily unavailable. Please try again."
+      "The AI tutor is temporarily unavailable. Please try again.",
     );
   }
 };
@@ -288,10 +310,48 @@ const PLACEMENT_SCHEMA = {
   required: ["nqfLevel", "confidence", "skillWeaknessFlags", "rationale"],
 } as const;
 
-export const scorePlacementAssessment = async (
-  responses: AssessmentResponse[]
-): Promise<PlacementScore> => {
+/* Mechanics duplicated from the PROVEN-WORKING post-account placement
+   flow (placement.service.ts — Function 6): 4096-token budget, a
+   retry loop (one transient hiccup no longer dumps the learner into
+   the Entry 1 fallback), strict parse + validation, and raw-body
+   logging on failure so the true cause is always in the logs. */
 
+const ONBOARDING_SCORING_MAX_TOKENS = 4096; // mirrors SCORING_MAX_TOKENS
+const VALID_NQF_LEVELS = new Set([
+  "Entry 1",
+  "Entry 2",
+  "Entry 3",
+  "Level 1",
+  "Level 2",
+]);
+
+/** Strict parse + validate — mirrors placement.service.ts
+ *  parseScoringResponse so malformed output is caught loudly rather
+ *  than leaking a half-formed object into the learner record. */
+const parsePlacementScore = (text: string): PlacementScore => {
+  const p = JSON.parse(text) as Partial<PlacementScore>;
+  if (typeof p.nqfLevel !== "string" || !VALID_NQF_LEVELS.has(p.nqfLevel)) {
+    throw new Error(`Invalid nqfLevel: ${p.nqfLevel}`);
+  }
+  if (
+    typeof p.confidence !== "number" ||
+    p.confidence < 0 ||
+    p.confidence > 1
+  ) {
+    throw new Error(`Invalid confidence: ${p.confidence}`);
+  }
+  if (!Array.isArray(p.skillWeaknessFlags)) {
+    throw new Error("skillWeaknessFlags must be an array");
+  }
+  if (typeof p.rationale !== "string" || p.rationale.trim() === "") {
+    throw new Error("rationale must be a non-empty string");
+  }
+  return p as PlacementScore;
+};
+
+const scorePlacementOnce = async (
+  userText: string,
+): Promise<PlacementScore> => {
   const systemInstruction = `You are an experienced ESOL placement assessor working with the UK Adult ESOL Core Curriculum (DfES 2001) and the NQF level descriptors (Entry 1 through Level 2).
 
 Score the learner's responses to the placement assessment below. Apply this rule strictly: NEVER over-assign a level. Always assign the correct level OR ONE LEVEL BELOW. Never assign a level the learner has not clearly demonstrated.
@@ -312,28 +372,77 @@ Return JSON: nqfLevel, confidence (0-1), skillWeaknessFlags (array of skill code
       responseMimeType: "application/json",
       responseSchema: PLACEMENT_SCHEMA as any,
       temperature: 0.2,
-      maxOutputTokens: 512,
+      // gemini-2.5-flash is a THINKING model — internal reasoning
+      // tokens are billed against maxOutputTokens. 4096 matches the
+      // proven post-account placement scorer; typical real usage is
+      // a few hundred tokens, so this is a wide safety margin.
+      maxOutputTokens: ONBOARDING_SCORING_MAX_TOKENS,
     },
   });
 
+  const result = await model.generateContent({
+    contents: [{ role: "user", parts: [{ text: userText }] }],
+  });
+  const candidate = result.response?.candidates?.[0];
+  const text = candidate?.content?.parts?.[0]?.text ?? "";
+
+  if (candidate?.finishReason === "MAX_TOKENS") {
+    logger.error(
+      { finishReason: candidate.finishReason, textLength: text.length },
+      "Onboarding placement scoring TRUNCATED — maxOutputTokens too small for gemini-2.5-flash thinking budget. Raise it.",
+    );
+  }
+  if (!text) {
+    throw new Error(
+      `Empty response from Gemini (finishReason: ${candidate?.finishReason ?? "unknown"})`,
+    );
+  }
+
+  try {
+    return parsePlacementScore(text);
+  } catch (err) {
+    // Raw-body snippet in the log — mirrors placement.service.ts so
+    // schema drift is diagnosable without re-running the request.
+    logger.error(
+      { rawSnippet: text.slice(0, 500), parseErr: (err as Error).message },
+      "Onboarding placement scoring — parse/validate failed",
+    );
+    throw err;
+  }
+};
+
+export const scorePlacementAssessment = async (
+  responses: AssessmentResponse[],
+): Promise<PlacementScore> => {
   const userText = responses
     .map(
       (r, i) =>
-        `Q${i + 1} (level ${r.level}): ${r.questionText}\nLearner answer: ${r.learnerAnswer}${r.correctAnswer ? `\nCorrect: ${r.correctAnswer}` : ""}`
+        `Q${i + 1} (level ${r.level}): ${r.questionText}\nLearner answer: ${r.learnerAnswer}${r.correctAnswer ? `\nCorrect: ${r.correctAnswer}` : ""}`,
     )
     .join("\n\n");
 
-  try {
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: userText }] }],
-    });
-    const text =
-      result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    return JSON.parse(text) as PlacementScore;
-  } catch (err) {
-    logger.error({ err }, "Placement assessment scoring failed");
-    throw new ApiError(503, "Assessment scoring is temporarily unavailable.");
+  // Retry once on ANY failure — mirrors the working placement flow.
+  // A single transient hiccup (parse failure, 429, network blip)
+  // previously sent every affected learner straight to the Entry 1
+  // fallback.
+  let lastError: Error | null = null;
+  for (const attemptNum of [1, 2]) {
+    try {
+      return await scorePlacementOnce(userText);
+    } catch (err) {
+      lastError = err as Error;
+      logger.warn(
+        { err, attemptNum },
+        "Onboarding placement scoring call failed — will retry",
+      );
+    }
   }
+
+  logger.error(
+    { err: lastError },
+    "Onboarding placement scoring failed after retries",
+  );
+  throw new ApiError(503, "Assessment scoring is temporarily unavailable.");
 };
 
 /* ── Teacher prep note generator ── */
@@ -354,7 +463,9 @@ export const generateTeacherPrepNote = async (input: {
         },
       ],
     },
-    generationConfig: { temperature: 0.5, maxOutputTokens: 1024 },
+    // Thinking budget shares maxOutputTokens on 2.5-flash — 1024 could
+    // truncate the ~300-word note after thinking.
+    generationConfig: { temperature: 0.5, maxOutputTokens: 2048 },
   });
 
   const userText = [
@@ -372,9 +483,7 @@ export const generateTeacherPrepNote = async (input: {
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: userText }] }],
     });
-    return (
-      result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? ""
-    );
+    return result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   } catch (err) {
     logger.error({ err }, "Teacher prep note generation failed");
     throw new ApiError(500, "Could not generate teacher prep note.");
@@ -384,7 +493,7 @@ export const generateTeacherPrepNote = async (input: {
 /* ── Final session summary ── */
 
 export const generateSessionSummary = async (
-  transcript: string
+  transcript: string,
 ): Promise<string> => {
   const model = geminiClient.preview.getGenerativeModel({
     model: MODEL_NAME,
@@ -396,7 +505,9 @@ export const generateSessionSummary = async (
         },
       ],
     },
-    generationConfig: { temperature: 0.4, maxOutputTokens: 512 },
+    // Thinking budget shares maxOutputTokens on 2.5-flash — 512 left
+    // no room for the 3-5 sentence summary after thinking.
+    generationConfig: { temperature: 0.4, maxOutputTokens: 1536 },
   });
   try {
     const result = await model.generateContent({

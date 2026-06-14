@@ -11,7 +11,7 @@ router.get(
   isAuthenticated,
   isStudent,
   getStudentDashboardValidation(),
-  getStudentDashboard
+  getStudentDashboard,
 );
 
 export default router;

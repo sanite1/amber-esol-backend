@@ -10,7 +10,7 @@ import { IUserDecoded } from "../middlewares/authMiddleWare";
  * unauthenticated requests.
  */
 export const isEsolUser = (
-  user: Pick<IUserDecoded, "orgId"> | null | undefined
+  user: Pick<IUserDecoded, "orgId"> | null | undefined,
 ): boolean => {
   return Boolean(user?.orgId);
 };

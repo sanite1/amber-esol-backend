@@ -39,10 +39,10 @@ const teacherReviewSchema = new Schema<ITeacherReview>(
     review_type: {
       type: String,
       enum: [
-        "async_review",        // teacher read AI output without contacting learner
-        "contact_session",     // synchronous teacher–learner session
-        "pathway_adjustment",  // teacher overrode/added scenarios for this learner
-        "rarpa_signoff",       // teacher confirmed a RARPA stage advancement
+        "async_review", // teacher read AI output without contacting learner
+        "contact_session", // synchronous teacher–learner session
+        "pathway_adjustment", // teacher overrode/added scenarios for this learner
+        "rarpa_signoff", // teacher confirmed a RARPA stage advancement
       ],
       required: true,
     },
@@ -80,7 +80,7 @@ const teacherReviewSchema = new Schema<ITeacherReview>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // Per-org dashboard: "all teacher activity in this org over time"
@@ -92,27 +92,34 @@ teacherReviewSchema.index({ learner_id: 1, created_at: -1 });
 // ── Append-only enforcement ────────────────────────────────────────────
 const blockMutation = function (next: (err?: Error) => void) {
   next(
-    new Error("TeacherReview is append-only — updates and deletes are not permitted.")
+    new Error(
+      "TeacherReview is append-only — updates and deletes are not permitted.",
+    ),
   );
 };
 
 teacherReviewSchema.pre(
   ["updateOne", "findOneAndUpdate", "updateMany"] as any,
-  blockMutation
+  blockMutation,
 );
 teacherReviewSchema.pre(
   ["deleteOne", "findOneAndDelete", "deleteMany"] as any,
-  blockMutation
+  blockMutation,
 );
 teacherReviewSchema.pre("save", function (next) {
   if (!this.isNew) {
     return next(
-      new Error("TeacherReview is append-only — re-saving an existing document is not permitted.")
+      new Error(
+        "TeacherReview is append-only — re-saving an existing document is not permitted.",
+      ),
     );
   }
   next();
 });
 
-const TeacherReview = model<ITeacherReview>("TeacherReview", teacherReviewSchema);
+const TeacherReview = model<ITeacherReview>(
+  "TeacherReview",
+  teacherReviewSchema,
+);
 
 export default TeacherReview;

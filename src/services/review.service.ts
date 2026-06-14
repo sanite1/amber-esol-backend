@@ -72,7 +72,7 @@ const recalcTutorRating = async (tutorId: string) => {
 
 export const createReviewService = async (
   studentId: string,
-  data: ICreateReviewRequest
+  data: ICreateReviewRequest,
 ) => {
   // 1. Validate booking exists
   const booking = await Booking.findById(data.bookingId);
@@ -148,7 +148,7 @@ export const createReviewService = async (
       lessonTopic: booking.specialty || null,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating review notification")
+    logger.error({ err }, "Error creating review notification"),
   );
 
   return new ApiResponse(201, "Review submitted successfully", review.toJSON());
@@ -158,7 +158,7 @@ export const createReviewService = async (
 
 export const getTutorReviewsService = async (
   tutorId: string,
-  query: IReviewQuery
+  query: IReviewQuery,
 ) => {
   const page = parseInt(query.page || "1", 10);
   const limit = parseInt(query.limit || "10", 10);
@@ -217,7 +217,7 @@ export const getTutorReviewsService = async (
 
 export const getMyReviewsService = async (
   studentId: string,
-  query: IReviewQuery
+  query: IReviewQuery,
 ) => {
   const page = parseInt(query.page || "1", 10);
   const limit = parseInt(query.limit || "10", 10);
@@ -267,7 +267,7 @@ export const getMyReviewsService = async (
 export const updateReviewService = async (
   reviewId: string,
   studentId: string,
-  data: IUpdateReviewRequest
+  data: IUpdateReviewRequest,
 ) => {
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -299,7 +299,7 @@ export const updateReviewService = async (
 
 export const deleteReviewService = async (
   reviewId: string,
-  studentId: string
+  studentId: string,
 ) => {
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -324,7 +324,7 @@ export const deleteReviewService = async (
 export const addReplyService = async (
   reviewId: string,
   tutorId: string,
-  data: IReplyRequest
+  data: IReplyRequest,
 ) => {
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -338,7 +338,7 @@ export const addReplyService = async (
   if (review.reply) {
     throw new ApiError(
       400,
-      "This review already has a reply. Use PATCH to update."
+      "This review already has a reply. Use PATCH to update.",
     );
   }
 
@@ -363,7 +363,7 @@ export const addReplyService = async (
       replyText: data.text,
       reviewUrl: `${DOMAIN_NAME}/lessons`,
     }).catch((err) =>
-      logger.error({ err }, "Error sending review reply email")
+      logger.error({ err }, "Error sending review reply email"),
     );
   }
 
@@ -382,7 +382,7 @@ export const addReplyService = async (
           : data.text,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating review reply notification")
+    logger.error({ err }, "Error creating review reply notification"),
   );
 
   return new ApiResponse(200, "Reply added successfully", review.toJSON());
@@ -393,7 +393,7 @@ export const addReplyService = async (
 export const updateReplyService = async (
   reviewId: string,
   tutorId: string,
-  data: IReplyRequest
+  data: IReplyRequest,
 ) => {
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -442,7 +442,7 @@ export const deleteReplyService = async (reviewId: string, tutorId: string) => {
 export const reportReviewService = async (
   reviewId: string,
   reporterId: string,
-  data: IReportRequest
+  data: IReportRequest,
 ) => {
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -451,7 +451,7 @@ export const reportReviewService = async (
 
   // Prevent duplicate reports from the same user
   const alreadyReported = review.reports.some(
-    (r) => r.reporterId.toString() === reporterId
+    (r) => r.reporterId.toString() === reporterId,
   );
   if (alreadyReported) {
     throw new ApiError(400, "You have already reported this review");
@@ -476,7 +476,7 @@ export const reportReviewService = async (
       reason: data.reason,
       adminUrl: `${DOMAIN_NAME}/admin/reviews`,
     }).catch((err) =>
-      logger.error({ err }, "Error sending report notification email")
+      logger.error({ err }, "Error sending report notification email"),
     );
   }
 
@@ -498,7 +498,7 @@ export const reportReviewService = async (
         totalReports: review.reports.length,
       },
     }).catch((err) =>
-      logger.error({ err }, "Error creating report notifications")
+      logger.error({ err }, "Error creating report notifications"),
     );
   }
 
@@ -509,7 +509,7 @@ export const reportReviewService = async (
 
 export const toggleHelpfulService = async (
   reviewId: string,
-  userId: string
+  userId: string,
 ) => {
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -664,7 +664,7 @@ export const adminListReviewsService = async (query: IAdminReviewQuery) => {
       .populate("studentId", "firstname lastname profilePicture email")
       .populate(
         "tutorId",
-        "firstname lastname profilePicture email specializations"
+        "firstname lastname profilePicture email specializations",
       )
       .populate("bookingId", "date startTime endTime type specialty")
       .populate("reports.reporterId", "firstname lastname email")
@@ -689,7 +689,7 @@ export const adminListReviewsService = async (query: IAdminReviewQuery) => {
 
 export const adminHideReviewService = async (
   reviewId: string,
-  _data: IAdminReviewActionRequest
+  _data: IAdminReviewActionRequest,
 ) => {
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -719,7 +719,7 @@ export const adminHideReviewService = async (
       comment: review.comment,
       reviewUrl: `${DOMAIN_NAME}/lessons`,
     }).catch((err) =>
-      logger.error({ err }, "Error sending review hidden email")
+      logger.error({ err }, "Error sending review hidden email"),
     );
   }
 
@@ -734,7 +734,7 @@ export const adminHideReviewService = async (
       rating: review.rating,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating review hidden notification")
+    logger.error({ err }, "Error creating review hidden notification"),
   );
 
   return new ApiResponse(200, "Review hidden successfully", review.toJSON());
@@ -744,7 +744,7 @@ export const adminHideReviewService = async (
 
 export const adminUnhideReviewService = async (
   reviewId: string,
-  _data: IAdminReviewActionRequest
+  _data: IAdminReviewActionRequest,
 ) => {
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -773,7 +773,7 @@ export const adminUnhideReviewService = async (
       comment: review.comment,
       reviewUrl: `${DOMAIN_NAME}/lessons`,
     }).catch((err) =>
-      logger.error({ err }, "Error sending review restored email")
+      logger.error({ err }, "Error sending review restored email"),
     );
   }
 
@@ -788,7 +788,7 @@ export const adminUnhideReviewService = async (
       rating: review.rating,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating review restored notification")
+    logger.error({ err }, "Error creating review restored notification"),
   );
 
   return new ApiResponse(200, "Review unhidden successfully", review.toJSON());
@@ -798,7 +798,7 @@ export const adminUnhideReviewService = async (
 
 export const adminRemoveReviewService = async (
   reviewId: string,
-  _data: IAdminReviewActionRequest
+  _data: IAdminReviewActionRequest,
 ) => {
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -826,7 +826,7 @@ export const adminRemoveReviewService = async (
       action: "removed",
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating review removed notification")
+    logger.error({ err }, "Error creating review removed notification"),
   );
 
   return new ApiResponse(200, "Review removed successfully", review.toJSON());
@@ -836,7 +836,7 @@ export const adminRemoveReviewService = async (
 
 export const adminRestoreReviewService = async (
   reviewId: string,
-  _data: IAdminReviewActionRequest
+  _data: IAdminReviewActionRequest,
 ) => {
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -864,7 +864,7 @@ export const adminRestoreReviewService = async (
       action: "restored_from_removed",
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating review restored notification")
+    logger.error({ err }, "Error creating review restored notification"),
   );
 
   return new ApiResponse(200, "Review restored successfully", review.toJSON());
@@ -875,7 +875,7 @@ export const adminRestoreReviewService = async (
 export const adminHandleReportService = async (
   reviewId: string,
   reportId: string,
-  data: IAdminReportActionRequest
+  data: IAdminReportActionRequest,
 ) => {
   const review = await Review.findById(reviewId);
   if (!review) {
@@ -883,7 +883,7 @@ export const adminHandleReportService = async (
   }
 
   const report = review.reports.find(
-    (r: any) => r._id?.toString() === reportId
+    (r: any) => r._id?.toString() === reportId,
   );
   if (!report) {
     throw new ApiError(404, "Report not found");

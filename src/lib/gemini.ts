@@ -41,9 +41,7 @@ export const MODEL_NAME = "gemini-2.5-flash";
 const PROJECT_ID =
   process.env.GOOGLE_CLOUD_PROJECT_ID || process.env.GCP_PROJECT_ID || "";
 const REGION =
-  process.env.GOOGLE_CLOUD_REGION ||
-  process.env.GCP_LOCATION ||
-  "europe-west4";
+  process.env.GOOGLE_CLOUD_REGION || process.env.GCP_LOCATION || "europe-west4";
 
 let _client: VertexAI | null = null;
 
@@ -61,12 +59,12 @@ export const initGeminiClient = (): void => {
 
   if (!PROJECT_ID) {
     throw new Error(
-      "Vertex AI init failed: GOOGLE_CLOUD_PROJECT_ID (or legacy GCP_PROJECT_ID) is not set."
+      "Vertex AI init failed: GOOGLE_CLOUD_PROJECT_ID (or legacy GCP_PROJECT_ID) is not set.",
     );
   }
   if (REGION === "europe-west2") {
     throw new Error(
-      "Vertex AI init failed: europe-west2 does not host Gemini 2.5 Flash. Use europe-west4."
+      "Vertex AI init failed: europe-west2 does not host Gemini 2.5 Flash. Use europe-west4.",
     );
   }
 
@@ -74,23 +72,23 @@ export const initGeminiClient = (): void => {
     _client = new VertexAI({ project: PROJECT_ID, location: REGION });
   } catch (err) {
     throw new Error(
-      `Vertex AI init failed during VertexAI construction: ${(err as Error).message}`
+      `Vertex AI init failed during VertexAI construction: ${(err as Error).message}`,
     );
   }
 
   // Match the exact log shape requested by the brief addendum.
   logger.info(
-    `Vertex AI client initialised: project=${PROJECT_ID} region=${REGION} model=${MODEL_NAME}`
+    `Vertex AI client initialised: project=${PROJECT_ID} region=${REGION} model=${MODEL_NAME}`,
   );
 
   if (process.env.GCP_PROJECT_ID && !process.env.GOOGLE_CLOUD_PROJECT_ID) {
     logger.warn(
-      "Using legacy GCP_PROJECT_ID env var. Migrate to GOOGLE_CLOUD_PROJECT_ID per Project Silk brief."
+      "Using legacy GCP_PROJECT_ID env var. Migrate to GOOGLE_CLOUD_PROJECT_ID per Project Silk brief.",
     );
   }
   if (process.env.GCP_LOCATION && !process.env.GOOGLE_CLOUD_REGION) {
     logger.warn(
-      "Using legacy GCP_LOCATION env var. Migrate to GOOGLE_CLOUD_REGION per Project Silk brief."
+      "Using legacy GCP_LOCATION env var. Migrate to GOOGLE_CLOUD_REGION per Project Silk brief.",
     );
   }
 };
@@ -104,7 +102,7 @@ export const geminiClient: VertexAI = new Proxy({} as VertexAI, {
   get(_target, prop, receiver) {
     if (!_client) {
       throw new Error(
-        "geminiClient accessed before initGeminiClient() ran. Add `initGeminiClient()` to src/index.ts before server.listen()."
+        "geminiClient accessed before initGeminiClient() ran. Add `initGeminiClient()` to src/index.ts before server.listen().",
       );
     }
     return Reflect.get(_client, prop, receiver);
@@ -117,11 +115,11 @@ export const geminiClient: VertexAI = new Proxy({} as VertexAI, {
  * — the client itself never sets responseMimeType at construction.
  */
 export const getGeminiModel = (
-  overrides: Partial<ModelParams> = {}
+  overrides: Partial<ModelParams> = {},
 ): GenerativeModelPreview => {
   if (!_client) {
     throw new Error(
-      "getGeminiModel called before initGeminiClient(). See src/index.ts."
+      "getGeminiModel called before initGeminiClient(). See src/index.ts.",
     );
   }
   // Use the .preview namespace to match what the existing service code uses

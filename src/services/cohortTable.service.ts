@@ -87,7 +87,10 @@ const LIVE_STATUS_THRESHOLDS = {
 } as const;
 
 /** Map User.cohort_status (5-band) onto the cohort-table 3-band view. */
-const COHORT_TO_TABLE_STATUS: Record<string, "active" | "inactive" | "dormant"> = {
+const COHORT_TO_TABLE_STATUS: Record<
+  string,
+  "active" | "inactive" | "dormant"
+> = {
   active: "active",
   new: "active",
   inactive_mild: "inactive",
@@ -168,7 +171,7 @@ const VALID_STATUS_FILTERS = new Set(["active", "inactive", "dormant"]);
 export const buildCohortPipeline = (
   orgId: Types.ObjectId,
   query: CohortTableQuery,
-  pagination: { skip: number; limit: number }
+  pagination: { skip: number; limit: number },
 ): PipelineStage[] => {
   // ── 1. Pre-lookup match — narrows the candidate set BEFORE the
   //       expensive AISession + LevelChange + Organisation lookups.
@@ -216,7 +219,7 @@ export const buildCohortPipeline = (
   if (query.search && query.search.trim().length >= MIN_SEARCH_LENGTH) {
     const rx = new RegExp(
       query.search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-      "i"
+      "i",
     );
     andClauses.push({
       $or: [{ firstname: rx }, { lastname: rx }],
@@ -371,10 +374,7 @@ export const buildCohortPipeline = (
       uln_status: {
         $cond: [
           {
-            $and: [
-              { $ne: ["$uln", null] },
-              { $ne: ["$uln", ""] },
-            ],
+            $and: [{ $ne: ["$uln", null] }, { $ne: ["$uln", ""] }],
           },
           "recorded",
           "missing",
@@ -401,11 +401,21 @@ export const buildCohortPipeline = (
                 $switch: {
                   branches: [
                     {
-                      case: { $lte: ["$$daysAgo", LIVE_STATUS_THRESHOLDS.ACTIVE_MAX_DAYS] },
+                      case: {
+                        $lte: [
+                          "$$daysAgo",
+                          LIVE_STATUS_THRESHOLDS.ACTIVE_MAX_DAYS,
+                        ],
+                      },
                       then: "active",
                     },
                     {
-                      case: { $lte: ["$$daysAgo", LIVE_STATUS_THRESHOLDS.INACTIVE_MAX_DAYS] },
+                      case: {
+                        $lte: [
+                          "$$daysAgo",
+                          LIVE_STATUS_THRESHOLDS.INACTIVE_MAX_DAYS,
+                        ],
+                      },
                       then: "inactive",
                     },
                   ],
@@ -425,9 +435,14 @@ export const buildCohortPipeline = (
       status: {
         $switch: {
           branches: [
-            { case: { $in: ["$cohort_status", ["active", "new"]] }, then: "active" },
             {
-              case: { $in: ["$cohort_status", ["inactive_mild", "inactive_moderate"]] },
+              case: { $in: ["$cohort_status", ["active", "new"]] },
+              then: "active",
+            },
+            {
+              case: {
+                $in: ["$cohort_status", ["inactive_mild", "inactive_moderate"]],
+              },
               then: "inactive",
             },
             { case: { $eq: ["$cohort_status", "dormant"] }, then: "dormant" },
@@ -510,10 +525,13 @@ export const buildCohortPipeline = (
 
 export const getCohortTableService = async (
   callerOrgId: string,
-  query: CohortTableQuery
+  query: CohortTableQuery,
 ): Promise<ApiResponse> => {
   if (!callerOrgId || !Types.ObjectId.isValid(callerOrgId)) {
-    throw new ApiError(400, "Organisation context is required and must be a valid id");
+    throw new ApiError(
+      400,
+      "Organisation context is required and must be a valid id",
+    );
   }
 
   // Per-field validation. Joi at the route layer catches most of this;
@@ -553,7 +571,7 @@ export const getCohortTableService = async (
     ) {
       throw new ApiError(
         400,
-        `limit must be an integer between ${MIN_PAGE_SIZE} and ${MAX_PAGE_SIZE}`
+        `limit must be an integer between ${MIN_PAGE_SIZE} and ${MAX_PAGE_SIZE}`,
       );
     }
   }
@@ -562,22 +580,21 @@ export const getCohortTableService = async (
   const limit = Math.min(
     Math.max(
       Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : DEFAULT_PAGE_SIZE,
-      MIN_PAGE_SIZE
+      MIN_PAGE_SIZE,
     ),
-    MAX_PAGE_SIZE
+    MAX_PAGE_SIZE,
   );
   const skip = (page - 1) * limit;
 
-  const pipeline = buildCohortPipeline(
-    new Types.ObjectId(callerOrgId),
-    query,
-    { skip, limit }
-  );
+  const pipeline = buildCohortPipeline(new Types.ObjectId(callerOrgId), query, {
+    skip,
+    limit,
+  });
 
   const [facetResult] = await User.aggregate(pipeline);
-  const rows = ((facetResult?.rows ?? []) as Array<Record<string, unknown>>).map(
-    (r) => normaliseRow(r)
-  );
+  const rows = (
+    (facetResult?.rows ?? []) as Array<Record<string, unknown>>
+  ).map((r) => normaliseRow(r));
   const total = (facetResult?.total?.[0]?.value as number | undefined) ?? 0;
 
   return new ApiResponse(200, "Cohort table retrieved", {

@@ -26,7 +26,11 @@ const main = async () => {
     const rules = ilr.rules as Record<string, unknown>;
     console.log("  fund_model:        ", rules.fund_model);
     console.log("  aim_type_default:  ", rules.aim_type_default);
-    console.log("  valid_sof_codes:   ", (rules.valid_sof_codes as string[])?.length, "codes");
+    console.log(
+      "  valid_sof_codes:   ",
+      (rules.valid_sof_codes as string[])?.length,
+      "codes",
+    );
     console.log("  llddt_remapping:   ", rules.llddt_remapping);
   }
   console.log("");
@@ -44,12 +48,19 @@ const main = async () => {
   console.log("ASF routing config found:", !!asf);
   if (asf) {
     const rules = asf.rules as {
-      sof_authority_map: Record<string, { name: string; needs_verification: boolean }>;
+      sof_authority_map: Record<
+        string,
+        { name: string; needs_verification: boolean }
+      >;
       default_sof: string;
     };
     const map = rules.sof_authority_map;
-    const verified = Object.values(map).filter((v) => !v.needs_verification).length;
-    const unverified = Object.values(map).filter((v) => v.needs_verification).length;
+    const verified = Object.values(map).filter(
+      (v) => !v.needs_verification,
+    ).length;
+    const unverified = Object.values(map).filter(
+      (v) => v.needs_verification,
+    ).length;
     console.log("  default_sof:      ", rules.default_sof);
     console.log("  total entries:    ", Object.keys(map).length);
     console.log("  verified:         ", verified);

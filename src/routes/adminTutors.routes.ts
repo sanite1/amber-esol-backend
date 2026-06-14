@@ -17,7 +17,7 @@ router.get(
   isAuthenticated,
   isAdmin,
   getAdminTutorsValidation(),
-  getAdminTutors
+  getAdminTutors,
 );
 
 /* ── PATCH /api/admin-tutors/:id/status ── */
@@ -26,7 +26,7 @@ router.patch(
   isAuthenticated,
   isAdmin,
   updateTutorStatusValidation(),
-  updateTutorStatus
+  updateTutorStatus,
 );
 
 export default router;

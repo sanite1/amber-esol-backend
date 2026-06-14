@@ -33,7 +33,7 @@ function countWeeklySlots(
     blocks: Array<{ startTime: string; endTime: string }>;
   }>,
   bufferMinutes: number,
-  slotDuration: number = 60
+  slotDuration: number = 60,
 ): number {
   let total = 0;
   for (const day of weeklySchedule) {
@@ -46,7 +46,7 @@ function countWeeklySlots(
       const available = endMin - startMin;
       if (available <= 0) continue;
       const slotsInBlock = Math.floor(
-        (available + bufferMinutes) / (slotDuration + bufferMinutes)
+        (available + bufferMinutes) / (slotDuration + bufferMinutes),
       );
       total += slotsInBlock;
     }
@@ -60,7 +60,7 @@ function countWeeklySlots(
 
 export const getTutorDashboardService = async (
   tutorId: string,
-  query: ITutorDashboardQuery
+  query: ITutorDashboardQuery,
 ): Promise<ITutorDashboardResponse> => {
   await completeStaleBookings(tutorId, "tutor");
   const upcomingLimit = Math.min(parseInt(query.upcomingLimit || "10", 10), 20);
@@ -125,7 +125,7 @@ export const getTutorDashboardService = async (
     })
       .populate(
         "studentId",
-        "firstname lastname profilePicture learningPreferences"
+        "firstname lastname profilePicture learningPreferences",
       )
       .sort({ date: 1, startTime: 1 })
       .limit(upcomingLimit)
@@ -258,11 +258,11 @@ export const getTutorDashboardService = async (
   });
 
   const confirmedUpcoming = upcomingBookings.filter(
-    (b: any) => b.status === "confirmed" && b.date === todayStr
+    (b: any) => b.status === "confirmed" && b.date === todayStr,
   );
 
   const todayUpcoming = filteredUpcoming.filter(
-    (b: any) => b.status === "confirmed" && b.date === todayStr
+    (b: any) => b.status === "confirmed" && b.date === todayStr,
   );
 
   const welcome: IDashboardWelcome = {
@@ -341,7 +341,7 @@ export const getTutorDashboardService = async (
   const nextPayoutDate = new Date(
     now.getFullYear(),
     now.getMonth() + 1,
-    0
+    0,
   ).toISOString();
 
   const earnings: IDashboardEarnings = {
@@ -365,7 +365,7 @@ export const getTutorDashboardService = async (
   let nextAvailableSlot: string | null = null;
   const nextConfirmed = filteredUpcoming.find(
     (b: any) =>
-      b.status === "confirmed" && new Date(`${b.date}T${b.startTime}:00`) > now
+      b.status === "confirmed" && new Date(`${b.date}T${b.startTime}:00`) > now,
   ) as any;
   if (nextConfirmed) {
     nextAvailableSlot = `${nextConfirmed.date}T${nextConfirmed.startTime}:00`;
@@ -404,7 +404,7 @@ export const getTutorDashboardService = async (
   for (const convo of conversations as any[]) {
     // Find the student participant (not the tutor)
     const student = convo.participants?.find(
-      (p: any) => p._id.toString() !== tutorId && p.role === "student"
+      (p: any) => p._id.toString() !== tutorId && p.role === "student",
     );
     if (!student) continue;
 

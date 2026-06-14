@@ -20,7 +20,7 @@ import logger from "../config/logger";
 
 export const createTicketService = async (
   userId: string,
-  data: ICreateTicketRequest
+  data: ICreateTicketRequest,
 ) => {
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, "User not found");
@@ -66,7 +66,7 @@ export const createTicketService = async (
 
 export const getMyTicketsService = async (
   userId: string,
-  query: { page?: string; limit?: string; status?: string }
+  query: { page?: string; limit?: string; status?: string },
 ) => {
   const page = parseInt(query.page || "1", 10);
   const limit = parseInt(query.limit || "10", 10);
@@ -100,7 +100,7 @@ export const getMyTicketsService = async (
 export const userReplyTicketService = async (
   userId: string,
   ticketId: string,
-  data: IReplyTicketRequest
+  data: IReplyTicketRequest,
 ) => {
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, "User not found");
@@ -378,7 +378,7 @@ export const getAdminTicketsService = async (query: IAdminTicketsQuery) => {
 export const adminReplyTicketService = async (
   adminId: string,
   ticketId: string,
-  data: IReplyTicketRequest
+  data: IReplyTicketRequest,
 ) => {
   const admin = await User.findById(adminId);
   if (!admin) throw new ApiError(404, "Admin not found");
@@ -413,7 +413,7 @@ export const adminReplyTicketService = async (
       subject: ticket.subject,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating ticket notification")
+    logger.error({ err }, "Error creating ticket notification"),
   );
 
   return new ApiResponse(200, "Reply sent successfully", ticket.toJSON());
@@ -425,7 +425,7 @@ export const adminReplyTicketService = async (
 
 export const adminUpdateTicketStatusService = async (
   ticketId: string,
-  data: IUpdateTicketStatusRequest
+  data: IUpdateTicketStatusRequest,
 ) => {
   const ticket = await Ticket.findById(ticketId);
   if (!ticket) throw new ApiError(404, "Ticket not found");
@@ -462,7 +462,7 @@ export const adminUpdateTicketStatusService = async (
         newStatus: data.status,
       },
     }).catch((err) =>
-      logger.error({ err }, "Error creating status notification")
+      logger.error({ err }, "Error creating status notification"),
     );
   }
 
@@ -479,7 +479,7 @@ export const adminUpdateTicketStatusService = async (
 
 export const adminUpdateTicketPriorityService = async (
   ticketId: string,
-  data: IUpdateTicketPriorityRequest
+  data: IUpdateTicketPriorityRequest,
 ) => {
   const ticket = await Ticket.findById(ticketId);
   if (!ticket) throw new ApiError(404, "Ticket not found");

@@ -47,7 +47,7 @@ router.post(
   isAuthenticated,
   isStudent,
   createBookingValidation(),
-  createBooking
+  createBooking,
 );
 
 // ── Authenticated: List bookings (role-aware) ──
@@ -58,7 +58,7 @@ router.get(
   "/upcoming",
   isAuthenticated,
   upcomingBookingsValidation(),
-  upcomingBookings
+  upcomingBookings,
 );
 
 // ── Authenticated: Booking stats ──
@@ -73,7 +73,7 @@ router.patch(
   isAuthenticated,
   isTutor,
   confirmBookingValidation(),
-  confirmBooking
+  confirmBooking,
 );
 
 // ── Authenticated: Tutor declines booking ──
@@ -82,7 +82,7 @@ router.patch(
   isAuthenticated,
   isTutor,
   declineBookingValidation(),
-  declineBooking
+  declineBooking,
 );
 
 // ── Authenticated: Cancel booking (student/tutor/admin) ──
@@ -90,7 +90,7 @@ router.patch(
   "/:id/cancel",
   isAuthenticated,
   cancelBookingValidation(),
-  cancelBooking
+  cancelBooking,
 );
 
 // ── Authenticated: Complete booking (tutor/admin) ──
@@ -98,7 +98,7 @@ router.patch(
   "/:id/complete",
   isAuthenticated,
   completeBookingValidation(),
-  completeBooking
+  completeBooking,
 );
 
 // ── Authenticated: Mark no-show (tutor/admin) ──
@@ -106,7 +106,7 @@ router.patch(
   "/:id/no-show",
   isAuthenticated,
   noShowBookingValidation(),
-  noShowBooking
+  noShowBooking,
 );
 // ── Admin: Lesson stats (enriched) ──
 router.get("/admin/stats", isAuthenticated, isAdmin, adminLessonStats);
@@ -117,7 +117,7 @@ router.patch(
   isAuthenticated,
   isAdmin,
   flagBookingValidation(),
-  flagBooking
+  flagBooking,
 );
 
 router.patch(
@@ -125,6 +125,6 @@ router.patch(
   isAuthenticated,
   isTutor,
   updateMeetingUrlValidation(),
-  updateMeetingUrl
+  updateMeetingUrl,
 );
 export default router;

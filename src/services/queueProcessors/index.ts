@@ -59,10 +59,13 @@ import type {
  * signature stays identical so no other file has to change.
  */
 
-const stub = async <T>(name: string, job: Job<T>): Promise<{ stubbed: true }> => {
+const stub = async <T>(
+  name: string,
+  job: Job<T>,
+): Promise<{ stubbed: true }> => {
   logger.info(
     { processor: name, jobId: job.id, jobName: job.name, data: job.data },
-    "[stub] processor invoked — no real work performed"
+    "[stub] processor invoked — no real work performed",
   );
   return { stubbed: true };
 };
@@ -79,7 +82,7 @@ const stub = async <T>(name: string, job: Job<T>): Promise<{ stubbed: true }> =>
  * Each branch returns its own result shape; the wrapper just logs.
  */
 export const processEsolSession = async (
-  job: Job<EsolSessionJob>
+  job: Job<EsolSessionJob>,
 ): Promise<{ action: string; result: unknown }> => {
   const { action, learnerId } = job.data;
   const payload = (job.data.payload ?? {}) as Record<string, unknown>;
@@ -110,12 +113,25 @@ export const processEsolSession = async (
             ? (payload.stage3ObjectiveId as string)
             : null;
 
+      // Insert-only enrichment (orgId/sessionId/esolLevel/topic) —
+      // optional; older queued jobs without it still process fine.
+      const context =
+        payload.context && typeof payload.context === "object"
+          ? (payload.context as {
+              orgId?: string | null;
+              sessionId?: string | null;
+              esolLevel?: string | null;
+              topic?: string | null;
+            })
+          : undefined;
+
       const result = await updateLedgerForTurn(
         learnerId,
         words,
         turnScore,
         scenarioId,
-        stage3ObjectiveId
+        stage3ObjectiveId,
+        context,
       );
       return { action, result };
     }
@@ -124,14 +140,17 @@ export const processEsolSession = async (
     case "process_turn":
       // Stubs — implementation lands with the Stage 4 evidence
       // rollup (Phase 11) and the async-turn mode (post-MVP).
-      return { action, result: await stub(`processEsolSession.${action}`, job) };
+      return {
+        action,
+        result: await stub(`processEsolSession.${action}`, job),
+      };
 
     default: {
       const _exhaustive: never = action as never;
       void _exhaustive;
       logger.warn(
         { jobId: job.id, jobName: job.name, action },
-        "esol-session job received with unknown action — ignoring"
+        "esol-session job received with unknown action — ignoring",
       );
       return { action, result: { ignored: true } };
     }
@@ -170,7 +189,10 @@ export const processRarpaEvidence = async (
   // retries (3 attempts with backoff). Returns a structured result
   // envelope on success / skip.
   if (kind === "stage5_summary") {
-    const payload = data as Extract<RarpaEvidenceJob, { kind: "stage5_summary" }>;
+    const payload = data as Extract<
+      RarpaEvidenceJob,
+      { kind: "stage5_summary" }
+    >;
     const result = await generateStage5Summary(payload.stage5_review_id);
     return { kind, result };
   }
@@ -187,7 +209,10 @@ export const processRarpaEvidence = async (
   // Re-type after the `kind === "evidence_report"` guard. We can't
   // rely on TS narrowing through the optional-kind union shape, so
   // we cast to the concrete report-job shape here.
-  const reportData = data as Extract<RarpaEvidenceJob, { kind: "evidence_report" }>;
+  const reportData = data as Extract<
+    RarpaEvidenceJob,
+    { kind: "evidence_report" }
+  >;
   const { orgId, periodStart, periodEnd, requestedBy, reportId } = reportData;
 
   logger.info(
@@ -333,7 +358,8 @@ export const processIlrExport = async (
   rows_blocked: number;
   warnings_count: number;
 }> => {
-  const { orgId, academicYear, periodStart, periodEnd, requestedBy, exportId } = job.data;
+  const { orgId, academicYear, periodStart, periodEnd, requestedBy, exportId } =
+    job.data;
 
   logger.info(
     { jobId: job.id, exportId, orgId, academicYear, periodStart, periodEnd },
@@ -469,7 +495,7 @@ export { processMisPush } from "../mis/processMisPush";
  * gives the worker three attempts before terminal failure.
  */
 export const processPriorityQueue = async (
-  job: Job<PriorityQueueJob>
+  job: Job<PriorityQueueJob>,
 ): Promise<{ action: string; result: unknown }> => {
   const action = job.data.action ?? "teacher-priority-score";
 
@@ -477,7 +503,7 @@ export const processPriorityQueue = async (
     if (!job.data.orgId) {
       logger.warn(
         { jobId: job.id },
-        "processPriorityQueue: check-progression job missing orgId — skipping"
+        "processPriorityQueue: check-progression job missing orgId — skipping",
       );
       return { action, result: { skipped: true, reason: "missing orgId" } };
     }
@@ -492,7 +518,11 @@ export const processPriorityQueue = async (
     // hands the job through unmodified; the recalc worker normalises
     // the key internally.
     const result = await processRecalcOrgPriorities(
-      job as unknown as Job<{ orgId?: string; org_id?: string; runId?: string }>
+      job as unknown as Job<{
+        orgId?: string;
+        org_id?: string;
+        runId?: string;
+      }>,
     );
     return { action, result };
   }
@@ -505,7 +535,7 @@ export const processPriorityQueue = async (
         learnerId?: string;
         learner_id?: string;
         triggerEvent?: string;
-      }>
+      }>,
     );
     return { action, result };
   }
@@ -536,7 +566,7 @@ export { processDeltaSync } from "../mis/processDeltaSync";
  * shape.
  */
 export const processNotifications = async (
-  job: Job<NotificationsQueuePayload>
+  job: Job<NotificationsQueuePayload>,
 ): Promise<{ kind: string; result: unknown }> => {
   if (job.name === "safeguarding-alert") {
     const data = job.data as SafeguardingAlertEmailJob;
@@ -547,7 +577,7 @@ export const processNotifications = async (
     ) {
       logger.error(
         { jobId: job.id, data },
-        "safeguarding-alert job has invalid payload shape — refusing to dispatch"
+        "safeguarding-alert job has invalid payload shape — refusing to dispatch",
       );
       throw new Error("Invalid safeguarding-alert payload");
     }
@@ -565,16 +595,19 @@ export const processNotifications = async (
     ) {
       logger.error(
         { jobId: job.id, data: generic },
-        "progression-confirmed-email: invalid payload shape — refusing to dispatch"
+        "progression-confirmed-email: invalid payload shape — refusing to dispatch",
       );
       throw new Error("Invalid progression-confirmed-email payload");
     }
     const result = await sendProgressionConfirmedEmail({
-      learner_id: typeof payload.learner_id === "string" ? payload.learner_id : "",
+      learner_id:
+        typeof payload.learner_id === "string" ? payload.learner_id : "",
       learner_email: payload.learner_email,
       learner_name: payload.learner_name,
       l1_language:
-        typeof payload.l1_language === "string" ? payload.l1_language : "english",
+        typeof payload.l1_language === "string"
+          ? payload.l1_language
+          : "english",
       old_level: typeof payload.old_level === "string" ? payload.old_level : "",
       new_level: payload.new_level,
     });
@@ -591,18 +624,24 @@ export const processNotifications = async (
     ) {
       logger.error(
         { jobId: job.id, data: generic },
-        "progression-rejected-email: invalid payload shape — refusing to dispatch"
+        "progression-rejected-email: invalid payload shape — refusing to dispatch",
       );
       throw new Error("Invalid progression-rejected-email payload");
     }
     const result = await sendProgressionRejectedEmail({
       org_id: typeof payload.org_id === "string" ? payload.org_id : "",
-      org_name: typeof payload.org_name === "string" ? payload.org_name : "your organisation",
+      org_name:
+        typeof payload.org_name === "string"
+          ? payload.org_name
+          : "your organisation",
       org_admin_user_id: payload.org_admin_user_id,
-      learner_id: typeof payload.learner_id === "string" ? payload.learner_id : "",
+      learner_id:
+        typeof payload.learner_id === "string" ? payload.learner_id : "",
       learner_name: payload.learner_name,
       current_level:
-        typeof payload.current_level === "string" ? payload.current_level : "unknown",
+        typeof payload.current_level === "string"
+          ? payload.current_level
+          : "unknown",
       reason: payload.reason,
     });
     return { kind: "progression-rejected-email", result };
@@ -617,7 +656,7 @@ export const processNotifications = async (
     ) {
       logger.error(
         { jobId: job.id, data: generic },
-        "dormant-learners-digest-email: invalid payload — refusing to dispatch"
+        "dormant-learners-digest-email: invalid payload — refusing to dispatch",
       );
       throw new Error("Invalid dormant-learners-digest-email payload");
     }
@@ -625,7 +664,8 @@ export const processNotifications = async (
       org_admin_user_id: payload.org_admin_user_id,
       org_id: typeof payload.org_id === "string" ? payload.org_id : "",
       dormant_count: payload.dormant_count,
-      window_days: typeof payload.window_days === "number" ? payload.window_days : 14,
+      window_days:
+        typeof payload.window_days === "number" ? payload.window_days : 14,
     });
     return { kind: "dormant-learners-digest-email", result };
   }
@@ -639,21 +679,29 @@ export const processNotifications = async (
     ) {
       logger.error(
         { jobId: job.id, data: generic },
-        "learner-nudge-email: invalid payload — refusing to dispatch"
+        "learner-nudge-email: invalid payload — refusing to dispatch",
       );
       throw new Error("Invalid learner-nudge-email payload");
     }
     const result = await sendLearnerNudgeEmail({
-      learner_id: typeof payload.learner_id === "string" ? payload.learner_id : "",
+      learner_id:
+        typeof payload.learner_id === "string" ? payload.learner_id : "",
       learner_email: payload.learner_email,
       learner_name: payload.learner_name,
       l1_language:
-        typeof payload.l1_language === "string" ? payload.l1_language : "english",
-      esol_level: typeof payload.esol_level === "string" ? payload.esol_level : null,
+        typeof payload.l1_language === "string"
+          ? payload.l1_language
+          : "english",
+      esol_level:
+        typeof payload.esol_level === "string" ? payload.esol_level : null,
       custom_message:
-        typeof payload.custom_message === "string" ? payload.custom_message : null,
+        typeof payload.custom_message === "string"
+          ? payload.custom_message
+          : null,
       sent_by_user_id:
-        typeof payload.sent_by_user_id === "string" ? payload.sent_by_user_id : "",
+        typeof payload.sent_by_user_id === "string"
+          ? payload.sent_by_user_id
+          : "",
     });
     return { kind: "learner-nudge-email", result };
   }
@@ -671,14 +719,15 @@ export const processNotifications = async (
     ) {
       logger.error(
         { jobId: job.id, data: generic },
-        "progression-ready-email: invalid payload shape — refusing to dispatch"
+        "progression-ready-email: invalid payload shape — refusing to dispatch",
       );
       throw new Error("Invalid progression-ready-email payload");
     }
     const result = await sendProgressionReadyEmail({
       org_admin_user_id: generic.recipientId,
       org_id: typeof payload.org_id === "string" ? payload.org_id : "",
-      learner_id: typeof payload.learner_id === "string" ? payload.learner_id : "",
+      learner_id:
+        typeof payload.learner_id === "string" ? payload.learner_id : "",
       learner_name: payload.learner_name,
       current_level: payload.current_level,
       ready_at:
@@ -700,12 +749,12 @@ export const processNotifications = async (
  * the postcode dataset into Redis or refresh the FALA whitelist.
  */
 export const processCacheRefresh = async (
-  job: Job<CacheRefreshJob>
+  job: Job<CacheRefreshJob>,
 ): Promise<{ task: string; result: unknown }> => {
   const { task, academicYear } = job.data;
   logger.info(
     { task, academicYear, jobId: job.id },
-    "cache-refresh job started"
+    "cache-refresh job started",
   );
 
   if (task === "postcode-load") {

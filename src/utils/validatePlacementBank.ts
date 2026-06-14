@@ -161,7 +161,7 @@ const validateCounts = (questions: PlacementQuestion[]): ValidationError[] => {
 const validateQuestion = (
   q: PlacementQuestion,
   scope: string,
-  seenIds: Set<string>
+  seenIds: Set<string>,
 ): ValidationError[] => {
   const errors: ValidationError[] = [];
 
@@ -258,7 +258,7 @@ const validateQuestion = (
 };
 
 export const validatePlacementBank = (
-  path: string = BANK_PATH
+  path: string = BANK_PATH,
 ): { errors: ValidationError[]; bank: PlacementBank } => {
   const bank = loadBank(path);
 
@@ -292,7 +292,7 @@ const main = () => {
 
   if (errors.length === 0) {
     console.log(
-      `✓ placement bank OK — ${total} questions, version ${bank.version}`
+      `✓ placement bank OK — ${total} questions, version ${bank.version}`,
     );
     process.exit(0);
   }
@@ -301,7 +301,7 @@ const main = () => {
   for (const e of errors) console.error(formatError(e));
   console.error(`\nTotal questions parsed: ${total}`);
   console.error(
-    `Minimum required: ${MIN_QUESTIONS} (≥${MIN_PER_CELL} per level × domain cell)`
+    `Minimum required: ${MIN_QUESTIONS} (≥${MIN_PER_CELL} per level × domain cell)`,
   );
   process.exit(1);
 };

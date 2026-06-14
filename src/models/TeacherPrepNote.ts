@@ -20,7 +20,7 @@ const teacherPrepNoteSchema = new Schema<ITeacherPrepNote>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 teacherPrepNoteSchema.index({ bookingId: 1 });
@@ -29,7 +29,7 @@ teacherPrepNoteSchema.index({ orgId: 1 });
 
 const TeacherPrepNote = model<ITeacherPrepNote>(
   "TeacherPrepNote",
-  teacherPrepNoteSchema
+  teacherPrepNoteSchema,
 );
 
 export default TeacherPrepNote;

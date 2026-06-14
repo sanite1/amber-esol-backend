@@ -40,7 +40,8 @@ const updateMisSettingsSchema = {
     .min(1)
     .unknown(false)
     .messages({
-      "object.min": "Provide at least one of misType, misApiEndpoint, misApiCredentials",
+      "object.min":
+        "Provide at least one of misType, misApiEndpoint, misApiCredentials",
     }),
 };
 

@@ -21,7 +21,7 @@ const answeredQuestionSchema = new Schema(
     was_correct: { type: Boolean, required: true },
     answered_at: { type: Date, required: true, default: Date.now },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const placementResultSchema = new Schema(
@@ -36,7 +36,7 @@ const placementResultSchema = new Schema(
     weakness_flags: { type: [String], default: [] },
     rationale: { type: String, default: null },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const placementAttemptSchema = new Schema<IPlacementAttempt>(
@@ -66,20 +66,18 @@ const placementAttemptSchema = new Schema<IPlacementAttempt>(
   {
     versionKey: false,
     timestamps: { createdAt: false, updatedAt: true },
-  }
+  },
 );
 
 // "Does this learner have an attempt in flight?" — the answer endpoint
 // uses this to resume vs start.
-placementAttemptSchema.index(
-  { learnerId: 1, status: 1, startedAt: -1 }
-);
+placementAttemptSchema.index({ learnerId: 1, status: 1, startedAt: -1 });
 // Per-org reporting — "how many learners completed placement this week?"
 placementAttemptSchema.index({ orgId: 1, status: 1, scoredAt: -1 });
 
 const PlacementAttempt = model<IPlacementAttempt>(
   "PlacementAttempt",
-  placementAttemptSchema
+  placementAttemptSchema,
 );
 
 export default PlacementAttempt;

@@ -16,7 +16,7 @@ import ComplianceConfigService from "../services/ComplianceConfigService";
 export const reloadPostcodeDataset = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const academicYear =
@@ -30,7 +30,12 @@ export const reloadPostcodeDataset = async (
       source,
     });
 
-    return respondWithAcceptedJob(res, job, "cache-refresh", "Postcode reload enqueued");
+    return respondWithAcceptedJob(
+      res,
+      job,
+      "cache-refresh",
+      "Postcode reload enqueued",
+    );
   } catch (err) {
     next(err);
   }
@@ -45,7 +50,7 @@ export const reloadPostcodeDataset = async (
 export const reloadFalaWhitelist = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const academicYear =
@@ -57,7 +62,12 @@ export const reloadFalaWhitelist = async (
       academicYear,
     });
 
-    return respondWithAcceptedJob(res, job, "cache-refresh", "FALA reload enqueued");
+    return respondWithAcceptedJob(
+      res,
+      job,
+      "cache-refresh",
+      "FALA reload enqueued",
+    );
   } catch (err) {
     next(err);
   }

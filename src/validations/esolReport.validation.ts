@@ -24,5 +24,5 @@ export const ilrReportValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

@@ -9,7 +9,7 @@ const lineItemSchema = new Schema(
     amount: { type: Number, required: true, min: 0 },
     bookingIds: [{ type: Schema.Types.ObjectId, ref: "Booking" }],
   },
-  { _id: false }
+  { _id: false },
 );
 
 const orgInvoiceSchema = new Schema<IOrgInvoice>(
@@ -43,7 +43,7 @@ const orgInvoiceSchema = new Schema<IOrgInvoice>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 orgInvoiceSchema.index({ orgId: 1, status: 1 });

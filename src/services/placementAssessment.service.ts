@@ -142,8 +142,7 @@ export const PLACEMENT_QUESTIONS: PlacementQuestion[] = [
     id: "q13",
     level: "Level 1",
     type: "multiple_choice",
-    prompt:
-      "Which is the most polite way to make a request at work?",
+    prompt: "Which is the most polite way to make a request at work?",
     options: [
       "Give me the report.",
       "I want the report.",
@@ -166,8 +165,7 @@ export const PLACEMENT_QUESTIONS: PlacementQuestion[] = [
     id: "q15",
     level: "Level 1",
     type: "multiple_choice",
-    prompt:
-      "If I had known about the meeting, I ___ attended.",
+    prompt: "If I had known about the meeting, I ___ attended.",
     options: ["will", "would have", "had", "would"],
     correctAnswer: "would have",
     skillCode: "Ws",
@@ -241,12 +239,12 @@ export const getQuestionsForAssessment = (): PlacementQuestion[] => {
  * - Mixed → continue mixed
  */
 export const getAdaptiveQuestions = (
-  firstFiveCorrect: number
+  firstFiveCorrect: number,
 ): PlacementQuestion[] => {
   if (firstFiveCorrect >= 5) {
     // Skip remaining E1/E2 — return L1/L2 only
     return PLACEMENT_QUESTIONS.filter(
-      (q) => q.level === "Level 1" || q.level === "Level 2"
+      (q) => q.level === "Level 1" || q.level === "Level 2",
     );
   }
   if (firstFiveCorrect === 0) {

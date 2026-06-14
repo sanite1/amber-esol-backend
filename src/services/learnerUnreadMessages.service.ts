@@ -108,25 +108,30 @@ export const getLearnerUnreadMessagesService = async (
   });
 
   const messages: UnreadMessageRow[] = docs.map((d) => {
-    const teacher = (d as unknown as {
-      teacher_id?: { _id: Types.ObjectId; firstname?: string; lastname?: string } | Types.ObjectId;
-    }).teacher_id;
+    const teacher = (
+      d as unknown as {
+        teacher_id?:
+          | { _id: Types.ObjectId; firstname?: string; lastname?: string }
+          | Types.ObjectId;
+      }
+    ).teacher_id;
     const isPopulated =
       teacher !== null && typeof teacher === "object" && "_id" in teacher;
     const teacherIdStr = isPopulated
       ? (teacher as { _id: Types.ObjectId })._id.toString()
-      : (teacher as Types.ObjectId | undefined)?.toString() ?? "";
+      : ((teacher as Types.ObjectId | undefined)?.toString() ?? "");
     return {
       _id: (d._id as Types.ObjectId).toString(),
       teacher_id: teacherIdStr,
       teacher_firstname: isPopulated
-        ? (teacher as { firstname?: string }).firstname ?? null
+        ? ((teacher as { firstname?: string }).firstname ?? null)
         : null,
       teacher_lastname: isPopulated
-        ? (teacher as { lastname?: string }).lastname ?? null
+        ? ((teacher as { lastname?: string }).lastname ?? null)
         : null,
       message_text: (d as { message_text: string }).message_text,
-      original_text: (d as { original_text?: string | null }).original_text ?? null,
+      original_text:
+        (d as { original_text?: string | null }).original_text ?? null,
       language: (d as { language?: string }).language ?? "en",
       sent_at: (() => {
         // `sent_at` is a Date on the lean doc. The redundant

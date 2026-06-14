@@ -30,7 +30,11 @@ const router = Router();
 
 router.use(isAuthenticated, isOrgAdmin, requireOrgContext);
 
-router.post("/", triggerEvidenceReportOrgAdminValidation(), triggerEvidenceReportOrgAdmin);
+router.post(
+  "/",
+  triggerEvidenceReportOrgAdminValidation(),
+  triggerEvidenceReportOrgAdmin,
+);
 router.get("/:jobId/status", getEvidenceReportStatusOrgAdmin);
 router.get("/:reportId/download", downloadEvidenceReportOrgAdmin);
 

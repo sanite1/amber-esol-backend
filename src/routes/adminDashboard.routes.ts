@@ -11,7 +11,7 @@ router.get(
   isAuthenticated,
   isAdmin,
   getAdminDashboardValidation(),
-  getAdminDashboard
+  getAdminDashboard,
 );
 
 export default router;

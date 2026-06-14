@@ -44,7 +44,7 @@ export const summariseCalibration: ExpressFunction = async (req, res, next) => {
         ? Number(versionRaw)
         : undefined;
     const data = await summariseCalibrationService(
-      Number.isFinite(version) ? (version as number) : undefined
+      Number.isFinite(version) ? (version as number) : undefined,
     );
     return res.status(200).json(data);
   } catch (err) {

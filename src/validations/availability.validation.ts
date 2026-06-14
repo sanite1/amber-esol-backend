@@ -56,7 +56,7 @@ const dayScheduleSchema = Joi.object({
       "thursday",
       "friday",
       "saturday",
-      "sunday"
+      "sunday",
     )
     .required()
     .messages({

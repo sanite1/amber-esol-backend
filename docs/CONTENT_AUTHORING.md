@@ -35,17 +35,18 @@
 
 ### 1. Layer 1 system prompt — Amber persona and voice
 
-| Field | Value |
-|---|---|
-| **Status** | `not_started` |
-| **Owner** | Joey + ESOL practitioner |
-| **Deadline** | TBD — set when the ESOL practitioner is engaged |
-| **Draft URL** | _(none yet)_ |
-| **Production path** | `src/data/system-prompts/layer1-identity.md` |
-| **Consumed by** | AI tutor session worker — wrapped into every Gemini call as the topmost system instruction |
+| Field               | Value                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| **Status**          | `not_started`                                                                              |
+| **Owner**           | Joey + ESOL practitioner                                                                   |
+| **Deadline**        | TBD — set when the ESOL practitioner is engaged                                            |
+| **Draft URL**       | _(none yet)_                                                                               |
+| **Production path** | `src/data/system-prompts/layer1-identity.md`                                               |
+| **Consumed by**     | AI tutor session worker — wrapped into every Gemini call as the topmost system instruction |
 
 **Notes:**
-- Layer 1 is the *who* — Amber's tone, persona, and voice principles.
+
+- Layer 1 is the _who_ — Amber's tone, persona, and voice principles.
   Warm, encouraging, never patronising. ESOL-practitioner review is
   required to catch any accidentally infantilising phrasing.
 - One file, English only. The model handles L1 output via the
@@ -58,17 +59,18 @@
 
 ### 2. Layer 2 system prompt — hard rules + safeguarding triggers + length caps
 
-| Field | Value |
-|---|---|
-| **Status** | `not_started` |
-| **Owner** | Joey + safeguarding professional |
-| **Deadline** | TBD — must precede *any* live learner traffic |
-| **Draft URL** | _(none yet)_ |
-| **Production path** | `src/data/system-prompts/layer2-hard-rules.md` |
-| **Consumed by** | AI tutor session worker — second-layer system instruction, applied on top of Layer 1 |
+| Field               | Value                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| **Status**          | `not_started`                                                                        |
+| **Owner**           | Joey + safeguarding professional                                                     |
+| **Deadline**        | TBD — must precede _any_ live learner traffic                                        |
+| **Draft URL**       | _(none yet)_                                                                         |
+| **Production path** | `src/data/system-prompts/layer2-hard-rules.md`                                       |
+| **Consumed by**     | AI tutor session worker — second-layer system instruction, applied on top of Layer 1 |
 
 **Notes:**
-- Layer 2 is the *must-nots*. Hard refusals (medical advice, legal
+
+- Layer 2 is the _must-nots_. Hard refusals (medical advice, legal
   advice, anything safeguarding-relevant gets escalated rather than
   answered). Response length caps. Forbidden topics.
 - Safeguarding-professional review is the gating signature here —
@@ -83,16 +85,17 @@
 
 ### 3. Layer 3 system prompts — level calibration (5 files)
 
-| Field | Value |
-|---|---|
-| **Status** | `not_started` |
-| **Owner** | Joey + ESOL practitioner |
-| **Deadline** | TBD — all five files needed before v1.0 |
-| **Draft URL** | _(none yet)_ |
+| Field               | Value                                                                                                                 |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Status**          | `not_started`                                                                                                         |
+| **Owner**           | Joey + ESOL practitioner                                                                                              |
+| **Deadline**        | TBD — all five files needed before v1.0                                                                               |
+| **Draft URL**       | _(none yet)_                                                                                                          |
 | **Production path** | `src/data/system-prompts/layer3-level-calibration/` (one file per level: `e1.md`, `e2.md`, `e3.md`, `l1.md`, `l2.md`) |
-| **Consumed by** | AI tutor session worker — third-layer system instruction, selected by the learner's current `esolLevel` |
+| **Consumed by**     | AI tutor session worker — third-layer system instruction, selected by the learner's current `esolLevel`               |
 
 **Notes:**
+
 - Each file calibrates the AI's vocabulary, sentence length, and
   grammatical scaffolding to the target NQF level.
 - The ESOL practitioner sign-off is critical — a Level-1 prompt that
@@ -106,16 +109,17 @@
 
 ### 4. Scenarios (3 files) — initial scenario bank
 
-| Field | Value |
-|---|---|
-| **Status** | `not_started` |
-| **Owner** | Joey + ESOL practitioner + qualified translators |
-| **Deadline** | TBD — gates v1.0 launch |
-| **Draft URL** | _(none yet)_ |
+| Field               | Value                                                                                    |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| **Status**          | `not_started`                                                                            |
+| **Owner**           | Joey + ESOL practitioner + qualified translators                                         |
+| **Deadline**        | TBD — gates v1.0 launch                                                                  |
+| **Draft URL**       | _(none yet)_                                                                             |
 | **Production path** | `src/data/scenarios/s1_gp_appointment.json`, `s2_payslip.json`, `s3_housing_rights.json` |
-| **Consumed by** | AI tutor session worker; placement assessment; evidence-report renderer |
+| **Consumed by**     | AI tutor session worker; placement assessment; evidence-report renderer                  |
 
 **Per-scenario requirements:**
+
 - Minimum 20 vocab items per scenario.
 - Full translations into all 5 MVP L1s: Arabic, Somali, Dari,
   English (source), Cantonese.
@@ -125,6 +129,7 @@
   the schema; content owns the words).
 
 **Translation budget:**
+
 - £500 – £1,500 across all three scenarios, sourced through Joey's
   network. Higher end if a single qualified translator covers all
   three; lower if the cost is split per L1.
@@ -134,6 +139,7 @@
   calibration.
 
 **Notes:**
+
 - Engineering's `validateScenarios` script catches schema errors;
   content reviewers catch meaning errors. Both are required.
 - Cultural notes are surfaced to learners on first encounter with
@@ -143,16 +149,17 @@
 
 ### 5. Placement question bank — 80 questions minimum
 
-| Field | Value |
-|---|---|
-| **Status** | `not_started` |
-| **Owner** | Joey + ESOL practitioner + translators |
-| **Deadline** | TBD — gates v1.0 launch |
-| **Draft URL** | _(none yet)_ |
-| **Production path** | `src/data/placement-bank.json` |
-| **Consumed by** | Placement service (Function 7) — adaptive question selection |
+| Field               | Value                                                        |
+| ------------------- | ------------------------------------------------------------ |
+| **Status**          | `not_started`                                                |
+| **Owner**           | Joey + ESOL practitioner + translators                       |
+| **Deadline**        | TBD — gates v1.0 launch                                      |
+| **Draft URL**       | _(none yet)_                                                 |
+| **Production path** | `src/data/placement-bank.json`                               |
+| **Consumed by**     | Placement service (Function 7) — adaptive question selection |
 
 **Notes:**
+
 - Minimum 80 questions to give the adaptive algorithm enough breadth
   to avoid placing two consecutive learners onto the same path.
 - Balanced across the five MVP levels (E1–L2) and the four ForSkills
@@ -169,14 +176,14 @@
 
 ### 6. Safeguarding messages — 30 pre-cached messages
 
-| Field | Value |
-|---|---|
-| **Status** | `not_started` |
-| **Owner** | Joey + safeguarding professional |
-| **Deadline** | TBD — **required** before live traffic in *any* org |
-| **Draft URL** | _(none yet)_ |
-| **Production path** | `src/data/safeguarding-messages.json` |
-| **Consumed by** | Safeguarding detector (Function 10) — surfaced verbatim when an alert is raised |
+| Field               | Value                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| **Status**          | `not_started`                                                                   |
+| **Owner**           | Joey + safeguarding professional                                                |
+| **Deadline**        | TBD — **required** before live traffic in _any_ org                             |
+| **Draft URL**       | _(none yet)_                                                                    |
+| **Production path** | `src/data/safeguarding-messages.json`                                           |
+| **Consumed by**     | Safeguarding detector (Function 10) — surfaced verbatim when an alert is raised |
 
 **Grid:** 6 categories × 5 languages = 30 messages.
 
@@ -186,6 +193,7 @@ Categories: `self_harm`, `domestic_abuse`, `radicalisation`,
 Languages: Arabic, Somali, Dari, English, Cantonese.
 
 **Notes:**
+
 - **Every message must be reviewed by the safeguarding professional
   before any production traffic.** A mis-phrased safeguarding message
   is a real-world safety hazard, not a UX issue.
@@ -202,16 +210,17 @@ Languages: Arabic, Somali, Dari, English, Cantonese.
 
 ### 7. CSV import templates and instructions
 
-| Field | Value |
-|---|---|
-| **Status** | `not_started` |
-| **Owner** | Joey |
-| **Deadline** | TBD — gates org-admin onboarding |
-| **Draft URL** | _(none yet)_ |
+| Field               | Value                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| **Status**          | `not_started`                                                                      |
+| **Owner**           | Joey                                                                               |
+| **Deadline**        | TBD — gates org-admin onboarding                                                   |
+| **Draft URL**       | _(none yet)_                                                                       |
 | **Production path** | `src/data/csv-templates/` + accompanying section in `docs/ORG_ADMIN_ONBOARDING.md` |
-| **Consumed by** | Bulk-import flow (Function 3 / Phase 6.1) |
+| **Consumed by**     | Bulk-import flow (Function 3 / Phase 6.1)                                          |
 
 **Notes:**
+
 - CSV templates: `learners.csv`, `forskills.csv`,
   `pre-platform-sessions.csv` (one per import flow on the org-admin
   dashboard).
@@ -228,16 +237,17 @@ Languages: Arabic, Somali, Dari, English, Cantonese.
 
 ### 8. Teacher message templates [ADDENDUM]
 
-| Field | Value |
-|---|---|
-| **Status** | `not_started` |
-| **Owner** | Joey + ESOL practitioner |
-| **Deadline** | TBD — gates Phase 24 launch |
-| **Draft URL** | _(none yet)_ |
-| **Production path** | `src/data/teacher-message-templates.json` |
-| **Consumed by** | Phase 24 teacher messaging flow + the re-engagement cron (dormant-learner outreach) |
+| Field               | Value                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| **Status**          | `not_started`                                                                       |
+| **Owner**           | Joey + ESOL practitioner                                                            |
+| **Deadline**        | TBD — gates Phase 24 launch                                                         |
+| **Draft URL**       | _(none yet)_                                                                        |
+| **Production path** | `src/data/teacher-message-templates.json`                                           |
+| **Consumed by**     | Phase 24 teacher messaging flow + the re-engagement cron (dormant-learner outreach) |
 
 **Categories:**
+
 - `re_engagement` — learner has been inactive 14+ days, teacher
   reaches out
 - `encouragement` — milestone reached, teacher acknowledges
@@ -250,6 +260,7 @@ learner's first name, the teacher's first name, and (where relevant)
 the level / objective being referenced.
 
 **Notes:**
+
 - ESOL-practitioner review is needed to keep the templates
   consistent with the AI tutor's voice — a teacher message that
   reads in a sharply different register from the AI tutor confuses
@@ -262,16 +273,17 @@ the level / objective being referenced.
 
 ### 9. Safeguarding keyword bank seeds [ADDENDUM]
 
-| Field | Value |
-|---|---|
-| **Status** | `not_started` |
-| **Owner** | Joey + safeguarding professional |
-| **Deadline** | TBD — **must precede live learner traffic** |
-| **Draft URL** | _(none yet)_ |
+| Field               | Value                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Status**          | `not_started`                                                                                                |
+| **Owner**           | Joey + safeguarding professional                                                                             |
+| **Deadline**        | TBD — **must precede live learner traffic**                                                                  |
+| **Draft URL**       | _(none yet)_                                                                                                 |
 | **Production path** | `src/scripts/seedSafeguardingKeywords.ts` populates the `safeguarding_keywords` Mongo collection (Phase 1.F) |
-| **Consumed by** | Safeguarding detector (Function 10) — substring / regex match against learner turns + teacher messages |
+| **Consumed by**     | Safeguarding detector (Function 10) — substring / regex match against learner turns + teacher messages       |
 
 **Languages:**
+
 - **English first** — the literal v1.0 launch is English-only
   detection. Joey + safeguarding professional sign off the English
   bank before any production traffic.
@@ -284,6 +296,7 @@ the level / objective being referenced.
   keyword match).
 
 **Notes:**
+
 - Keyword bank is intentionally conservative — false positives are
   acceptable, false negatives are not. The DSL workflow then has the
   judgement call on whether the alert is genuine.
@@ -293,16 +306,17 @@ the level / objective being referenced.
 
 ### 10. Compliance Config seeds [ADDENDUM]
 
-| Field | Value |
-|---|---|
-| **Status** | `not_started` |
-| **Owner** | Joey (compliance lead) |
-| **Deadline** | TBD — gates the first real ILR export |
-| **Draft URL** | _(none yet)_ |
+| Field               | Value                                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Status**          | `not_started`                                                                                         |
+| **Owner**           | Joey (compliance lead)                                                                                |
+| **Deadline**        | TBD — gates the first real ILR export                                                                 |
+| **Draft URL**       | _(none yet)_                                                                                          |
 | **Production path** | `src/scripts/seedComplianceConfig.ts` populates the `compliance_configs` Mongo collection (Phase 1.E) |
-| **Consumed by** | ILR export pipeline (Function 13); RARPA evidence pipeline (Function 14); ASF postcode router |
+| **Consumed by**     | ILR export pipeline (Function 13); RARPA evidence pipeline (Function 14); ASF postcode router         |
 
 **Three domains × current academic year:**
+
 - `ilr` / `2025/26` — ESFA ILR field mappings, valid value lists,
   breaking-change handlers (SOF code 19 routing, EnglishProgType,
   SOC2000 → SOC, LLDDT code 15 expired). All four documented in the
@@ -313,6 +327,7 @@ the level / objective being referenced.
   from the DfE ASF dataset.
 
 **Notes:**
+
 - This is the only Section B item Joey owns solo — it's
   configuration data, not narrative content, and the technical
   accuracy is verifiable against the published ESFA spec rather
@@ -340,10 +355,10 @@ document. Joey is the final accountability holder for content
 quality and compliance fitness.
 
 | Date | Items signed off | Signature |
-|---|---|---|
-|  |  |  |
-|  |  |  |
-|  |  |  |
+| ---- | ---------------- | --------- |
+|      |                  |           |
+|      |                  |           |
+|      |                  |           |
 
 ### ESOL practitioner (qualified ESOL teacher, NQF Level 3+ ESOL qualification)
 
@@ -351,9 +366,9 @@ Required sign-off for **content items A.1, A.3, A.4, A.5, B.8** —
 anything where the words go in front of a learner.
 
 | Date | Practitioner name | Items signed off | Signature |
-|---|---|---|---|
-|  |  |  |  |
-|  |  |  |  |
+| ---- | ----------------- | ---------------- | --------- |
+|      |                   |                  |           |
+|      |                   |                  |           |
 
 ### Safeguarding professional (DSL or equivalent)
 
@@ -362,9 +377,9 @@ hard rules, the safeguarding pre-cached messages, and the keyword
 bank seeds.
 
 | Date | Professional name | Items signed off | Signature |
-|---|---|---|---|
-|  |  |  |  |
-|  |  |  |  |
+| ---- | ----------------- | ---------------- | --------- |
+|      |                   |                  |           |
+|      |                   |                  |           |
 
 ### Qualified translators (one per L1)
 
@@ -374,18 +389,18 @@ qualified translator in the target language with ESOL teaching
 context.
 
 | Date | Translator name | Language(s) | Items signed off | Signature |
-|---|---|---|---|---|
-|  |  |  |  |  |
-|  |  |  |  |  |
-|  |  |  |  |  |
-|  |  |  |  |  |
-|  |  |  |  |  |
+| ---- | --------------- | ----------- | ---------------- | --------- |
+|      |                 |             |                  |           |
+|      |                 |             |                  |           |
+|      |                 |             |                  |           |
+|      |                 |             |                  |           |
+|      |                 |             |                  |           |
 
 ---
 
 ## Out-of-scope (tracked elsewhere)
 
-The following are *not* tracked here because they're either
+The following are _not_ tracked here because they're either
 engineering-owned or covered by a separate process:
 
 - **Demo seed fixture** — covered in `docs/DEMO_ENVIRONMENT.md` and
@@ -405,6 +420,6 @@ engineering-owned or covered by a separate process:
 
 ## Change log for this document
 
-| Date | Change | By |
-|---|---|---|
+| Date      | Change                                                             | By          |
+| --------- | ------------------------------------------------------------------ | ----------- |
 | (initial) | Document created from Function 17 brief + Final Addendum additions | Engineering |

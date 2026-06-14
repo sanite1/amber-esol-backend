@@ -38,16 +38,19 @@ const ilrExportWarningsSchema = new Schema<IIlrExportWarnings>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // TTL index — 7 days (604,800 seconds). After that the org admin should
 // have already actioned the warnings or re-run the export.
-ilrExportWarningsSchema.index({ created_at: 1 }, { expireAfterSeconds: 604_800 });
+ilrExportWarningsSchema.index(
+  { created_at: 1 },
+  { expireAfterSeconds: 604_800 },
+);
 
 const IlrExportWarnings = model<IIlrExportWarnings>(
   "IlrExportWarnings",
-  ilrExportWarningsSchema
+  ilrExportWarningsSchema,
 );
 
 export default IlrExportWarnings;

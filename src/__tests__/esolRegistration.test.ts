@@ -67,9 +67,11 @@ import PostcodeRouter from "../services/postcodeRouter.service";
 import { createNotification } from "../services/notification.service";
 import ApiError from "../errors/apiError";
 
-const mockedLookup = (PostcodeRouter as unknown as {
-  lookup: jest.Mock;
-}).lookup;
+const mockedLookup = (
+  PostcodeRouter as unknown as {
+    lookup: jest.Mock;
+  }
+).lookup;
 const mockedCreateNotification = createNotification as jest.Mock;
 
 // ── Test helpers ─────────────────────────────────────────────────────
@@ -107,7 +109,7 @@ const createReferralRow = async (orgId: string, token: string) =>
 
 const baseRegisterPayload = (
   token: string,
-  over: Partial<EsolRegisterPayload> = {}
+  over: Partial<EsolRegisterPayload> = {},
 ): EsolRegisterPayload => ({
   token,
   firstname: "Aamina",
@@ -166,8 +168,7 @@ describe("D1-T1 — token verification", () => {
     // Mutate the final character of the signature segment.
     const parts = realToken.split(".");
     const lastChar = parts[2].slice(-1);
-    parts[2] =
-      parts[2].slice(0, -1) + (lastChar === "A" ? "B" : "A");
+    parts[2] = parts[2].slice(0, -1) + (lastChar === "A" ? "B" : "A");
     const tampered = parts.join(".");
 
     await expect(verifyReferralTokenService(tampered)).rejects.toMatchObject({
@@ -188,7 +189,7 @@ describe("D1-T2 — register creates correct learner record", () => {
       baseRegisterPayload(token, {
         l1_language: "arabic",
         postcode_prior: "M1 1AE",
-      })
+      }),
     );
 
     expect(res.statusCode).toBe(201);
@@ -225,7 +226,7 @@ describe("D1-T3 — cross-org isolation at registration", () => {
 
     const decoded = jwt.verify(
       accessToken,
-      process.env.JWT_SECRET as string
+      process.env.JWT_SECRET as string,
     ) as Record<string, string>;
 
     expect(decoded.orgId).toBe(orgA._id.toString());
@@ -344,10 +345,10 @@ describe("D1-T6 — missing postcode in dataset", () => {
 
     expect(mockedCreateNotification).toHaveBeenCalledTimes(2);
     const userIdsNotified = mockedCreateNotification.mock.calls.map((c) =>
-      String((c[0] as any).userId)
+      String((c[0] as any).userId),
     );
     expect(userIdsNotified.sort()).toEqual(
-      [adminA._id.toString(), adminB._id.toString()].sort()
+      [adminA._id.toString(), adminB._id.toString()].sort(),
     );
     expect(mockedCreateNotification.mock.calls[0][0]).toMatchObject({
       type: "system",
@@ -375,7 +376,12 @@ describe("D1-T7 — org admin isolation", () => {
     // Org B admin tries to fetch the Org A learner by passing Org B's id
     // through the scoping middleware (orgId arg = their own).
     await expect(
-      getLearnerService(orgB._id.toString(), learnerInOrgA, "org_admin", orgB._id.toString())
+      getLearnerService(
+        orgB._id.toString(),
+        learnerInOrgA,
+        "org_admin",
+        orgB._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 404 });
   });
 

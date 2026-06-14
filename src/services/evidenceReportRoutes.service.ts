@@ -141,19 +141,23 @@ export const triggerEvidenceReportService = async (
         { reportId, orgId: input.org_id, cachedAt: cached.meta?.created_at },
         "triggerEvidenceReport: returning cached completed report",
       );
-      return new ApiResponse(200, "Evidence report already available (cached)", {
-        report_id: reportId,
-        cached: true,
-        status: "completed",
-        // The cached envelope stores the canonical download URL —
-        // preferring that over a recomputed string protects against
-        // route drift between worker and route layer.
-        download_url:
-          cached.result.download_url ??
-          `/api/org-admin/evidence-report/${reportId}/download`,
-        generated_at: cached.result.generated_at,
-        learner_count: cached.result.learner_count,
-      });
+      return new ApiResponse(
+        200,
+        "Evidence report already available (cached)",
+        {
+          report_id: reportId,
+          cached: true,
+          status: "completed",
+          // The cached envelope stores the canonical download URL —
+          // preferring that over a recomputed string protects against
+          // route drift between worker and route layer.
+          download_url:
+            cached.result.download_url ??
+            `/api/org-admin/evidence-report/${reportId}/download`,
+          generated_at: cached.result.generated_at,
+          learner_count: cached.result.learner_count,
+        },
+      );
     }
   }
 
@@ -250,7 +254,10 @@ export const getEvidenceReportStatusService = async (
   }
 
   // Cross-org scope check (org-admin callers only). Admins skip.
-  if (callerOrgId !== null && (job.data as { orgId?: string }).orgId !== callerOrgId) {
+  if (
+    callerOrgId !== null &&
+    (job.data as { orgId?: string }).orgId !== callerOrgId
+  ) {
     throw new ApiError(403, "Access denied to this evidence report job");
   }
 
@@ -333,7 +340,10 @@ export const authoriseEvidenceReportDownloadService = async (
     period_end?: string;
   } | null;
   if (!result) {
-    throw new ApiError(500, "Evidence report metadata missing — re-run with force_refresh=true");
+    throw new ApiError(
+      500,
+      "Evidence report metadata missing — re-run with force_refresh=true",
+    );
   }
 
   const ownerOrgId = lock.org_id?.toString() ?? "";

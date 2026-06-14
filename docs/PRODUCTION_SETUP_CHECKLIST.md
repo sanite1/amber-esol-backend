@@ -56,45 +56,45 @@ Production**. Each variable's value comes from the 1Password vault
 entry named in the right column. Copy-paste from 1Password directly
 into the Vercel UI — never via a shell that might log the value.
 
-| Variable                       | 1Password entry                        | Notes |
-|--------------------------------|----------------------------------------|-------|
-| `NODE_ENV`                     | _literal_ `production`                 |       |
-| `MONGODB_URI`                  | Mongo — Prod URI                       | Atlas cluster, prod project |
-| `DEMO_MONGODB_URI`             | (omit — prod project ≠ demo project)   | LEAVE UNSET. See Stage 6 |
-| `REDIS_URL`                    | Upstash — Prod URL                     |       |
-| `JWT_SECRET`                   | JWT_SECRET — Prod                      | 64-byte hex |
-| `REFERRAL_JWT_SECRET`          | REFERRAL_JWT_SECRET — Prod             | 64-byte hex |
-| `REFERRAL_JWT_EXPIRES_IN`      | _literal_ `365d`                       |       |
-| `MIS_CREDENTIALS_KEY`          | MIS_CREDENTIALS_KEY — Prod             | 32-byte hex |
-| `CRON_SECRET`                  | CRON_SECRET — Prod                     | Validates `Authorization: Bearer …` on cron routes |
-| `INVOICE_CRON_SECRET`          | INVOICE_CRON_SECRET — Prod             | Separate from CRON_SECRET — billing isolation |
-| `BULL_BOARD_TOKEN`             | BULL_BOARD_TOKEN — Prod                | 32-byte hex |
-| `STRIPE_SECRET_KEY`            | Stripe — Live secret key               | `sk_live_…` not `sk_test_…` |
-| `STRIPE_WEBHOOK_SECRET`        | Stripe — Live webhook secret           |       |
-| `AUTH_EMAIL`                   | privateemail.com — auth user           |       |
-| `AUTH_PASS`                    | privateemail.com — auth pass           |       |
-| `ADMIN_EMAIL`                  | _literal_ `joey@ambertraining.co.uk`   | Audit/ops recipient |
-| `SAFEGUARDING_EMAIL`           | _literal_ `safeguarding@ambertraining.co.uk` | Designated safeguarding lead |
-| `SAFEGUARDING_ALERT_EMAIL`     | _literal_ same as above                | Alert recipient |
-| `SUPPORT_EMAIL`                | _literal_ `support@ambertraining.co.uk` |       |
-| `GOOGLE_APPLICATION_CREDENTIALS` | GCP — Service account JSON (literal) | Paste the JSON content (Vercel re-mounts at runtime). Do NOT paste a file path |
-| `GOOGLE_CLOUD_PROJECT_ID`      | GCP — Project ID                       |       |
-| `GOOGLE_CLOUD_REGION`          | _literal_ `europe-west2`               |       |
-| `GEMINI_MODEL`                 | _literal_ `gemini-2.5-flash`           |       |
-| `CLOUD_NAME`                   | Cloudinary — cloud name                |       |
-| `CLOUDINARY_API_KEY`           | Cloudinary — API key                   |       |
-| `CLOUDINARY_API_SECRET`        | Cloudinary — API secret                |       |
-| `DAILY_API_KEY`                | Daily.co — API key                     | Video call hosting |
-| `ZOOM_ACCOUNT_ID`              | Zoom — account id                      | If Zoom integration used |
-| `ZOOM_CLIENT_ID`               | Zoom — client id                       |       |
-| `ZOOM_CLIENT_SECRET`           | Zoom — client secret                   |       |
-| `ACADEMIC_YEAR`                | _literal_ `2025/26`                    | Updated 1 August each year |
-| `AMBER_UKPRN`                  | _literal_ (Joey supplies)              |       |
-| `DOMAIN_NAME`                  | _literal_ `esol.ambertraining.co.uk`   |       |
-| `LARGE_DATASET_TIMEOUT`        | _literal_ `600000`                     | 10 min for postcode load |
-| `LOG_LEVEL`                    | _literal_ `info`                       |       |
-| `MOCK_OCR`                     | _literal_ `false`                      |       |
-| `SENTRY_DSN`                   | Sentry — Backend DSN                   | See Stage 8 |
+| Variable                         | 1Password entry                              | Notes                                                                          |
+| -------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
+| `NODE_ENV`                       | _literal_ `production`                       |                                                                                |
+| `MONGODB_URI`                    | Mongo — Prod URI                             | Atlas cluster, prod project                                                    |
+| `DEMO_MONGODB_URI`               | (omit — prod project ≠ demo project)         | LEAVE UNSET. See Stage 6                                                       |
+| `REDIS_URL`                      | Upstash — Prod URL                           |                                                                                |
+| `JWT_SECRET`                     | JWT_SECRET — Prod                            | 64-byte hex                                                                    |
+| `REFERRAL_JWT_SECRET`            | REFERRAL_JWT_SECRET — Prod                   | 64-byte hex                                                                    |
+| `REFERRAL_JWT_EXPIRES_IN`        | _literal_ `365d`                             |                                                                                |
+| `MIS_CREDENTIALS_KEY`            | MIS_CREDENTIALS_KEY — Prod                   | 32-byte hex                                                                    |
+| `CRON_SECRET`                    | CRON_SECRET — Prod                           | Validates `Authorization: Bearer …` on cron routes                             |
+| `INVOICE_CRON_SECRET`            | INVOICE_CRON_SECRET — Prod                   | Separate from CRON_SECRET — billing isolation                                  |
+| `BULL_BOARD_TOKEN`               | BULL_BOARD_TOKEN — Prod                      | 32-byte hex                                                                    |
+| `STRIPE_SECRET_KEY`              | Stripe — Live secret key                     | `sk_live_…` not `sk_test_…`                                                    |
+| `STRIPE_WEBHOOK_SECRET`          | Stripe — Live webhook secret                 |                                                                                |
+| `AUTH_EMAIL`                     | privateemail.com — auth user                 |                                                                                |
+| `AUTH_PASS`                      | privateemail.com — auth pass                 |                                                                                |
+| `ADMIN_EMAIL`                    | _literal_ `joey@ambertraining.co.uk`         | Audit/ops recipient                                                            |
+| `SAFEGUARDING_EMAIL`             | _literal_ `safeguarding@ambertraining.co.uk` | Designated safeguarding lead                                                   |
+| `SAFEGUARDING_ALERT_EMAIL`       | _literal_ same as above                      | Alert recipient                                                                |
+| `SUPPORT_EMAIL`                  | _literal_ `support@ambertraining.co.uk`      |                                                                                |
+| `GOOGLE_APPLICATION_CREDENTIALS` | GCP — Service account JSON (literal)         | Paste the JSON content (Vercel re-mounts at runtime). Do NOT paste a file path |
+| `GOOGLE_CLOUD_PROJECT_ID`        | GCP — Project ID                             |                                                                                |
+| `GOOGLE_CLOUD_REGION`            | _literal_ `europe-west2`                     |                                                                                |
+| `GEMINI_MODEL`                   | _literal_ `gemini-2.5-flash`                 |                                                                                |
+| `CLOUD_NAME`                     | Cloudinary — cloud name                      |                                                                                |
+| `CLOUDINARY_API_KEY`             | Cloudinary — API key                         |                                                                                |
+| `CLOUDINARY_API_SECRET`          | Cloudinary — API secret                      |                                                                                |
+| `DAILY_API_KEY`                  | Daily.co — API key                           | Video call hosting                                                             |
+| `ZOOM_ACCOUNT_ID`                | Zoom — account id                            | If Zoom integration used                                                       |
+| `ZOOM_CLIENT_ID`                 | Zoom — client id                             |                                                                                |
+| `ZOOM_CLIENT_SECRET`             | Zoom — client secret                         |                                                                                |
+| `ACADEMIC_YEAR`                  | _literal_ `2025/26`                          | Updated 1 August each year                                                     |
+| `AMBER_UKPRN`                    | _literal_ (Joey supplies)                    |                                                                                |
+| `DOMAIN_NAME`                    | _literal_ `esol.ambertraining.co.uk`         |                                                                                |
+| `LARGE_DATASET_TIMEOUT`          | _literal_ `600000`                           | 10 min for postcode load                                                       |
+| `LOG_LEVEL`                      | _literal_ `info`                             |                                                                                |
+| `MOCK_OCR`                       | _literal_ `false`                            |                                                                                |
+| `SENTRY_DSN`                     | Sentry — Backend DSN                         | See Stage 8                                                                    |
 
 - [ ] Confirm `DEMO_MONGODB_URI` is **not set** on the prod project.
       Its presence would let an accidentally-flipped `DEMO_MODE` env
@@ -121,8 +121,7 @@ into the Vercel UI — never via a shell that might log the value.
 - [ ] In Vercel project → **Settings → Domains** → add
       `api.esol.ambertraining.co.uk`.
 - [ ] Vercel shows DNS instructions. Add the requested `CNAME` /
-      `A` record at your DNS provider for the apex.
-      - Recommend `CNAME → cname.vercel-dns.com`.
+      `A` record at your DNS provider for the apex. - Recommend `CNAME → cname.vercel-dns.com`.
 - [ ] Wait for propagation (5–60 min).
 - [ ] Vercel auto-provisions a Let's Encrypt cert. Confirm **green
       tick** next to the domain in Vercel.
@@ -149,19 +148,18 @@ into the Vercel UI — never via a shell that might log the value.
 
 - [ ] Vercel **Add New Project** → import `amber-esol-mvp`.
 - [ ] **Framework preset:** **Create React App**.
-- [ ] **Production branch:** `main`. **Preview branches:** `develop`
-      + PR branches.
+- [ ] **Production branch:** `main`. **Preview branches:** `develop` + PR branches.
 - [ ] **Build command:** `npm run build` (CRA default).
 - [ ] **Output directory:** `build` (CRA default).
 - [ ] **Install command:** `npm ci`.
 
 ### 3.2 Environment variables (production scope)
 
-| Variable                  | Value                                          |
-|---------------------------|------------------------------------------------|
-| `REACT_APP_BACKEND_URL`   | `https://api.esol.ambertraining.co.uk`         |
-| `REACT_APP_SENTRY_DSN`    | (1Password: Sentry — Frontend DSN)             |
-| `REACT_APP_ENVIRONMENT`   | `production`                                   |
+| Variable                | Value                                  |
+| ----------------------- | -------------------------------------- |
+| `REACT_APP_BACKEND_URL` | `https://api.esol.ambertraining.co.uk` |
+| `REACT_APP_SENTRY_DSN`  | (1Password: Sentry — Frontend DSN)     |
+| `REACT_APP_ENVIRONMENT` | `production`                           |
 
 - [ ] Save. Trigger a redeploy.
 
@@ -307,16 +305,16 @@ The brief recommends Logtail (Better Stack) for MVP.
   - [ ] `npm i @sentry/node` in `amber-esol-backend`.
   - [ ] Initialise at the top of `src/index.ts` (BEFORE any other
         import that can throw at module load):
-        ```ts
-        import * as Sentry from "@sentry/node";
-        if (process.env.SENTRY_DSN) {
-          Sentry.init({
-            dsn: process.env.SENTRY_DSN,
-            environment: process.env.NODE_ENV ?? "development",
-            tracesSampleRate: 0.05,
-          });
-        }
-        ```
+        `ts
+import * as Sentry from "@sentry/node";
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV ?? "development",
+    tracesSampleRate: 0.05,
+  });
+}
+`
   - [ ] Wrap the Express error middleware with `Sentry.Handlers.errorHandler()`.
   - [ ] Set `SENTRY_DSN` on backend Vercel + Railway. Demo project
         gets a DIFFERENT DSN so demo errors don't pollute the prod
@@ -390,13 +388,13 @@ unlock production traffic.
 ### Engineering lead
 
 | Date | Name | Deployment SHAs (backend / frontend / workers) | Signature |
-|------|------|------------------------------------------------|-----------|
+| ---- | ---- | ---------------------------------------------- | --------- |
 |      |      |                                                |           |
 
 ### Joey (Amber Training Ltd — engagement lead)
 
 | Date | Signature |
-|------|-----------|
+| ---- | --------- |
 |      |           |
 
 **Until both signatures are in place, the production custom

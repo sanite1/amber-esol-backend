@@ -9,7 +9,12 @@ import {
 } from "../../interfaces/booking.interface";
 const DOMAIN_NAME = process.env.DOMAIN_NAME;
 
-export const sendVerificationMail = async (userInfo: IUser) => {
+export const sendVerificationMail = async (
+  userInfo: IUser,
+  /** ESOL onboarding passes the placement result so the learner sees
+   *  it in the verification email, before first login. */
+  extras?: { placementLevel?: string; placementRationale?: string },
+) => {
   const mailOptions = {
     from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
     to: userInfo.email,
@@ -19,6 +24,8 @@ export const sendVerificationMail = async (userInfo: IUser) => {
       name: userInfo.firstname,
       email: userInfo.email,
       url: `${DOMAIN_NAME}/verify/${userInfo._id}/${userInfo.verificationToken}`,
+      placementLevel: extras?.placementLevel ?? null,
+      placementRationale: extras?.placementRationale ?? null,
     },
   };
   try {
@@ -69,7 +76,7 @@ export const sendWelcomeMail = async (userInfo: IUser) => {
 export const sendAccountSuspendedMail = async (
   userInfo: IUser,
   reason?: string,
-  duration?: string
+  duration?: string,
 ) => {
   const mailOptions = {
     from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
@@ -234,7 +241,7 @@ export const sendBookingConfirmedMail = async (ctx: BookingEmailContext) => {
 /* ── Booking Declined (sent to STUDENT) ── */
 
 export const sendBookingDeclinedMail = async (
-  ctx: SingleBookingEmailContext
+  ctx: SingleBookingEmailContext,
 ) => {
   const mailOptions = {
     from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
@@ -263,7 +270,7 @@ export const sendBookingDeclinedMail = async (
 /* ── Booking Cancelled by Student (sent to TUTOR) ── */
 
 export const sendBookingCancelledByStudentMail = async (
-  ctx: SingleBookingEmailContext
+  ctx: SingleBookingEmailContext,
 ) => {
   const mailOptions = {
     from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
@@ -291,7 +298,7 @@ export const sendBookingCancelledByStudentMail = async (
 /* ── Booking Cancelled by Tutor (sent to STUDENT) ── */
 
 export const sendBookingCancelledByTutorMail = async (
-  ctx: SingleBookingEmailContext
+  ctx: SingleBookingEmailContext,
 ) => {
   const mailOptions = {
     from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
@@ -510,7 +517,7 @@ export const sendReviewReplyMail = async (ctx: ReviewReplyEmailContext) => {
 /* ── Review Report (sent to ADMIN) ── */
 
 export const sendReviewReportAdminMail = async (
-  ctx: ReviewReportEmailContext
+  ctx: ReviewReportEmailContext,
 ) => {
   const mailOptions = {
     from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
@@ -582,7 +589,7 @@ export const sendReviewRestoredMail = async (ctx: ReviewEmailContext) => {
 /* ── New Message Notification (sent to RECIPIENT) ── */
 
 export const sendNewMessageNotificationMail = async (
-  ctx: NewMessageEmailContext
+  ctx: NewMessageEmailContext,
 ) => {
   const mailOptions = {
     from: `"Amber Training" <${process.env.AUTH_EMAIL}>`,
@@ -602,7 +609,7 @@ export const sendNewMessageNotificationMail = async (
   } catch (error) {
     logger.error(
       { err: error },
-      "Error sending new message notification email"
+      "Error sending new message notification email",
     );
   }
 };

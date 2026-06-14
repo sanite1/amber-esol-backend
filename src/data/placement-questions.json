@@ -1,5 +1,33 @@
 {
-  "version": 1,
+  "_dev_notes": [
+    "Placement question bank for the ESOL adaptive assessment.",
+    "",
+    "Original 5 questions (one per level) have full translations in",
+    "ar / so / fa / zh. The 15 questions added on the December seed",
+    "pass have ENGLISH text in every language field as a placeholder —",
+    "they are content-complete and structurally valid but need real",
+    "translations before production. Look for ids ending in -002/-003/",
+    "-004 to find them.",
+    "",
+    "Audio status: the original e2-listening-001, l1-listening-001 etc.",
+    "say 'Listen: ...' but the frontend does NOT play audio yet. They",
+    "function as reading questions in the meantime — the text after",
+    "'Listen:' is read by the learner. For honesty, the new-pass",
+    "questions use 'Read this announcement:' framing and are classified",
+    "as reading, NOT listening. Real listening (audio clips) lands when",
+    "TTS / recordings get wired into the placement page.",
+    "",
+    "Answer-position distribution: deliberately balanced across A/B/C/D",
+    "(~5 each) so a learner can't game the test by guessing one letter.",
+    "Original 5 questions are unchanged; new 15 have been shuffled.",
+    "",
+    "Runtime requirement: ≥ 4 questions per level (see",
+    "placement.service.ts PER_LEVEL_INITIAL). Validator (npm run",
+    "validate:placement-bank) wants 80 total with 4 per (level × domain)",
+    "cell — that's the production target. We currently sit at the",
+    "runtime minimum so the assessment can RUN, not at the full bar."
+  ],
+  "version": 3,
   "questions": [
     {
       "id": "e1-reading-001",
@@ -45,6 +73,144 @@
         }
       ],
       "correct_answer": "a",
+      "difficulty_weight": 1.0
+    },
+    {
+      "id": "e1-reading-002",
+      "level": "e1",
+      "skill_domain": "reading",
+      "question_en": "Read: 'OPEN 9am - 5pm Monday to Friday'. Is the shop open on Sunday?",
+      "question_ar": "Read: 'OPEN 9am - 5pm Monday to Friday'. Is the shop open on Sunday?",
+      "question_so": "Read: 'OPEN 9am - 5pm Monday to Friday'. Is the shop open on Sunday?",
+      "question_fa": "Read: 'OPEN 9am - 5pm Monday to Friday'. Is the shop open on Sunday?",
+      "question_zh": "Read: 'OPEN 9am - 5pm Monday to Friday'. Is the shop open on Sunday?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "Yes",
+          "text_ar": "Yes",
+          "text_so": "Yes",
+          "text_fa": "Yes",
+          "text_zh": "Yes"
+        },
+        {
+          "id": "b",
+          "text_en": "No",
+          "text_ar": "No",
+          "text_so": "No",
+          "text_fa": "No",
+          "text_zh": "No"
+        },
+        {
+          "id": "c",
+          "text_en": "Only in the morning",
+          "text_ar": "Only in the morning",
+          "text_so": "Only in the morning",
+          "text_fa": "Only in the morning",
+          "text_zh": "Only in the morning"
+        },
+        {
+          "id": "d",
+          "text_en": "I don't know",
+          "text_ar": "I don't know",
+          "text_so": "I don't know",
+          "text_fa": "I don't know",
+          "text_zh": "I don't know"
+        }
+      ],
+      "correct_answer": "b",
+      "difficulty_weight": 1.0
+    },
+    {
+      "id": "e1-writing-001",
+      "level": "e1",
+      "skill_domain": "writing",
+      "question_en": "Choose the correctly written sentence.",
+      "question_ar": "Choose the correctly written sentence.",
+      "question_so": "Choose the correctly written sentence.",
+      "question_fa": "Choose the correctly written sentence.",
+      "question_zh": "Choose the correctly written sentence.",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "i am from london.",
+          "text_ar": "i am from london.",
+          "text_so": "i am from london.",
+          "text_fa": "i am from london.",
+          "text_zh": "i am from london."
+        },
+        {
+          "id": "b",
+          "text_en": "I am from london",
+          "text_ar": "I am from london",
+          "text_so": "I am from london",
+          "text_fa": "I am from london",
+          "text_zh": "I am from london"
+        },
+        {
+          "id": "c",
+          "text_en": "I am from London.",
+          "text_ar": "I am from London.",
+          "text_so": "I am from London.",
+          "text_fa": "I am from London.",
+          "text_zh": "I am from London."
+        },
+        {
+          "id": "d",
+          "text_en": "i am from London.",
+          "text_ar": "i am from London.",
+          "text_so": "i am from London.",
+          "text_fa": "i am from London.",
+          "text_zh": "i am from London."
+        }
+      ],
+      "correct_answer": "c",
+      "difficulty_weight": 1.0
+    },
+    {
+      "id": "e1-reading-003",
+      "level": "e1",
+      "skill_domain": "reading",
+      "question_en": "Read this short profile: 'My name is Sara. I am twenty-five years old.' How old is Sara?",
+      "question_ar": "Read this short profile: 'My name is Sara. I am twenty-five years old.' How old is Sara?",
+      "question_so": "Read this short profile: 'My name is Sara. I am twenty-five years old.' How old is Sara?",
+      "question_fa": "Read this short profile: 'My name is Sara. I am twenty-five years old.' How old is Sara?",
+      "question_zh": "Read this short profile: 'My name is Sara. I am twenty-five years old.' How old is Sara?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "15",
+          "text_ar": "15",
+          "text_so": "15",
+          "text_fa": "15",
+          "text_zh": "15"
+        },
+        {
+          "id": "b",
+          "text_en": "35",
+          "text_ar": "35",
+          "text_so": "35",
+          "text_fa": "35",
+          "text_zh": "35"
+        },
+        {
+          "id": "c",
+          "text_en": "55",
+          "text_ar": "55",
+          "text_so": "55",
+          "text_fa": "55",
+          "text_zh": "55"
+        },
+        {
+          "id": "d",
+          "text_en": "25",
+          "text_ar": "25",
+          "text_so": "25",
+          "text_fa": "25",
+          "text_zh": "25"
+        }
+      ],
+      "correct_answer": "d",
       "difficulty_weight": 1.0
     },
     {
@@ -94,6 +260,144 @@
       "difficulty_weight": 1.0
     },
     {
+      "id": "e2-reading-001",
+      "level": "e2",
+      "skill_domain": "reading",
+      "question_en": "A receipt shows: 'Bread £1.20, Milk £1.50, Eggs £2.30, Total £5.00'. How much was the milk?",
+      "question_ar": "A receipt shows: 'Bread £1.20, Milk £1.50, Eggs £2.30, Total £5.00'. How much was the milk?",
+      "question_so": "A receipt shows: 'Bread £1.20, Milk £1.50, Eggs £2.30, Total £5.00'. How much was the milk?",
+      "question_fa": "A receipt shows: 'Bread £1.20, Milk £1.50, Eggs £2.30, Total £5.00'. How much was the milk?",
+      "question_zh": "A receipt shows: 'Bread £1.20, Milk £1.50, Eggs £2.30, Total £5.00'. How much was the milk?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "£1.20",
+          "text_ar": "£1.20",
+          "text_so": "£1.20",
+          "text_fa": "£1.20",
+          "text_zh": "£1.20"
+        },
+        {
+          "id": "b",
+          "text_en": "£2.30",
+          "text_ar": "£2.30",
+          "text_so": "£2.30",
+          "text_fa": "£2.30",
+          "text_zh": "£2.30"
+        },
+        {
+          "id": "c",
+          "text_en": "£1.50",
+          "text_ar": "£1.50",
+          "text_so": "£1.50",
+          "text_fa": "£1.50",
+          "text_zh": "£1.50"
+        },
+        {
+          "id": "d",
+          "text_en": "£5.00",
+          "text_ar": "£5.00",
+          "text_so": "£5.00",
+          "text_fa": "£5.00",
+          "text_zh": "£5.00"
+        }
+      ],
+      "correct_answer": "c",
+      "difficulty_weight": 1.0
+    },
+    {
+      "id": "e2-writing-001",
+      "level": "e2",
+      "skill_domain": "writing",
+      "question_en": "Choose the correct preposition: 'I will meet you ___ the bus stop.'",
+      "question_ar": "Choose the correct preposition: 'I will meet you ___ the bus stop.'",
+      "question_so": "Choose the correct preposition: 'I will meet you ___ the bus stop.'",
+      "question_fa": "Choose the correct preposition: 'I will meet you ___ the bus stop.'",
+      "question_zh": "Choose the correct preposition: 'I will meet you ___ the bus stop.'",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "on",
+          "text_ar": "on",
+          "text_so": "on",
+          "text_fa": "on",
+          "text_zh": "on"
+        },
+        {
+          "id": "b",
+          "text_en": "in",
+          "text_ar": "in",
+          "text_so": "in",
+          "text_fa": "in",
+          "text_zh": "in"
+        },
+        {
+          "id": "c",
+          "text_en": "of",
+          "text_ar": "of",
+          "text_so": "of",
+          "text_fa": "of",
+          "text_zh": "of"
+        },
+        {
+          "id": "d",
+          "text_en": "at",
+          "text_ar": "at",
+          "text_so": "at",
+          "text_fa": "at",
+          "text_zh": "at"
+        }
+      ],
+      "correct_answer": "d",
+      "difficulty_weight": 1.0
+    },
+    {
+      "id": "e2-speaking-001",
+      "level": "e2",
+      "skill_domain": "speaking",
+      "question_en": "Someone says: 'How are you?' Which reply is most polite?",
+      "question_ar": "Someone says: 'How are you?' Which reply is most polite?",
+      "question_so": "Someone says: 'How are you?' Which reply is most polite?",
+      "question_fa": "Someone says: 'How are you?' Which reply is most polite?",
+      "question_zh": "Someone says: 'How are you?' Which reply is most polite?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "Why?",
+          "text_ar": "Why?",
+          "text_so": "Why?",
+          "text_fa": "Why?",
+          "text_zh": "Why?"
+        },
+        {
+          "id": "b",
+          "text_en": "Yes.",
+          "text_ar": "Yes.",
+          "text_so": "Yes.",
+          "text_fa": "Yes.",
+          "text_zh": "Yes."
+        },
+        {
+          "id": "c",
+          "text_en": "I'm fine, thank you. And you?",
+          "text_ar": "I'm fine, thank you. And you?",
+          "text_so": "I'm fine, thank you. And you?",
+          "text_fa": "I'm fine, thank you. And you?",
+          "text_zh": "I'm fine, thank you. And you?"
+        },
+        {
+          "id": "d",
+          "text_en": "Goodbye.",
+          "text_ar": "Goodbye.",
+          "text_so": "Goodbye.",
+          "text_fa": "Goodbye.",
+          "text_zh": "Goodbye."
+        }
+      ],
+      "correct_answer": "c",
+      "difficulty_weight": 1.0
+    },
+    {
       "id": "e3-writing-001",
       "level": "e3",
       "skill_domain": "writing",
@@ -137,6 +441,144 @@
         }
       ],
       "correct_answer": "b",
+      "difficulty_weight": 1.0
+    },
+    {
+      "id": "e3-reading-001",
+      "level": "e3",
+      "skill_domain": "reading",
+      "question_en": "Read: 'Doctors recommend walking for at least 30 minutes a day.' What do doctors recommend?",
+      "question_ar": "Read: 'Doctors recommend walking for at least 30 minutes a day.' What do doctors recommend?",
+      "question_so": "Read: 'Doctors recommend walking for at least 30 minutes a day.' What do doctors recommend?",
+      "question_fa": "Read: 'Doctors recommend walking for at least 30 minutes a day.' What do doctors recommend?",
+      "question_zh": "Read: 'Doctors recommend walking for at least 30 minutes a day.' What do doctors recommend?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "Running every day",
+          "text_ar": "Running every day",
+          "text_so": "Running every day",
+          "text_fa": "Running every day",
+          "text_zh": "Running every day"
+        },
+        {
+          "id": "b",
+          "text_en": "Sleeping more",
+          "text_ar": "Sleeping more",
+          "text_so": "Sleeping more",
+          "text_fa": "Sleeping more",
+          "text_zh": "Sleeping more"
+        },
+        {
+          "id": "c",
+          "text_en": "Walking for half an hour daily",
+          "text_ar": "Walking for half an hour daily",
+          "text_so": "Walking for half an hour daily",
+          "text_fa": "Walking for half an hour daily",
+          "text_zh": "Walking for half an hour daily"
+        },
+        {
+          "id": "d",
+          "text_en": "Eating less",
+          "text_ar": "Eating less",
+          "text_so": "Eating less",
+          "text_fa": "Eating less",
+          "text_zh": "Eating less"
+        }
+      ],
+      "correct_answer": "c",
+      "difficulty_weight": 1.0
+    },
+    {
+      "id": "e3-reading-002",
+      "level": "e3",
+      "skill_domain": "reading",
+      "question_en": "Read this announcement: 'The library closes at 8pm on weekdays but 5pm on weekends.' When does the library close on Saturday?",
+      "question_ar": "Read this announcement: 'The library closes at 8pm on weekdays but 5pm on weekends.' When does the library close on Saturday?",
+      "question_so": "Read this announcement: 'The library closes at 8pm on weekdays but 5pm on weekends.' When does the library close on Saturday?",
+      "question_fa": "Read this announcement: 'The library closes at 8pm on weekdays but 5pm on weekends.' When does the library close on Saturday?",
+      "question_zh": "Read this announcement: 'The library closes at 8pm on weekdays but 5pm on weekends.' When does the library close on Saturday?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "5pm",
+          "text_ar": "5pm",
+          "text_so": "5pm",
+          "text_fa": "5pm",
+          "text_zh": "5pm"
+        },
+        {
+          "id": "b",
+          "text_en": "8pm",
+          "text_ar": "8pm",
+          "text_so": "8pm",
+          "text_fa": "8pm",
+          "text_zh": "8pm"
+        },
+        {
+          "id": "c",
+          "text_en": "It is closed all day",
+          "text_ar": "It is closed all day",
+          "text_so": "It is closed all day",
+          "text_fa": "It is closed all day",
+          "text_zh": "It is closed all day"
+        },
+        {
+          "id": "d",
+          "text_en": "9pm",
+          "text_ar": "9pm",
+          "text_so": "9pm",
+          "text_fa": "9pm",
+          "text_zh": "9pm"
+        }
+      ],
+      "correct_answer": "a",
+      "difficulty_weight": 1.0
+    },
+    {
+      "id": "e3-speaking-001",
+      "level": "e3",
+      "skill_domain": "speaking",
+      "question_en": "You want to ask politely to leave work early. Which is best?",
+      "question_ar": "You want to ask politely to leave work early. Which is best?",
+      "question_so": "You want to ask politely to leave work early. Which is best?",
+      "question_fa": "You want to ask politely to leave work early. Which is best?",
+      "question_zh": "You want to ask politely to leave work early. Which is best?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "I'm going now.",
+          "text_ar": "I'm going now.",
+          "text_so": "I'm going now.",
+          "text_fa": "I'm going now.",
+          "text_zh": "I'm going now."
+        },
+        {
+          "id": "b",
+          "text_en": "I leave early.",
+          "text_ar": "I leave early.",
+          "text_so": "I leave early.",
+          "text_fa": "I leave early.",
+          "text_zh": "I leave early."
+        },
+        {
+          "id": "c",
+          "text_en": "You let me go.",
+          "text_ar": "You let me go.",
+          "text_so": "You let me go.",
+          "text_fa": "You let me go.",
+          "text_zh": "You let me go."
+        },
+        {
+          "id": "d",
+          "text_en": "Could I leave a bit early today, please?",
+          "text_ar": "Could I leave a bit early today, please?",
+          "text_so": "Could I leave a bit early today, please?",
+          "text_fa": "Could I leave a bit early today, please?",
+          "text_zh": "Could I leave a bit early today, please?"
+        }
+      ],
+      "correct_answer": "d",
       "difficulty_weight": 1.0
     },
     {
@@ -186,6 +628,144 @@
       "difficulty_weight": 1.5
     },
     {
+      "id": "l1-writing-001",
+      "level": "l1",
+      "skill_domain": "writing",
+      "question_en": "Choose the sentence that uses the conditional correctly.",
+      "question_ar": "Choose the sentence that uses the conditional correctly.",
+      "question_so": "Choose the sentence that uses the conditional correctly.",
+      "question_fa": "Choose the sentence that uses the conditional correctly.",
+      "question_zh": "Choose the sentence that uses the conditional correctly.",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "If it will rain, I will stay home.",
+          "text_ar": "If it will rain, I will stay home.",
+          "text_so": "If it will rain, I will stay home.",
+          "text_fa": "If it will rain, I will stay home.",
+          "text_zh": "If it will rain, I will stay home."
+        },
+        {
+          "id": "b",
+          "text_en": "If it rains, I will stay home.",
+          "text_ar": "If it rains, I will stay home.",
+          "text_so": "If it rains, I will stay home.",
+          "text_fa": "If it rains, I will stay home.",
+          "text_zh": "If it rains, I will stay home."
+        },
+        {
+          "id": "c",
+          "text_en": "If it rained, I stay home.",
+          "text_ar": "If it rained, I stay home.",
+          "text_so": "If it rained, I stay home.",
+          "text_fa": "If it rained, I stay home.",
+          "text_zh": "If it rained, I stay home."
+        },
+        {
+          "id": "d",
+          "text_en": "If it rain, I would stay home.",
+          "text_ar": "If it rain, I would stay home.",
+          "text_so": "If it rain, I would stay home.",
+          "text_fa": "If it rain, I would stay home.",
+          "text_zh": "If it rain, I would stay home."
+        }
+      ],
+      "correct_answer": "b",
+      "difficulty_weight": 1.5
+    },
+    {
+      "id": "l1-reading-002",
+      "level": "l1",
+      "skill_domain": "reading",
+      "question_en": "Read this notice: 'Although the meeting was scheduled for 10am, it was postponed to the afternoon due to a technical issue.' Why was the meeting moved?",
+      "question_ar": "Read this notice: 'Although the meeting was scheduled for 10am, it was postponed to the afternoon due to a technical issue.' Why was the meeting moved?",
+      "question_so": "Read this notice: 'Although the meeting was scheduled for 10am, it was postponed to the afternoon due to a technical issue.' Why was the meeting moved?",
+      "question_fa": "Read this notice: 'Although the meeting was scheduled for 10am, it was postponed to the afternoon due to a technical issue.' Why was the meeting moved?",
+      "question_zh": "Read this notice: 'Although the meeting was scheduled for 10am, it was postponed to the afternoon due to a technical issue.' Why was the meeting moved?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "Someone was late",
+          "text_ar": "Someone was late",
+          "text_so": "Someone was late",
+          "text_fa": "Someone was late",
+          "text_zh": "Someone was late"
+        },
+        {
+          "id": "b",
+          "text_en": "The room was unavailable",
+          "text_ar": "The room was unavailable",
+          "text_so": "The room was unavailable",
+          "text_fa": "The room was unavailable",
+          "text_zh": "The room was unavailable"
+        },
+        {
+          "id": "c",
+          "text_en": "It was cancelled",
+          "text_ar": "It was cancelled",
+          "text_so": "It was cancelled",
+          "text_fa": "It was cancelled",
+          "text_zh": "It was cancelled"
+        },
+        {
+          "id": "d",
+          "text_en": "A technical problem",
+          "text_ar": "A technical problem",
+          "text_so": "A technical problem",
+          "text_fa": "A technical problem",
+          "text_zh": "A technical problem"
+        }
+      ],
+      "correct_answer": "d",
+      "difficulty_weight": 1.5
+    },
+    {
+      "id": "l1-speaking-001",
+      "level": "l1",
+      "skill_domain": "speaking",
+      "question_en": "You disagree with a colleague's idea in a meeting. Which is most professional?",
+      "question_ar": "You disagree with a colleague's idea in a meeting. Which is most professional?",
+      "question_so": "You disagree with a colleague's idea in a meeting. Which is most professional?",
+      "question_fa": "You disagree with a colleague's idea in a meeting. Which is most professional?",
+      "question_zh": "You disagree with a colleague's idea in a meeting. Which is most professional?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "I see your point, but I'd like to suggest a different angle.",
+          "text_ar": "I see your point, but I'd like to suggest a different angle.",
+          "text_so": "I see your point, but I'd like to suggest a different angle.",
+          "text_fa": "I see your point, but I'd like to suggest a different angle.",
+          "text_zh": "I see your point, but I'd like to suggest a different angle."
+        },
+        {
+          "id": "b",
+          "text_en": "That is wrong.",
+          "text_ar": "That is wrong.",
+          "text_so": "That is wrong.",
+          "text_fa": "That is wrong.",
+          "text_zh": "That is wrong."
+        },
+        {
+          "id": "c",
+          "text_en": "No, no, no.",
+          "text_ar": "No, no, no.",
+          "text_so": "No, no, no.",
+          "text_fa": "No, no, no.",
+          "text_zh": "No, no, no."
+        },
+        {
+          "id": "d",
+          "text_en": "I don't like it.",
+          "text_ar": "I don't like it.",
+          "text_so": "I don't like it.",
+          "text_fa": "I don't like it.",
+          "text_zh": "I don't like it."
+        }
+      ],
+      "correct_answer": "a",
+      "difficulty_weight": 1.5
+    },
+    {
       "id": "l2-speaking-001",
       "level": "l2",
       "skill_domain": "speaking",
@@ -229,6 +809,144 @@
         }
       ],
       "correct_answer": "a",
+      "difficulty_weight": 1.5
+    },
+    {
+      "id": "l2-reading-001",
+      "level": "l2",
+      "skill_domain": "reading",
+      "question_en": "An article states: 'Despite a sharp decline in retail footfall, online sales grew by 18% this quarter.' What does the article imply?",
+      "question_ar": "An article states: 'Despite a sharp decline in retail footfall, online sales grew by 18% this quarter.' What does the article imply?",
+      "question_so": "An article states: 'Despite a sharp decline in retail footfall, online sales grew by 18% this quarter.' What does the article imply?",
+      "question_fa": "An article states: 'Despite a sharp decline in retail footfall, online sales grew by 18% this quarter.' What does the article imply?",
+      "question_zh": "An article states: 'Despite a sharp decline in retail footfall, online sales grew by 18% this quarter.' What does the article imply?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "Total sales fell",
+          "text_ar": "Total sales fell",
+          "text_so": "Total sales fell",
+          "text_fa": "Total sales fell",
+          "text_zh": "Total sales fell"
+        },
+        {
+          "id": "b",
+          "text_en": "All shops have closed",
+          "text_ar": "All shops have closed",
+          "text_so": "All shops have closed",
+          "text_fa": "All shops have closed",
+          "text_zh": "All shops have closed"
+        },
+        {
+          "id": "c",
+          "text_en": "Online prices rose by 18%",
+          "text_ar": "Online prices rose by 18%",
+          "text_so": "Online prices rose by 18%",
+          "text_fa": "Online prices rose by 18%",
+          "text_zh": "Online prices rose by 18%"
+        },
+        {
+          "id": "d",
+          "text_en": "Shoppers moved from stores to online channels",
+          "text_ar": "Shoppers moved from stores to online channels",
+          "text_so": "Shoppers moved from stores to online channels",
+          "text_fa": "Shoppers moved from stores to online channels",
+          "text_zh": "Shoppers moved from stores to online channels"
+        }
+      ],
+      "correct_answer": "d",
+      "difficulty_weight": 1.5
+    },
+    {
+      "id": "l2-writing-001",
+      "level": "l2",
+      "skill_domain": "writing",
+      "question_en": "Choose the sentence that uses the past perfect correctly.",
+      "question_ar": "Choose the sentence that uses the past perfect correctly.",
+      "question_so": "Choose the sentence that uses the past perfect correctly.",
+      "question_fa": "Choose the sentence that uses the past perfect correctly.",
+      "question_zh": "Choose the sentence that uses the past perfect correctly.",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "By the time we arrived, the meeting had already finished.",
+          "text_ar": "By the time we arrived, the meeting had already finished.",
+          "text_so": "By the time we arrived, the meeting had already finished.",
+          "text_fa": "By the time we arrived, the meeting had already finished.",
+          "text_zh": "By the time we arrived, the meeting had already finished."
+        },
+        {
+          "id": "b",
+          "text_en": "By the time we arrived, the meeting already finished.",
+          "text_ar": "By the time we arrived, the meeting already finished.",
+          "text_so": "By the time we arrived, the meeting already finished.",
+          "text_fa": "By the time we arrived, the meeting already finished.",
+          "text_zh": "By the time we arrived, the meeting already finished."
+        },
+        {
+          "id": "c",
+          "text_en": "By the time we arrived, the meeting has already finished.",
+          "text_ar": "By the time we arrived, the meeting has already finished.",
+          "text_so": "By the time we arrived, the meeting has already finished.",
+          "text_fa": "By the time we arrived, the meeting has already finished.",
+          "text_zh": "By the time we arrived, the meeting has already finished."
+        },
+        {
+          "id": "d",
+          "text_en": "By the time we arrived, the meeting is already finishing.",
+          "text_ar": "By the time we arrived, the meeting is already finishing.",
+          "text_so": "By the time we arrived, the meeting is already finishing.",
+          "text_fa": "By the time we arrived, the meeting is already finishing.",
+          "text_zh": "By the time we arrived, the meeting is already finishing."
+        }
+      ],
+      "correct_answer": "a",
+      "difficulty_weight": 1.5
+    },
+    {
+      "id": "l2-reading-002",
+      "level": "l2",
+      "skill_domain": "reading",
+      "question_en": "Read this sentence: 'Had we anticipated the supply chain disruption, we would have ordered the components earlier.' What is the speaker doing?",
+      "question_ar": "Read this sentence: 'Had we anticipated the supply chain disruption, we would have ordered the components earlier.' What is the speaker doing?",
+      "question_so": "Read this sentence: 'Had we anticipated the supply chain disruption, we would have ordered the components earlier.' What is the speaker doing?",
+      "question_fa": "Read this sentence: 'Had we anticipated the supply chain disruption, we would have ordered the components earlier.' What is the speaker doing?",
+      "question_zh": "Read this sentence: 'Had we anticipated the supply chain disruption, we would have ordered the components earlier.' What is the speaker doing?",
+      "options": [
+        {
+          "id": "a",
+          "text_en": "Making a prediction about the future",
+          "text_ar": "Making a prediction about the future",
+          "text_so": "Making a prediction about the future",
+          "text_fa": "Making a prediction about the future",
+          "text_zh": "Making a prediction about the future"
+        },
+        {
+          "id": "b",
+          "text_en": "Describing a current event",
+          "text_ar": "Describing a current event",
+          "text_so": "Describing a current event",
+          "text_fa": "Describing a current event",
+          "text_zh": "Describing a current event"
+        },
+        {
+          "id": "c",
+          "text_en": "Expressing regret about a past decision",
+          "text_ar": "Expressing regret about a past decision",
+          "text_so": "Expressing regret about a past decision",
+          "text_fa": "Expressing regret about a past decision",
+          "text_zh": "Expressing regret about a past decision"
+        },
+        {
+          "id": "d",
+          "text_en": "Asking a question",
+          "text_ar": "Asking a question",
+          "text_so": "Asking a question",
+          "text_fa": "Asking a question",
+          "text_zh": "Asking a question"
+        }
+      ],
+      "correct_answer": "c",
       "difficulty_weight": 1.5
     }
   ]

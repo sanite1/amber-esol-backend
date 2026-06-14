@@ -24,6 +24,7 @@ import { getOrgAdminCohortTable } from "../controllers/cohortTable.controller";
 import { getOrgAdminLearnerDetail } from "../controllers/learnerDetail.controller";
 import { nudgeLearner } from "../controllers/learnerNudge.controller";
 import { assignTeacherToLearner } from "../controllers/teacherAssignment.controller";
+import { getTeacherMatchesForLearner } from "../controllers/teacherMatching.controller";
 
 const router = Router();
 
@@ -34,6 +35,15 @@ router.get("/", cohortTableValidation(), getOrgAdminCohortTable);
 
 /* ── GET /api/org-admin/learners/:id (Function 12 To-Do 2) ───────── */
 router.get("/:id", learnerDetailValidation(), getOrgAdminLearnerDetail);
+
+/* ── GET /api/org-admin/learners/:id/teacher-matches ──────────────────
+ * Ranked teacher suggestions (with match reasons) for one learner —
+ * powers the "Suggested teachers" panel on the learner detail page. */
+router.get(
+  "/:id/teacher-matches",
+  learnerDetailValidation(),
+  getTeacherMatchesForLearner,
+);
 
 /* ── POST /api/org-admin/learners/:id/nudge (Function 12 To-Do 4) ── */
 router.post("/:id/nudge", nudgeLearnerValidation(), nudgeLearner);

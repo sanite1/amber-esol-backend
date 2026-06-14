@@ -9,7 +9,7 @@ const AddressSchema = new Schema(
     postcode: { type: String },
     country: { type: String, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const CertificationSchema = new Schema(
@@ -19,7 +19,7 @@ const CertificationSchema = new Schema(
     year: { type: String, required: true },
     documentUrl: { type: String },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const EducationSchema = new Schema(
@@ -28,7 +28,7 @@ const EducationSchema = new Schema(
     institution: { type: String, required: true },
     year: { type: String, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const NotificationPreferencesSchema = new Schema(
@@ -42,7 +42,7 @@ const NotificationPreferencesSchema = new Schema(
     lessonUpdates: { type: Boolean, default: true },
     paymentAlerts: { type: Boolean, default: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const TeachingPreferencesSchema = new Schema(
@@ -66,7 +66,7 @@ const TeachingPreferencesSchema = new Schema(
     },
     autoAcceptBookings: { type: Boolean, default: false },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const LearningPreferencesSchema = new Schema(
@@ -107,7 +107,7 @@ const LearningPreferencesSchema = new Schema(
       default: "one-on-one",
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 // ── RARPA Stage 3 objective subdocument ─────────────────────────────────
@@ -123,7 +123,7 @@ const Stage3ObjectiveSchema = new Schema(
     set_from: { type: String, default: null }, // e.g. "placement_assessment", "teacher_override"
     target_level: { type: String, default: null }, // e1/e2/e3/l1/l2
   },
-  { _id: false }
+  { _id: false },
 );
 
 const userSchema = new Schema<IUser>(
@@ -260,7 +260,14 @@ const userSchema = new Schema<IUser>(
     uln: { type: String, default: null },
     ulnStatus: {
       type: String,
-      enum: ["pending", "verified", "not_required", "confirmed", "not_applicable", null],
+      enum: [
+        "pending",
+        "verified",
+        "not_required",
+        "confirmed",
+        "not_applicable",
+        null,
+      ],
       default: null,
     },
     fundingStatus: {
@@ -305,6 +312,10 @@ const userSchema = new Schema<IUser>(
     current_level: { type: String, default: null },
     assessment_score: { type: Number, default: null },
     placement_confidence: { type: Number, default: null },
+    // Gemini's plain-English explanation of the placement call —
+    // shown to the learner (welcome modal) and available to the
+    // teacher when reviewing the placement.
+    placement_rationale: { type: String, default: null },
     skillWeaknessFlags: { type: [String], default: [] },
 
     // ── NEW Phase 1.6 ESOL learner fields (snake_case per brief) ──────
@@ -423,6 +434,24 @@ const userSchema = new Schema<IUser>(
     // to false via PATCH /api/teacher/preferences/auto-re-engagement.
     // No-op for non-tutor roles.
     auto_re_engagement_enabled: { type: Boolean, default: true },
+
+    // ── Teaching profile (teacher-matching foundation) ────────────────
+    // TEACHER-ONLY. Self-served via PATCH /api/teacher/teaching-profile.
+    // Drives needs-based learner→teacher matching (teacherMatching
+    // .service.ts): level coverage is a hard filter when set, L1
+    // overlap and specialism↔aim-type are score boosts. Empty arrays
+    // mean "unspecified" — the teacher stays eligible for everything
+    // (matching degrades gracefully to least-loaded), so an unfilled
+    // profile never blocks assignment.
+    teaching_profile: {
+      // Level codes "e1"…"l2" (NOT display form).
+      levels_taught: { type: [String], default: [] },
+      // Display-form language names matching the learner l1Language
+      // values from onboarding (e.g. "Arabic", "Polish").
+      languages_spoken: { type: [String], default: [] },
+      // Keys from TEACHER_SPECIALISMS in teacherMatching.service.ts.
+      specialisms: { type: [String], default: [] },
+    },
   },
   {
     timestamps: true,
@@ -438,7 +467,7 @@ const userSchema = new Schema<IUser>(
         delete ret.tokenExpiryDate;
       },
     },
-  }
+  },
 );
 
 // ── Compound indexes ────────────────────────────────────────────────────

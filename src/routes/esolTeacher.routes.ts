@@ -26,7 +26,7 @@ import { IUserDecoded } from "../middlewares/authMiddleWare";
 const isAdminOrgAdminOrSelf = (
   req: Request & { user?: IUserDecoded },
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const role = req.user?.role;
   const isSelf =
@@ -35,7 +35,7 @@ const isAdminOrgAdminOrSelf = (
     return next();
   }
   return next(
-    new (require("../errors/apiError").default)(403, "Access denied")
+    new (require("../errors/apiError").default)(403, "Access denied"),
   );
 };
 
@@ -54,7 +54,7 @@ router.post(
   "/:tutorId/approve",
   isAdmin,
   approveTeacherValidation(),
-  approveTeacher
+  approveTeacher,
 );
 
 // Update qualifications (tutor self | admin)
@@ -62,7 +62,7 @@ router.patch(
   "/:tutorId/qualifications",
   isAdminOrgAdminOrSelf,
   updateQualificationsValidation(),
-  updateTeacherQualifications
+  updateTeacherQualifications,
 );
 
 // Revoke ESOL approval (admin only)
@@ -70,7 +70,7 @@ router.delete(
   "/:tutorId/approve",
   isAdmin,
   tutorIdParamValidation(),
-  revokeTeacherApproval
+  revokeTeacherApproval,
 );
 
 export default router;

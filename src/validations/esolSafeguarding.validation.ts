@@ -30,14 +30,14 @@ export const listAlertsValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const alertIdParamValidation = () =>
   validate(
     { params: Joi.object({ alertId: objectId.required() }) },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const reviewAlertValidation = () =>
@@ -57,5 +57,5 @@ export const reviewAlertValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

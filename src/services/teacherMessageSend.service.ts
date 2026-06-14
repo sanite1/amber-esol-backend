@@ -62,6 +62,11 @@ import ApiError from "../errors/apiError";
 import ApiResponse from "../errors/apiResponse";
 import User from "../models/User";
 import TeacherMessage from "../models/TeacherMessage";
+import TeacherReview from "../models/TeacherReview";
+import {
+  glhContributionHours,
+  MESSAGE_CONTACT_DURATION_MINS,
+} from "./teacherGlhContribution";
 import { writeAuditLog } from "./auditLog.service";
 import { notificationsQueue } from "../queues";
 import { translateTeacherMessage } from "./teacherMessageTranslate.service";
@@ -151,10 +156,7 @@ export const sendTeacherMessageService = async (
     throw new ApiError(400, "message_text is required");
   }
   if (messageText.length > 300) {
-    throw new ApiError(
-      400,
-      "message_text must be 300 characters or fewer",
-    );
+    throw new ApiError(400, "message_text must be 300 characters or fewer");
   }
   if (typeof body.translate_to_l1 !== "boolean") {
     throw new ApiError(400, "translate_to_l1 is required (boolean)");
@@ -177,10 +179,7 @@ export const sendTeacherMessageService = async (
     learner as { assigned_teacher_id?: Types.ObjectId | null }
   ).assigned_teacher_id;
   if (!assignedTo || assignedTo.toString() !== input.teacher_id) {
-    throw new ApiError(
-      403,
-      "Forbidden — this learner is not assigned to you.",
-    );
+    throw new ApiError(403, "Forbidden — this learner is not assigned to you.");
   }
   const orgId = (learner as { orgId?: Types.ObjectId | null }).orgId;
   if (!orgId) {
@@ -189,9 +188,8 @@ export const sendTeacherMessageService = async (
       "Learner has no org assignment — cannot send message without one",
     );
   }
-  const l1Language = (
-    learner as { l1Language?: string | null }
-  ).l1Language ?? "english";
+  const l1Language =
+    (learner as { l1Language?: string | null }).l1Language ?? "english";
 
   // ── 2. Optional translation ──────────────────────────────────
   // The brief: translate only when both `translate_to_l1` is true
@@ -244,6 +242,47 @@ export const sendTeacherMessageService = async (
     read_at: null,
     trigger,
   });
+
+  // ── 3b. TeacherReview + GLH credit (Final Addendum §11) ──────
+  // A written message IS documented teacher contact: the addendum
+  // specifies a contact_session review at a standard 5 minutes,
+  // which also feeds glh_teacher_contact (and therefore the ILR
+  // claim) and refreshes teacher_last_reviewed_at. Best-effort —
+  // the message row above is the durable artefact; a failure here
+  // is logged loudly but doesn't roll the message back.
+  try {
+    await TeacherReview.create({
+      learner_id: learnerObjectId,
+      teacher_id: teacherObjectId,
+      org_id: orgId,
+      review_type: "contact_session",
+      duration_mins: MESSAGE_CONTACT_DURATION_MINS,
+      notes: `Sent a written message (${outputLanguage}); trigger=${trigger}.`,
+      ai_recommendation_acted_on: trigger === "priority_queue",
+      created_at: sentAt,
+    });
+    await User.updateOne(
+      { _id: learnerObjectId },
+      {
+        $inc: {
+          glh_teacher_contact: glhContributionHours(
+            "contact_session",
+            MESSAGE_CONTACT_DURATION_MINS,
+          ),
+        },
+        $set: { teacher_last_reviewed_at: sentAt },
+      },
+    );
+  } catch (err) {
+    logger.error(
+      {
+        err: (err as Error).message,
+        learnerId: input.learner_id,
+        messageId: (messageDoc._id as Types.ObjectId).toString(),
+      },
+      "teacherMessageSend: TeacherReview/GLH write failed — message sent but contact not credited",
+    );
+  }
 
   // ── 4. AuditLog ───────────────────────────────────────────────
   // The reason carries length + language + trigger so an org admin

@@ -43,7 +43,7 @@ const vocabLedgerSchema = new Schema<IVocabLedger>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 vocabLedgerSchema.index({ learnerId: 1, esolLevel: 1 });

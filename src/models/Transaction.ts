@@ -47,7 +47,7 @@ const transactionSchema = new Schema<ITransaction>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // Tutor earnings, payment summary

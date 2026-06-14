@@ -70,9 +70,7 @@ const fileRead = (rel: string): string => {
 const fileContains = (rel: string, needle: string | RegExp): boolean => {
   const body = fileRead(rel);
   if (!body) return false;
-  return typeof needle === "string"
-    ? body.includes(needle)
-    : needle.test(body);
+  return typeof needle === "string" ? body.includes(needle) : needle.test(body);
 };
 
 const fileContainsAll = (rel: string, needles: (string | RegExp)[]): boolean =>
@@ -193,7 +191,10 @@ const CHECKS: Check[] = [
     title: "CORS whitelist (not origin: '*')",
     run: () => {
       const body = fileRead("src/index.ts") + fileRead("src/config/cors.ts");
-      if (body.match(/origin\s*:\s*['"]\*['"]/) && !body.includes("ALLOWED_ORIGINS")) {
+      if (
+        body.match(/origin\s*:\s*['"]\*['"]/) &&
+        !body.includes("ALLOWED_ORIGINS")
+      ) {
         return { status: "FAIL", detail: "CORS still wildcard" };
       }
       if (fileExists("src/config/cors.ts")) return { status: "PASS" };
@@ -211,9 +212,12 @@ const CHECKS: Check[] = [
     phase: 0,
     title: "Feature flag utils + middleware",
     run: () => {
-      const ok = fileExists("src/utils/userType.ts") &&
+      const ok =
+        fileExists("src/utils/userType.ts") &&
         fileExists("src/middlewares/blockMarketplaceForEsol.ts");
-      return ok ? { status: "PASS" } : { status: "FAIL", detail: "feature flag files missing" };
+      return ok
+        ? { status: "PASS" }
+        : { status: "FAIL", detail: "feature flag files missing" };
     },
   },
   {
@@ -229,9 +233,12 @@ const CHECKS: Check[] = [
     phase: 1,
     title: "Codebase boots (package.json scripts)",
     run: () => {
-      const ok = checkNpmScript("dev").status === "PASS" &&
+      const ok =
+        checkNpmScript("dev").status === "PASS" &&
         checkNpmScript("workers").status === "PASS";
-      return ok ? { status: "PASS" } : { status: "WARN", detail: "dev/workers script missing" };
+      return ok
+        ? { status: "PASS" }
+        : { status: "WARN", detail: "dev/workers script missing" };
     },
   },
   {
@@ -244,7 +251,10 @@ const CHECKS: Check[] = [
       const missing = needed.filter((n) => !env.includes(n));
       return missing.length === 0
         ? { status: "PASS" }
-        : { status: "WARN", detail: `env example missing: ${missing.join(", ")}` };
+        : {
+            status: "WARN",
+            detail: `env example missing: ${missing.join(", ")}`,
+          };
     },
   },
   {
@@ -252,10 +262,13 @@ const CHECKS: Check[] = [
     phase: 1,
     title: "[ADDENDUM] Singleton Gemini client",
     run: () => {
-      const ok = fileExists("src/lib/gemini.ts") &&
+      const ok =
+        fileExists("src/lib/gemini.ts") &&
         fileContains("src/lib/gemini.ts", "geminiClient") &&
         fileContains("src/lib/gemini.ts", "initGeminiClient");
-      return ok ? { status: "PASS" } : { status: "FAIL", detail: "singleton not found" };
+      return ok
+        ? { status: "PASS" }
+        : { status: "FAIL", detail: "singleton not found" };
     },
   },
   {
@@ -269,10 +282,13 @@ const CHECKS: Check[] = [
     phase: 1,
     title: "[ADDENDUM] BullMQ + ioredis (Redis singleton)",
     run: () => {
-      const ok = fileExists("src/lib/redis.ts") &&
+      const ok =
+        fileExists("src/lib/redis.ts") &&
         checkPackageDep("bullmq").status === "PASS" &&
         checkPackageDep("ioredis").status === "PASS";
-      return ok ? { status: "PASS" } : { status: "FAIL", detail: "redis/bullmq not wired" };
+      return ok
+        ? { status: "PASS" }
+        : { status: "FAIL", detail: "redis/bullmq not wired" };
     },
   },
   {
@@ -293,7 +309,10 @@ const CHECKS: Check[] = [
       ];
       const missing = requiredQueues.filter((q) => !queues.includes(q));
       if (missing.length > 0)
-        return { status: "FAIL", detail: `Missing queues: ${missing.join(", ")}` };
+        return {
+          status: "FAIL",
+          detail: `Missing queues: ${missing.join(", ")}`,
+        };
       if (!fileExists("src/models/FailedJob.ts"))
         return { status: "FAIL", detail: "FailedJob model missing" };
       if (!fileExists("src/workers/run.ts"))
@@ -306,11 +325,14 @@ const CHECKS: Check[] = [
     phase: 1,
     title: "[ADDENDUM] Job status endpoint + Bull Board",
     run: () => {
-      const ok = fileExists("src/routes/jobs.routes.ts") &&
+      const ok =
+        fileExists("src/routes/jobs.routes.ts") &&
         fileExists("src/routes/adminQueues.routes.ts") &&
         checkPackageDep("@bull-board/express").status === "PASS" &&
         fileExists("src/middlewares/bullBoardToken.ts");
-      return ok ? { status: "PASS" } : { status: "WARN", detail: "Bull Board pieces partial" };
+      return ok
+        ? { status: "PASS" }
+        : { status: "WARN", detail: "Bull Board pieces partial" };
     },
   },
   {
@@ -318,10 +340,13 @@ const CHECKS: Check[] = [
     phase: 1,
     title: "[ADDENDUM] ComplianceConfig model + service + seed",
     run: () => {
-      const ok = fileExists("src/models/ComplianceConfig.ts") &&
+      const ok =
+        fileExists("src/models/ComplianceConfig.ts") &&
         fileExists("src/services/ComplianceConfigService.ts") &&
         fileExists("src/scripts/seedComplianceConfig.ts");
-      return ok ? { status: "PASS" } : { status: "FAIL", detail: "ComplianceConfig pieces missing" };
+      return ok
+        ? { status: "PASS" }
+        : { status: "FAIL", detail: "ComplianceConfig pieces missing" };
     },
   },
   {
@@ -367,7 +392,10 @@ const CHECKS: Check[] = [
       const missing = required.filter((r) => !env.includes(r));
       return missing.length === 0
         ? { status: "PASS" }
-        : { status: "WARN", detail: `Missing in .env.example: ${missing.join(", ")}` };
+        : {
+            status: "WARN",
+            detail: `Missing in .env.example: ${missing.join(", ")}`,
+          };
     },
   },
   {
@@ -376,7 +404,9 @@ const CHECKS: Check[] = [
     title: "npm packages installed (bullmq, ioredis, bull-board, cryptr)",
     run: () => {
       const needed = ["bullmq", "ioredis", "@bull-board/express", "cryptr"];
-      const missing = needed.filter((n) => checkPackageDep(n).status !== "PASS");
+      const missing = needed.filter(
+        (n) => checkPackageDep(n).status !== "PASS",
+      );
       return missing.length === 0
         ? { status: "PASS" }
         : { status: "FAIL", detail: `Missing deps: ${missing.join(", ")}` };
@@ -411,8 +441,11 @@ const CHECKS: Check[] = [
     title: "Booking model has esol_consolidation + org_invoiced",
     run: () => {
       const body = fileRead("src/models/Booking.ts");
-      const ok = body.includes("esol_consolidation") && body.includes("org_invoiced");
-      return ok ? { status: "PASS" } : { status: "WARN", detail: "esol fields not in Booking" };
+      const ok =
+        body.includes("esol_consolidation") && body.includes("org_invoiced");
+      return ok
+        ? { status: "PASS" }
+        : { status: "WARN", detail: "esol fields not in Booking" };
     },
   },
   {
@@ -452,8 +485,12 @@ const CHECKS: Check[] = [
     phase: 1,
     title: "Org-scoping middleware",
     run: () => {
-      const ok = fileExists("src/middlewares/orgScopingMiddleware.ts") &&
-        fileContains("src/middlewares/orgScopingMiddleware.ts", "requireOrgContext");
+      const ok =
+        fileExists("src/middlewares/orgScopingMiddleware.ts") &&
+        fileContains(
+          "src/middlewares/orgScopingMiddleware.ts",
+          "requireOrgContext",
+        );
       return ok ? { status: "PASS" } : { status: "FAIL" };
     },
   },
@@ -464,7 +501,9 @@ const CHECKS: Check[] = [
     run: () => {
       const body = fileRead("src/middlewares/authMiddleWare.ts");
       const ok = body.includes("orgId") || body.includes("org_id");
-      return ok ? { status: "PASS" } : { status: "WARN", detail: "org_id not in auth middleware" };
+      return ok
+        ? { status: "PASS" }
+        : { status: "WARN", detail: "org_id not in auth middleware" };
     },
   },
   {
@@ -486,7 +525,9 @@ const CHECKS: Check[] = [
         "/api/cron/fala-refresh",
         "/api/cron/postcode-refresh-alert",
       ];
-      const missing = required.filter((r) => checkVercelCron(r).status !== "PASS");
+      const missing = required.filter(
+        (r) => checkVercelCron(r).status !== "PASS",
+      );
       return missing.length === 0
         ? { status: "PASS", detail: `${required.length} crons` }
         : { status: "WARN", detail: `Missing: ${missing.join(", ")}` };
@@ -518,16 +559,20 @@ const CHECKS: Check[] = [
     id: "3.1",
     phase: 3,
     title: "org_invoiced bypass in booking.service.ts",
-    run: () => checkFileContent("src/services/booking.service.ts", "org_invoiced"),
+    run: () =>
+      checkFileContent("src/services/booking.service.ts", "org_invoiced"),
   },
   {
     id: "3.2",
     phase: 3,
     title: "ESOL teacher approval routes",
     run: () => {
-      const ok = anyFileExists([
-        "src/routes/esolTeacher.routes.ts",
-      ]) && fileContains("src/services/esolTeacher.service.ts", "esolTeacherApproved");
+      const ok =
+        anyFileExists(["src/routes/esolTeacher.routes.ts"]) &&
+        fileContains(
+          "src/services/esolTeacher.service.ts",
+          "esolTeacherApproved",
+        );
       return ok ? { status: "PASS" } : { status: "WARN" };
     },
   },
@@ -548,9 +593,11 @@ const CHECKS: Check[] = [
     phase: 3,
     title: "Public reviews blocked for esol_consolidation",
     run: () => {
-      const body = fileRead("src/controllers/review.controller.ts") +
+      const body =
+        fileRead("src/controllers/review.controller.ts") +
         fileRead("src/services/review.service.ts");
-      return body.includes("esol_consolidation") || body.includes("esolConsolidation")
+      return body.includes("esol_consolidation") ||
+        body.includes("esolConsolidation")
         ? { status: "PASS" }
         : { status: "WARN", detail: "review block not found" };
     },
@@ -562,7 +609,8 @@ const CHECKS: Check[] = [
     phase: 4,
     title: "Organisation CRUD routes",
     run: () =>
-      fileExists("src/routes/org.routes.ts") || fileExists("src/routes/esolOrg.routes.ts")
+      fileExists("src/routes/org.routes.ts") ||
+      fileExists("src/routes/esolOrg.routes.ts")
         ? { status: "PASS" }
         : { status: "FAIL" },
   },
@@ -571,9 +619,11 @@ const CHECKS: Check[] = [
     phase: 4,
     title: "Referral link generation",
     run: () => {
-      const body = fileRead("src/services/org.service.ts") +
+      const body =
+        fileRead("src/services/org.service.ts") +
         fileRead("src/services/esolReferralToken.service.ts");
-      return body.includes("generateReferralToken") || body.includes("ReferralToken")
+      return body.includes("generateReferralToken") ||
+        body.includes("ReferralToken")
         ? { status: "PASS" }
         : { status: "WARN" };
     },
@@ -590,7 +640,8 @@ const CHECKS: Check[] = [
     title: "Org admin user creation",
     run: () => {
       const body = fileRead("src/services/org.service.ts");
-      return body.includes("createOrgAdminUser") || body.includes("orgAdminWelcome")
+      return body.includes("createOrgAdminUser") ||
+        body.includes("orgAdminWelcome")
         ? { status: "PASS" }
         : { status: "WARN" };
     },
@@ -688,7 +739,8 @@ const CHECKS: Check[] = [
     phase: 7,
     title: "ForSkills CSV importer (route or service)",
     run: () => {
-      const body = fileRead("src/services/orgAdminImport.service.ts") +
+      const body =
+        fileRead("src/services/orgAdminImport.service.ts") +
         fileRead("src/services/forskillsApi.service.ts");
       return body.length > 0 ? { status: "PASS" } : { status: "WARN" };
     },
@@ -718,8 +770,10 @@ const CHECKS: Check[] = [
     phase: 8,
     title: "Adaptive question selection",
     run: () =>
-      fileContains("src/services/placement.service.ts", "selectAdaptiveQuestions") ||
-      fileContains("src/services/placement.service.ts", "adaptive")
+      fileContains(
+        "src/services/placement.service.ts",
+        "selectAdaptiveQuestions",
+      ) || fileContains("src/services/placement.service.ts", "adaptive")
         ? { status: "PASS" }
         : { status: "WARN" },
   },
@@ -727,7 +781,8 @@ const CHECKS: Check[] = [
     id: "8.3",
     phase: 8,
     title: "Gemini placement scoring",
-    run: () => checkFileContent("src/services/placement.service.ts", "geminiClient"),
+    run: () =>
+      checkFileContent("src/services/placement.service.ts", "geminiClient"),
   },
   {
     id: "8.4",
@@ -755,7 +810,10 @@ const CHECKS: Check[] = [
       const model = fileExists("src/models/CalibrationLog.ts");
       return doc && route && model
         ? { status: "PASS" }
-        : { status: "WARN", detail: `doc=${doc} route=${route} model=${model}` };
+        : {
+            status: "WARN",
+            detail: `doc=${doc} route=${route} model=${model}`,
+          };
     },
   },
 
@@ -782,7 +840,8 @@ const CHECKS: Check[] = [
     id: "9.3",
     phase: 9,
     title: "Gemini integration via singleton (gemini.service.ts)",
-    run: () => checkFileContent("src/services/gemini.service.ts", "geminiClient"),
+    run: () =>
+      checkFileContent("src/services/gemini.service.ts", "geminiClient"),
   },
   {
     id: "9.4",
@@ -808,7 +867,9 @@ const CHECKS: Check[] = [
     title: "Session start + end routes (pathway_override + unread msg check)",
     run: () => {
       const body = fileRead("src/services/aiSession.service.ts");
-      const features = ["pathway_override", "unread_messages"].filter((f) => !body.includes(f));
+      const features = ["pathway_override", "unread_messages"].filter(
+        (f) => !body.includes(f),
+      );
       return features.length === 0
         ? { status: "PASS" }
         : { status: "WARN", detail: `Missing: ${features.join(", ")}` };
@@ -820,7 +881,9 @@ const CHECKS: Check[] = [
     title: "AI rate limiters (aiTurnLimiter, sessionStartLimiter)",
     run: () => {
       const body = fileRead("src/config/rateLimiter.ts");
-      const features = ["aiTurnLimiter", "sessionStartLimiter"].filter((f) => !body.includes(f));
+      const features = ["aiTurnLimiter", "sessionStartLimiter"].filter(
+        (f) => !body.includes(f),
+      );
       return features.length === 0
         ? { status: "PASS" }
         : { status: "WARN", detail: `Missing: ${features.join(", ")}` };
@@ -944,7 +1007,8 @@ const CHECKS: Check[] = [
     phase: 12,
     title: "Daily progression cron + worker",
     run: () => {
-      const ok = checkVercelCron("/api/cron/check-progression").status === "PASS" &&
+      const ok =
+        checkVercelCron("/api/cron/check-progression").status === "PASS" &&
         fileExists("src/__tests__/progressionCron.test.ts");
       return ok ? { status: "PASS" } : { status: "WARN" };
     },
@@ -1021,7 +1085,11 @@ const CHECKS: Check[] = [
     id: "13.8",
     phase: 13,
     title: "[ADDENDUM] Teacher GLH column on cohort table",
-    run: () => checkFileContent("src/services/cohortTable.service.ts", "teacher_contact_hours"),
+    run: () =>
+      checkFileContent(
+        "src/services/cohortTable.service.ts",
+        "teacher_contact_hours",
+      ),
   },
   {
     id: "13.9",
@@ -1035,7 +1103,8 @@ const CHECKS: Check[] = [
     id: "14.1",
     phase: 14,
     title: "ILR field mapping (reads from ComplianceConfig)",
-    run: () => checkFileContent("src/services/ilrExport.service.ts", "ComplianceConfig"),
+    run: () =>
+      checkFileContent("src/services/ilrExport.service.ts", "ComplianceConfig"),
   },
   {
     id: "14.2",
@@ -1054,7 +1123,8 @@ const CHECKS: Check[] = [
     phase: 14,
     title: "Export routes (async queue, companion JSON)",
     run: () => {
-      const ok = fileExists("src/routes/ilrExport.routes.ts") &&
+      const ok =
+        fileExists("src/routes/ilrExport.routes.ts") &&
         fileExists("src/__tests__/ilrExportRoutes.test.ts");
       return ok ? { status: "PASS" } : { status: "WARN" };
     },
@@ -1109,7 +1179,11 @@ const CHECKS: Check[] = [
     id: "15.5",
     phase: 15,
     title: "Report caching via IdempotencyKey",
-    run: () => checkFileContent("src/services/evidenceReport.service.ts", /idempot|IdempotencyKey/i),
+    run: () =>
+      checkFileContent(
+        "src/services/evidenceReport.service.ts",
+        /idempot|IdempotencyKey/i,
+      ),
   },
 
   // ── Phase 16 ─────────────────────────────────────────────────
@@ -1204,10 +1278,7 @@ const CHECKS: Check[] = [
     phase: 17,
     title: "Demo-mode env toggle (DEMO_MODE middleware)",
     run: () =>
-      anyFileExists([
-        "src/middlewares/demoMode.ts",
-        "src/config/demoMode.ts",
-      ])
+      anyFileExists(["src/middlewares/demoMode.ts", "src/config/demoMode.ts"])
         ? { status: "PASS" }
         : { status: "WARN" },
   },
@@ -1362,7 +1433,11 @@ const CHECKS: Check[] = [
     id: "22.1",
     phase: 22,
     title: "requireTeacherRole middleware",
-    run: () => checkFileContent("src/middlewares/teacherMiddleware.ts", "requireTeacherRole"),
+    run: () =>
+      checkFileContent(
+        "src/middlewares/teacherMiddleware.ts",
+        "requireTeacherRole",
+      ),
   },
   {
     id: "22.2",
@@ -1418,7 +1493,11 @@ const CHECKS: Check[] = [
     id: "23.1",
     phase: 23,
     title: "Priority scoring service (evaluatePriority)",
-    run: () => checkFileContent("src/services/priorityQueue.service.ts", "evaluatePriority"),
+    run: () =>
+      checkFileContent(
+        "src/services/priorityQueue.service.ts",
+        "evaluatePriority",
+      ),
   },
   {
     id: "23.2",
@@ -1430,13 +1509,21 @@ const CHECKS: Check[] = [
     id: "23.3",
     phase: 23,
     title: "Priority queue worker (recalc-org-priorities)",
-    run: () => checkFileContent("src/services/priorityQueueRecalc.service.ts", "runOrgPriorityRecalc"),
+    run: () =>
+      checkFileContent(
+        "src/services/priorityQueueRecalc.service.ts",
+        "runOrgPriorityRecalc",
+      ),
   },
   {
     id: "23.4",
     phase: 23,
     title: "On-demand recalc after teacher actions",
-    run: () => checkFileContent("src/services/priorityQueueRecalc.service.ts", "enqueueLearnerPriorityRecalc"),
+    run: () =>
+      checkFileContent(
+        "src/services/priorityQueueRecalc.service.ts",
+        "enqueueLearnerPriorityRecalc",
+      ),
   },
   {
     id: "23.5",
@@ -1448,7 +1535,11 @@ const CHECKS: Check[] = [
     id: "23.6",
     phase: 23,
     title: "Daily priority recalc cron handler",
-    run: () => checkFileContent("src/services/priorityQueueCron.service.ts", "fanOutPriorityRecalc"),
+    run: () =>
+      checkFileContent(
+        "src/services/priorityQueueCron.service.ts",
+        "fanOutPriorityRecalc",
+      ),
   },
 
   // ── Phase 24 ─────────────────────────────────────────────────
@@ -1511,7 +1602,11 @@ const CHECKS: Check[] = [
     id: "25.4",
     phase: 25,
     title: "Evidence report teacher oversight aggregates",
-    run: () => checkFileContent("src/services/evidenceReport.service.ts", "teacher_oversight"),
+    run: () =>
+      checkFileContent(
+        "src/services/evidenceReport.service.ts",
+        "teacher_oversight",
+      ),
   },
   {
     id: "25.5",
@@ -1566,7 +1661,8 @@ const CHECKS: Check[] = [
     phase: 26,
     title: "Public ROI submission endpoint + model",
     run: () => {
-      const ok = fileExists("src/models/RoiCalculatorSubmission.ts") &&
+      const ok =
+        fileExists("src/models/RoiCalculatorSubmission.ts") &&
         fileExists("src/services/roiCalculatorSubmit.service.ts") &&
         fileExists("src/routes/publicRoiCalculator.routes.ts");
       return ok ? { status: "PASS" } : { status: "FAIL" };
@@ -1587,12 +1683,15 @@ const CHECKS: Check[] = [
     phase: 26,
     title: "Onboarding URL embed (welcome email)",
     run: () => {
-      const ok = fileExists("src/services/roiCalculatorUrl.service.ts") &&
+      const ok =
+        fileExists("src/services/roiCalculatorUrl.service.ts") &&
         fileContains(
           "src/services/nodemailer/templates/orgAdminWelcome.handlebars",
           "roiCalculatorUrl",
         );
-      return ok ? { status: "PASS" } : { status: "WARN", detail: "URL embed partial" };
+      return ok
+        ? { status: "PASS" }
+        : { status: "WARN", detail: "URL embed partial" };
     },
   },
   {
@@ -1628,16 +1727,26 @@ const runJest = (skip: boolean): JestSummary => {
     };
   }
   console.log("\n→ Running jest (this may take 30-60s)...\n");
-  const result = spawnSync("npx", ["jest", "--runInBand", "--forceExit", "--silent"], {
-    cwd: ROOT,
-    encoding: "utf8",
-    timeout: 240_000, // 4 minutes
-  });
+  const result = spawnSync(
+    "npx",
+    ["jest", "--runInBand", "--forceExit", "--silent"],
+    {
+      cwd: ROOT,
+      encoding: "utf8",
+      timeout: 240_000, // 4 minutes
+    },
+  );
   const out = (result.stdout || "") + "\n" + (result.stderr || "");
   const suiteMatch = out.match(/Test Suites:.*$/m)?.[0] ?? "";
   const testMatch = out.match(/Tests:.*$/m)?.[0] ?? "";
-  const passedSuites = parseInt(suiteMatch.match(/(\d+) passed/)?.[1] ?? "0", 10);
-  const failedSuites = parseInt(suiteMatch.match(/(\d+) failed/)?.[1] ?? "0", 10);
+  const passedSuites = parseInt(
+    suiteMatch.match(/(\d+) passed/)?.[1] ?? "0",
+    10,
+  );
+  const failedSuites = parseInt(
+    suiteMatch.match(/(\d+) failed/)?.[1] ?? "0",
+    10,
+  );
   const passedTests = parseInt(testMatch.match(/(\d+) passed/)?.[1] ?? "0", 10);
   const failedTests = parseInt(testMatch.match(/(\d+) failed/)?.[1] ?? "0", 10);
   return {
@@ -1688,7 +1797,9 @@ const main = () => {
     `${COLOUR.bold}${COLOUR.cyan}Project Silk — Merged TODO Audit${COLOUR.reset}\n`,
   );
   console.log(`Root: ${ROOT}`);
-  console.log(`Checks: ${CHECKS.length}, Tests: ${skipTests ? "skipped" : "will run"}\n`);
+  console.log(
+    `Checks: ${CHECKS.length}, Tests: ${skipTests ? "skipped" : "will run"}\n`,
+  );
 
   const filtered = onlyPhase
     ? CHECKS.filter((c) => c.phase === parseInt(onlyPhase, 10))
@@ -1725,7 +1836,9 @@ const main = () => {
   if (skipTests) {
     console.log(`  ${STATUS_ICON.SKIP}  Skipped via --no-tests`);
   } else {
-    console.log(`  ${jest.passed ? STATUS_ICON.PASS : STATUS_ICON.FAIL}  ${jest.raw}`);
+    console.log(
+      `  ${jest.passed ? STATUS_ICON.PASS : STATUS_ICON.FAIL}  ${jest.raw}`,
+    );
   }
 
   // Summary
@@ -1741,15 +1854,21 @@ const main = () => {
   if (fails.length > 0) {
     console.log(`\n${COLOUR.bold}${COLOUR.red}Failed checks${COLOUR.reset}`);
     for (const f of fails) {
-      console.log(`  ✗ ${f.id} — ${f.title}${f.detail ? `\n    ${COLOUR.grey}${f.detail}${COLOUR.reset}` : ""}`);
+      console.log(
+        `  ✗ ${f.id} — ${f.title}${f.detail ? `\n    ${COLOUR.grey}${f.detail}${COLOUR.reset}` : ""}`,
+      );
     }
   }
 
   const warns = results.filter((r) => r.status === "WARN");
   if (warns.length > 0) {
-    console.log(`\n${COLOUR.bold}${COLOUR.yellow}Warnings (advisory, don't block)${COLOUR.reset}`);
+    console.log(
+      `\n${COLOUR.bold}${COLOUR.yellow}Warnings (advisory, don't block)${COLOUR.reset}`,
+    );
     for (const w of warns) {
-      console.log(`  ⚠ ${w.id} — ${w.title}${w.detail ? `\n    ${COLOUR.grey}${w.detail}${COLOUR.reset}` : ""}`);
+      console.log(
+        `  ⚠ ${w.id} — ${w.title}${w.detail ? `\n    ${COLOUR.grey}${w.detail}${COLOUR.reset}` : ""}`,
+      );
     }
   }
 

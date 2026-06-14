@@ -74,13 +74,19 @@ const futureSlotDate = (daysAhead = 2): string => {
 
 /** A complete 7-day weekly schedule, every day enabled, 09:00–18:00. */
 const fullWeeklySchedule = () =>
-  ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map(
-    (day) => ({
-      day,
-      enabled: true,
-      blocks: [{ startTime: "09:00", endTime: "18:00" }],
-    })
-  );
+  [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+  ].map((day) => ({
+    day,
+    enabled: true,
+    blocks: [{ startTime: "09:00", endTime: "18:00" }],
+  }));
 
 // ── Tests ────────────────────────────────────────────────────────────
 
@@ -151,7 +157,10 @@ describe("ESOL session rate standardisation (brief §2 Change 4)", () => {
     expect((result.data as any).invoicedToOrg).toBe(true);
 
     // OrgInvoice append landed — one draft invoice for this org/month
-    const invoice = await OrgInvoice.findOne({ orgId: org._id, status: "draft" });
+    const invoice = await OrgInvoice.findOne({
+      orgId: org._id,
+      status: "draft",
+    });
     expect(invoice).not.toBeNull();
     expect(invoice!.subtotal).toBe(ORG_ESOL_RATE);
 
@@ -170,15 +179,20 @@ describe("ESOL session rate standardisation (brief §2 Change 4)", () => {
     const marketplaceStudent = await createStudent({ orgId: null });
     const date = futureSlotDate(2);
 
-    const result = await createBookingService(marketplaceStudent._id.toString(), {
-      tutorId: teacher._id.toString(),
-      type: "regular",
-      slots: [{ date, startTime: "10:00", endTime: "11:00" }],
-    } as any);
+    const result = await createBookingService(
+      marketplaceStudent._id.toString(),
+      {
+        tutorId: teacher._id.toString(),
+        type: "regular",
+        slots: [{ date, startTime: "10:00", endTime: "11:00" }],
+      } as any,
+    );
 
     expect(result.statusCode).toBe(201);
 
-    const persisted = await Booking.findOne({ studentId: marketplaceStudent._id });
+    const persisted = await Booking.findOne({
+      studentId: marketplaceStudent._id,
+    });
     expect(persisted).not.toBeNull();
     expect(persisted!.type).toBe("regular");
     expect(persisted!.price).toBe(TEACHER_HOURLY_RATE);
@@ -186,7 +200,9 @@ describe("ESOL session rate standardisation (brief §2 Change 4)", () => {
     expect(persisted!.paymentStatus).toBe("pending"); // awaiting Stripe payment
 
     // Marketplace path issued a Stripe checkout (our mock returned the fake URL)
-    expect((result.data as any).checkoutUrl).toBe("https://checkout.stripe.com/fake");
+    expect((result.data as any).checkoutUrl).toBe(
+      "https://checkout.stripe.com/fake",
+    );
     expect((result.data as any).paymentRequired).toBe(true);
 
     // No OrgInvoice was created — marketplace bookings don't roll into an invoice

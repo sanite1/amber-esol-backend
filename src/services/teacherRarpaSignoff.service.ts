@@ -73,6 +73,7 @@ import ApiResponse from "../errors/apiResponse";
 import User from "../models/User";
 import Stage5Review from "../models/Stage5Review";
 import TeacherReview from "../models/TeacherReview";
+import { glhContributionHours } from "./teacherGlhContribution";
 import { writeAuditLog } from "./auditLog.service";
 import { enqueueLearnerPriorityRecalc } from "./priorityQueueRecalc.service";
 import logger from "../config/logger";
@@ -159,10 +160,7 @@ export const signOffStage5ReviewService = async (
     learner as { assigned_teacher_id?: Types.ObjectId | null }
   ).assigned_teacher_id;
   if (!assignedTo || assignedTo.toString() !== input.teacher_id) {
-    throw new ApiError(
-      403,
-      "Forbidden — this learner is not assigned to you.",
-    );
+    throw new ApiError(403, "Forbidden — this learner is not assigned to you.");
   }
   const orgId = (learner as { orgId?: Types.ObjectId | null }).orgId;
   if (!orgId) {
@@ -187,13 +185,19 @@ export const signOffStage5ReviewService = async (
   }
 
   // ── 3. Pre-condition gates ────────────────────────────────────
-  if (review.learner_self_assessment === null || review.learner_self_assessment === undefined) {
+  if (
+    review.learner_self_assessment === null ||
+    review.learner_self_assessment === undefined
+  ) {
     throw new ApiError(
       409,
       "Cannot sign off — learner has not yet submitted their self-assessment.",
     );
   }
-  if (review.ai_tutor_summary === null || review.ai_tutor_summary === undefined) {
+  if (
+    review.ai_tutor_summary === null ||
+    review.ai_tutor_summary === undefined
+  ) {
     throw new ApiError(
       409,
       "Cannot sign off — AI tutor summary has not yet been generated.",
@@ -223,6 +227,19 @@ export const signOffStage5ReviewService = async (
     ai_recommendation_acted_on: false,
     created_at: signed_at,
   });
+
+  // GLH credit — Final Addendum §4.3 sets rarpa_signoff at a fixed
+  // 0.5h regardless of duration (duration_mins stays 0: there's no
+  // wall-clock contact to measure).
+  await User.updateOne(
+    { _id: learnerObjectId },
+    {
+      $inc: {
+        glh_teacher_contact: glhContributionHours("rarpa_signoff", 0),
+      },
+      $set: { teacher_last_reviewed_at: signed_at },
+    },
+  );
 
   // ── 5. Stage5Review update ────────────────────────────────────
   // Only the two fields the brief specifies — `next_steps` is the

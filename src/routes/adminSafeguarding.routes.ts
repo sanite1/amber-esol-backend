@@ -47,14 +47,19 @@ const router = Router();
 router.use(isAuthenticated, isAdmin);
 
 /* ── GET /api/admin/safeguarding ─────────────────────────────────── */
-router.get("/", isAdmin, listAdminSafeguardingValidation(), listAdminSafeguardingAlerts);
+router.get(
+  "/",
+  isAdmin,
+  listAdminSafeguardingValidation(),
+  listAdminSafeguardingAlerts,
+);
 
 /* ── GET /api/admin/safeguarding/:id ─────────────────────────────── */
 router.get(
   "/:id",
   isAdmin,
   adminSafeguardingIdParamValidation(),
-  getAdminSafeguardingAlert
+  getAdminSafeguardingAlert,
 );
 
 /* ── PATCH /api/admin/safeguarding/:id ───────────────────────────── */
@@ -62,7 +67,7 @@ router.patch(
   "/:id",
   isAdmin,
   resolveAdminSafeguardingValidation(),
-  resolveAdminSafeguardingAlert
+  resolveAdminSafeguardingAlert,
 );
 
 export default router;

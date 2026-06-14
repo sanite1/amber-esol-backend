@@ -19,9 +19,11 @@ export const importLearners: ExpressFunction = async (req, res, next) => {
       return next(new ApiError(401, "Unauthorized"));
     }
 
-    const ctx = (req as typeof req & {
-      esol_context?: { org_id: string };
-    }).esol_context;
+    const ctx = (
+      req as typeof req & {
+        esol_context?: { org_id: string };
+      }
+    ).esol_context;
     if (!ctx?.org_id) {
       return next(new ApiError(403, "Organisation context required"));
     }

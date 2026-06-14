@@ -84,9 +84,11 @@ class LazyRedisStore implements Store {
         try {
           this.real = new RedisStore({
             sendCommand: (async (...args: string[]) => {
-              return await (redis as unknown as {
-                call: (...a: string[]) => Promise<unknown>;
-              }).call(...args);
+              return await (
+                redis as unknown as {
+                  call: (...a: string[]) => Promise<unknown>;
+                }
+              ).call(...args);
             }) as never,
             prefix: this.keyPrefix,
           });
@@ -94,14 +96,14 @@ class LazyRedisStore implements Store {
           if (this.warnedFallback) {
             logger.info(
               { prefix: this.keyPrefix },
-              "Rate limiter back on Redis-backed store"
+              "Rate limiter back on Redis-backed store",
             );
             this.warnedFallback = false;
           }
         } catch (err) {
           logger.error(
             { err: (err as Error).message, prefix: this.keyPrefix },
-            "RedisStore construction failed — using in-memory fallback"
+            "RedisStore construction failed — using in-memory fallback",
           );
           this.real = null;
         }
@@ -120,7 +122,7 @@ class LazyRedisStore implements Store {
       logger.warn(
         { prefix: this.keyPrefix },
         "Rate limiter using in-memory fallback (Redis unavailable) — " +
-          "counters are per-container, not fleet-wide"
+          "counters are per-container, not fleet-wide",
       );
       this.warnedFallback = true;
     }

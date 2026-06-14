@@ -17,7 +17,8 @@
  *   W7  Per-learner failure is counted, run continues for the rest of the org
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 // Queue mocks — capture .add() calls
 const priorityAdd = jest.fn().mockResolvedValue({ id: "fake" });
@@ -106,7 +107,7 @@ const createLearner = async (orgId: unknown, opts: LearnerOpts = {}) => {
   if (opts.createdAt) {
     await User.collection.updateOne(
       { _id: learner._id as unknown as never },
-      { $set: { createdAt: opts.createdAt } }
+      { $set: { createdAt: opts.createdAt } },
     );
   }
   return learner;
@@ -117,7 +118,7 @@ const seedPassingSession = async (
   orgId: unknown,
   scenarioId: string,
   completedAt: Date,
-  skillCodes: string[] = ["Sc", "Lr", "Rt", "Wt"]
+  skillCodes: string[] = ["Sc", "Lr", "Rt", "Wt"],
 ) => {
   const s = await AISession.create({
     learnerId,
@@ -140,7 +141,7 @@ const seedPassingSession = async (
   });
   await AISession.collection.updateOne(
     { _id: s._id as unknown as never },
-    { $set: { completedAt } }
+    { $set: { completedAt } },
   );
   return s;
 };
@@ -148,19 +149,25 @@ const seedPassingSession = async (
 // Three passing sessions covering 4 domains
 const seedReadyHistory = async (learnerId: unknown, orgId: unknown) => {
   await seedPassingSession(
-    learnerId, orgId, "s1_gp_appointment",
+    learnerId,
+    orgId,
+    "s1_gp_appointment",
     new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    ["Sc", "Lr"]
+    ["Sc", "Lr"],
   );
   await seedPassingSession(
-    learnerId, orgId, "s2_payslip",
+    learnerId,
+    orgId,
+    "s2_payslip",
     new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    ["Rt", "Wt"]
+    ["Rt", "Wt"],
   );
   await seedPassingSession(
-    learnerId, orgId, "s3_housing_rights",
+    learnerId,
+    orgId,
+    "s3_housing_rights",
     new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    ["Sc", "Lr", "Rt"]
+    ["Sc", "Lr", "Rt"],
   );
 };
 
@@ -252,7 +259,7 @@ describe("runOrgProgressionCheck", () => {
 
     // Email enqueued
     const emailCalls = notificationsAdd.mock.calls.filter(
-      (c) => c[0] === "progression-ready-email"
+      (c) => c[0] === "progression-ready-email",
     );
     expect(emailCalls).toHaveLength(1);
     expect(emailCalls[0][1].payload.current_level).toBe("e2");
@@ -268,7 +275,9 @@ describe("runOrgProgressionCheck", () => {
       action: "progression_ready_flagged",
     }).lean();
     expect(audit).toBeTruthy();
-    expect((audit?.after_state as { current_level?: string })?.current_level).toBe("e2");
+    expect(
+      (audit?.after_state as { current_level?: string })?.current_level,
+    ).toBe("e2");
   });
 
   it("W2 — second run within 7d at same level → deduped, no second email", async () => {
@@ -289,8 +298,8 @@ describe("runOrgProgressionCheck", () => {
     expect(createNotificationMock).not.toHaveBeenCalled();
     expect(
       notificationsAdd.mock.calls.filter(
-        (c) => c[0] === "progression-ready-email"
-      )
+        (c) => c[0] === "progression-ready-email",
+      ),
     ).toHaveLength(0);
   });
 
@@ -343,8 +352,10 @@ describe("cohort_status sweep", () => {
       cohort: "active",
     });
     await seedPassingSession(
-      learner._id, org._id, "s1_gp_appointment",
-      new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+      learner._id,
+      org._id,
+      "s1_gp_appointment",
+      new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
     );
 
     const stats = await runOrgProgressionCheck(org._id.toString());
@@ -358,7 +369,10 @@ describe("cohort_status sweep", () => {
       action: "cohort_status_changed",
     }).lean();
     expect(audit).toBeTruthy();
-    const after = audit?.after_state as { cohort_status?: string; days_since_last_session?: number };
+    const after = audit?.after_state as {
+      cohort_status?: string;
+      days_since_last_session?: number;
+    };
     expect(after?.cohort_status).toBe("dormant");
     expect(after?.days_since_last_session).toBe(20);
 
@@ -366,7 +380,7 @@ describe("cohort_status sweep", () => {
     expect(stats.dormant_learners_count).toBe(1);
     expect(stats.dormant_digest_email_sent).toBe(true);
     const emailCall = notificationsAdd.mock.calls.find(
-      (c) => c[0] === "dormant-learners-digest-email"
+      (c) => c[0] === "dormant-learners-digest-email",
     );
     expect(emailCall).toBeDefined();
     expect(emailCall![1].payload.dormant_count).toBe(1);
@@ -378,15 +392,17 @@ describe("cohort_status sweep", () => {
       createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
     });
     await seedPassingSession(
-      learner._id, org._id, "s1_gp_appointment",
-      new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // 2 days ago → active
+      learner._id,
+      org._id,
+      "s1_gp_appointment",
+      new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago → active
     );
 
     const stats = await runOrgProgressionCheck(org._id.toString());
     expect(stats.dormant_learners_count).toBe(0);
     expect(stats.dormant_digest_email_sent).toBe(false);
     const emailCalls = notificationsAdd.mock.calls.filter(
-      (c) => c[0] === "dormant-learners-digest-email"
+      (c) => c[0] === "dormant-learners-digest-email",
     );
     expect(emailCalls).toHaveLength(0);
   });
@@ -406,7 +422,7 @@ describe("cohort_status sweep", () => {
     expect(decideCohortStatus(100, 100)).toBe("dormant");
 
     // No session yet
-    expect(decideCohortStatus(null, 3)).toBe("new");           // enrolled ≤ 4 days
+    expect(decideCohortStatus(null, 3)).toBe("new"); // enrolled ≤ 4 days
     expect(decideCohortStatus(null, 5)).toBe("inactive_mild"); // enrolled > 4 days
   });
 });

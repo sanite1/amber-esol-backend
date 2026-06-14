@@ -38,7 +38,7 @@ export type ExpressFunction<B = {}, Q = {}> = (
     teacher_context?: ITeacherContext;
   },
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => void;
 
 export interface IdParam {

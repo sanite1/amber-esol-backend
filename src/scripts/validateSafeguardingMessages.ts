@@ -53,11 +53,11 @@ const LANGUAGES = ["en", "ar", "so", "fa", "zh"] as const;
  * (e.g. spaces vs hyphens).
  */
 const EXPECTED_SIGNPOSTS: Record<(typeof CATEGORIES)[number], string[]> = {
-  self_harm:            ["Samaritans", "116 123", "SHOUT", "85258"],
-  domestic_abuse:       ["National Domestic Abuse Helpline", "0808 2000 247"],
-  radicalisation:       ["someone", "in touch", "note"], // brief: NO direct signposting
-  child_concern:        ["NSPCC", "0808 800 5000"],
-  exploitation:         ["Modern Slavery Helpline", "08000 121 700"],
+  self_harm: ["Samaritans", "116 123", "SHOUT", "85258"],
+  domestic_abuse: ["National Domestic Abuse Helpline", "0808 2000 247"],
+  radicalisation: ["someone", "in touch", "note"], // brief: NO direct signposting
+  child_concern: ["NSPCC", "0808 800 5000"],
+  exploitation: ["Modern Slavery Helpline", "08000 121 700"],
   mental_health_crisis: ["NHS 111", "option 2", "SHOUT", "85258"],
 };
 
@@ -99,7 +99,9 @@ const validate = (data: unknown): Issue[] => {
   const issues: Issue[] = [];
 
   if (!data || typeof data !== "object" || Array.isArray(data)) {
-    return [{ scope: "root", severity: "error", message: "must be a JSON object" }];
+    return [
+      { scope: "root", severity: "error", message: "must be a JSON object" },
+    ];
   }
   const root = data as Record<string, unknown>;
 
@@ -187,7 +189,8 @@ const validate = (data: unknown): Issue[] => {
           issues.push({
             scope: `${category}.${lang}`,
             severity: "warning",
-            message: "identical to the English message — likely a translation paste error",
+            message:
+              "identical to the English message — likely a translation paste error",
           });
         }
       }
@@ -227,7 +230,7 @@ const main = () => {
     `Validated ${FILE_PATH.split("/").slice(-1)[0]} ` +
       `(${CATEGORIES.length} categories × ${LANGUAGES.length} languages = ` +
       `${expectedMessageCount} messages): ` +
-      `${errors.length} error(s), ${warnings.length} warning(s)`
+      `${errors.length} error(s), ${warnings.length} warning(s)`,
   );
 
   if (warnings.length > 0) {
@@ -239,7 +242,7 @@ const main = () => {
     console.log(
       warnings.length > 0
         ? "\n✓ structural check passes — warnings remain"
-        : "\n✓ safeguarding messages file is valid"
+        : "\n✓ safeguarding messages file is valid",
     );
     process.exit(0);
   }
@@ -249,7 +252,7 @@ const main = () => {
   console.error(
     `\nAll 30 messages must be non-empty before the safeguarding ` +
       `pre-cache path can serve them. See docs/SAFEGUARDING_REVIEW.md ` +
-      `for the review process.`
+      `for the review process.`,
   );
   process.exit(1);
 };

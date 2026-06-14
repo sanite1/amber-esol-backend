@@ -13,11 +13,11 @@ import {
 export const getAdminStudents = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const result = await getAdminStudentsService(
-      req.query as unknown as IAdminStudentsQuery
+      req.query as unknown as IAdminStudentsQuery,
     );
     return res.status(result.statusCode).json({
       message: result.message,
@@ -33,12 +33,12 @@ export const getAdminStudents = async (
 export const updateStudentStatus = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const result = await adminUpdateStudentStatusService(
       req.params.id,
-      req.body as IAdminUpdateStudentStatusRequest
+      req.body as IAdminUpdateStudentStatusRequest,
     );
     return res.status(result.statusCode).json({
       message: result.message,

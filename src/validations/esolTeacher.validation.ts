@@ -25,14 +25,14 @@ export const listTeachersValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const tutorIdParamValidation = () =>
   validate(
     { params: Joi.object({ tutorId: objectId.required() }) },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const approveTeacherValidation = () =>
@@ -58,7 +58,7 @@ export const approveTeacherValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const updateQualificationsValidation = () =>
@@ -79,7 +79,7 @@ export const updateQualificationsValidation = () =>
       }).min(1),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 /* ── ESOL Teacher Application (POST /api/esol/teachers/apply) ─────── */
@@ -96,14 +96,11 @@ export const applyEsolValidation = () =>
               "Qualification type must be one of: CELTA, DELTA, CertTESOL, DipTESOL, PGCE, other",
             "any.required": "Qualification type is required",
           }),
-        qualification_document_url: Joi.string()
-          .uri()
-          .required()
-          .messages({
-            "string.uri": "Qualification document URL must be a valid URL",
-            "any.required":
-              "Qualification document URL is required — upload a copy of your certificate",
-          }),
+        qualification_document_url: Joi.string().uri().required().messages({
+          "string.uri": "Qualification document URL must be a valid URL",
+          "any.required":
+            "Qualification document URL is required — upload a copy of your certificate",
+        }),
         dbs_check_reference: Joi.string()
           .trim()
           .min(4)
@@ -129,7 +126,7 @@ export const applyEsolValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 /* ── ESOL Teacher Rejection (PATCH /api/admin/users/:id/reject-esol-teacher) ── */
@@ -139,20 +136,15 @@ export const rejectTeacherValidation = () =>
     {
       params: Joi.object({ id: objectId.required() }),
       body: Joi.object({
-        reason: Joi.string()
-          .trim()
-          .min(10)
-          .max(1000)
-          .required()
-          .messages({
-            "string.min":
-              "Rejection reason must be at least 10 characters — the teacher receives this verbatim",
-            "any.required": "Rejection reason is required",
-          }),
+        reason: Joi.string().trim().min(10).max(1000).required().messages({
+          "string.min":
+            "Rejection reason must be at least 10 characters — the teacher receives this verbatim",
+          "any.required": "Rejection reason is required",
+        }),
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 /* ── ESOL Teacher Approval via admin route (PATCH /api/admin/users/:id/approve-esol-teacher) ── */
@@ -166,5 +158,5 @@ export const adminApproveEsolValidation = () =>
       }).optional(),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

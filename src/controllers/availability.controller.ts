@@ -20,7 +20,7 @@ import {
 export const getAvailability = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { tutorId } = req.params;
@@ -36,7 +36,7 @@ export const getAvailability = async (
 export const setSchedule: ExpressFunction<ISetScheduleRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const tutorId = req.user?.id?.toString();
@@ -55,7 +55,7 @@ export const setSchedule: ExpressFunction<ISetScheduleRequest> = async (
 export const updateSettings: ExpressFunction<IUpdateSettingsRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const tutorId = req.user?.id?.toString();
@@ -74,7 +74,7 @@ export const updateSettings: ExpressFunction<IUpdateSettingsRequest> = async (
 export const createOverride: ExpressFunction<ICreateOverrideRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const tutorId = req.user?.id?.toString();
@@ -93,7 +93,7 @@ export const createOverride: ExpressFunction<ICreateOverrideRequest> = async (
 export const deleteOverride = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const tutorId = (req as any).user?.id?.toString();
@@ -112,7 +112,7 @@ export const deleteOverride = async (
 export const getAvailableSlots = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { tutorId } = req.params;

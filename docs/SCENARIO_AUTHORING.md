@@ -46,18 +46,18 @@ much higher than the cost of one extra review round.
 
 **What goes into each field:**
 
-| Field | Source | Notes |
-|---|---|---|
-| `scenario_id` | already populated | Must match the filename |
-| `title.en` | starting draft populated | Joey may refine wording |
-| `nqf_level_range` | already populated per brief | Don't widen without practitioner approval |
-| `skill_codes` | already populated per brief | The 9 ILR Skills for Life sub-codes — see `src/services/esolSkills.ts` |
-| `stage3_objective_domains` | populated | Maps to the four ForSkills domains the scenario produces evidence for |
-| `vocabulary_set` | Joey writes | See §1.1 below |
-| `grammar_targets` | Joey writes | 3–5 items; match the level range |
-| `roleplay_prompt_en` | Joey writes | 2–4 sentences telling Amber what role she's playing and what the learner needs to do |
-| `pass_threshold` | Joey sets | 0.6–0.9; default 0.7. Higher for assessment-prep scenarios, lower for early-confidence-building ones |
-| `cultural_notes_en` | Joey writes | 3–5 sentences of UK-context the learner needs (NHS, PAYE, AST tenancy etc.) |
+| Field                      | Source                      | Notes                                                                                                |
+| -------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `scenario_id`              | already populated           | Must match the filename                                                                              |
+| `title.en`                 | starting draft populated    | Joey may refine wording                                                                              |
+| `nqf_level_range`          | already populated per brief | Don't widen without practitioner approval                                                            |
+| `skill_codes`              | already populated per brief | The 9 ILR Skills for Life sub-codes — see `src/services/esolSkills.ts`                               |
+| `stage3_objective_domains` | populated                   | Maps to the four ForSkills domains the scenario produces evidence for                                |
+| `vocabulary_set`           | Joey writes                 | See §1.1 below                                                                                       |
+| `grammar_targets`          | Joey writes                 | 3–5 items; match the level range                                                                     |
+| `roleplay_prompt_en`       | Joey writes                 | 2–4 sentences telling Amber what role she's playing and what the learner needs to do                 |
+| `pass_threshold`           | Joey sets                   | 0.6–0.9; default 0.7. Higher for assessment-prep scenarios, lower for early-confidence-building ones |
+| `cultural_notes_en`        | Joey writes                 | 3–5 sentences of UK-context the learner needs (NHS, PAYE, AST tenancy etc.)                          |
 
 ### 1.1 The vocabulary set
 
@@ -140,7 +140,7 @@ revises the JSON. Bump version to `"0.2-practitioner-reviewed"`.
 
 **Who:** Four translators — one per non-English MVP language. **Never
 machine translation** for the bank itself; machine output can be a
-helpful starting point for a *human* translator to revise, but the
+helpful starting point for a _human_ translator to revise, but the
 file must contain human-revised content.
 
 **Recruitment:** Source translators via:
@@ -215,7 +215,7 @@ because the practitioner can't independently verify it.
 Both parties counter-sign:
 
 - **Joey** confirms the English content is right and the translators
-  + practitioner were paid + the workflow was followed.
+  - practitioner were paid + the workflow was followed.
 - **ESOL practitioner** confirms the scenario is fit for launch use
   in their professional judgement.
 
@@ -264,14 +264,14 @@ CI gates the merge to `main` on `npm run validate:scenarios` exiting
 
 Realistic launch cost for all three scenarios:
 
-| Step | Per scenario | Across 3 scenarios |
-|---|---|---|
-| 1. English authoring | (Joey's time) | — |
-| 2. Practitioner level review | £300–£500 | £900–£1,500 |
-| 3. Translation (4 languages) | £600–£2,000 | £1,800–£6,000 |
-| 4. Practitioner translation review | £100–£200 | £300–£600 |
-| 5. Sign-off | (admin time) | — |
-| **Total** | **£1,000–£2,700** | **£3,000–£8,100** |
+| Step                               | Per scenario      | Across 3 scenarios |
+| ---------------------------------- | ----------------- | ------------------ |
+| 1. English authoring               | (Joey's time)     | —                  |
+| 2. Practitioner level review       | £300–£500         | £900–£1,500        |
+| 3. Translation (4 languages)       | £600–£2,000       | £1,800–£6,000      |
+| 4. Practitioner translation review | £100–£200         | £300–£600          |
+| 5. Sign-off                        | (admin time)      | —                  |
+| **Total**                          | **£1,000–£2,700** | **£3,000–£8,100**  |
 
 The brief's "£500–£1,500 across 3 scenarios" target is achievable at
 the low end if translators are sourced through community networks

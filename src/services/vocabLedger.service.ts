@@ -56,6 +56,17 @@ export interface UpdateLedgerForTurnArgs {
   current_turn_score: number;
   scenario_id: string | null;
   stage3_objective_id: string | null;
+  /** Insert-only enrichment — lets the learner vocabulary page show
+   *  topic / level and lets org admins scope by orgId. Existing rows
+   *  keep their values ($ifNull). */
+  context?: VocabLedgerContext;
+}
+
+export interface VocabLedgerContext {
+  orgId?: string | Types.ObjectId | null;
+  sessionId?: string | Types.ObjectId | null;
+  esolLevel?: string | null;
+  topic?: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -85,10 +96,11 @@ const toObjectId = (id: string | Types.ObjectId): Types.ObjectId =>
  */
 const upsertWord = async (
   word: string,
-  args: UpdateLedgerForTurnArgs
+  args: UpdateLedgerForTurnArgs,
 ): Promise<void> => {
   const learnerObjectId = toObjectId(args.learner_id);
   const now = new Date();
+  const ctx = args.context ?? {};
 
   await VocabLedger.updateOne(
     { learnerId: learnerObjectId, word },
@@ -105,6 +117,18 @@ const upsertWord = async (
           stage3_objective_id: {
             $ifNull: ["$stage3_objective_id", args.stage3_objective_id],
           },
+          // Insert-only context — keep existing values on update.
+          orgId: {
+            $ifNull: ["$orgId", ctx.orgId ? toObjectId(ctx.orgId) : null],
+          },
+          sessionId: {
+            $ifNull: [
+              "$sessionId",
+              ctx.sessionId ? toObjectId(ctx.sessionId) : null,
+            ],
+          },
+          esolLevel: { $ifNull: ["$esolLevel", ctx.esolLevel ?? null] },
+          topic: { $ifNull: ["$topic", ctx.topic ?? null] },
           retained: {
             $let: {
               vars: {
@@ -119,7 +143,12 @@ const upsertWord = async (
                   {
                     $and: [
                       { $gte: ["$$newCount", RETENTION_MIN_ENCOUNTERS] },
-                      { $gte: [args.current_turn_score, RETENTION_MIN_TURN_SCORE] },
+                      {
+                        $gte: [
+                          args.current_turn_score,
+                          RETENTION_MIN_TURN_SCORE,
+                        ],
+                      },
                     ],
                   },
                 ],
@@ -131,7 +160,7 @@ const upsertWord = async (
         },
       },
     ],
-    { upsert: true }
+    { upsert: true },
   );
 };
 
@@ -148,9 +177,13 @@ export const updateLedgerForTurn = async (
   vocabulary_items_used: string[],
   current_turn_score: number,
   scenario_id: string | null,
-  stage3_objective_id: string | null
+  stage3_objective_id: string | null,
+  context?: VocabLedgerContext,
 ): Promise<{ updated: number; skipped: number }> => {
-  if (!Array.isArray(vocabulary_items_used) || vocabulary_items_used.length === 0) {
+  if (
+    !Array.isArray(vocabulary_items_used) ||
+    vocabulary_items_used.length === 0
+  ) {
     return { updated: 0, skipped: 0 };
   }
 
@@ -160,8 +193,8 @@ export const updateLedgerForTurn = async (
     new Set(
       vocabulary_items_used
         .map((w) => (typeof w === "string" ? w.trim() : ""))
-        .filter((w) => w.length > 0)
-    )
+        .filter((w) => w.length > 0),
+    ),
   );
 
   let updated = 0;
@@ -174,6 +207,7 @@ export const updateLedgerForTurn = async (
         current_turn_score,
         scenario_id,
         stage3_objective_id,
+        context,
       });
       updated += 1;
     } catch (err) {
@@ -185,7 +219,7 @@ export const updateLedgerForTurn = async (
           word,
           scenarioId: scenario_id,
         },
-        "VocabLedger upsert failed for word — continuing with the rest of the turn"
+        "VocabLedger upsert failed for word — continuing with the rest of the turn",
       );
     }
   }
@@ -198,7 +232,7 @@ export const updateLedgerForTurn = async (
       updated,
       skipped,
     },
-    "Vocab ledger updated for turn"
+    "Vocab ledger updated for turn",
   );
 
   return { updated, skipped };
@@ -230,7 +264,7 @@ export const updateLedgerForTurn = async (
  */
 export const getReinforcementTargets = async (
   learner_id: string | Types.ObjectId,
-  limit: number = REINFORCEMENT_DEFAULT_LIMIT
+  limit: number = REINFORCEMENT_DEFAULT_LIMIT,
 ): Promise<VocabReinforcementTarget[]> => {
   const learnerObjectId = toObjectId(learner_id);
   const rows = await VocabLedger.find({
@@ -244,8 +278,10 @@ export const getReinforcementTargets = async (
 
   return rows.map((r) => ({
     word: r.word,
-    definition_en: (r as { definition_en?: string | null }).definition_en ?? null,
-    times_encountered: (r as { times_encountered?: number }).times_encountered ?? 0,
+    definition_en:
+      (r as { definition_en?: string | null }).definition_en ?? null,
+    times_encountered:
+      (r as { times_encountered?: number }).times_encountered ?? 0,
     last_seen_at: (r as { last_seen_at?: Date | null }).last_seen_at ?? null,
   }));
 };

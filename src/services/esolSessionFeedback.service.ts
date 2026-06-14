@@ -27,7 +27,7 @@ export const submitLearnerFeedbackService = async (
     comment?: string;
     topicsWorkedOn?: string[];
   },
-  caller: CallerContext
+  caller: CallerContext,
 ) => {
   const session = await loadSessionForFeedback(sessionId);
 
@@ -57,10 +57,14 @@ export const submitLearnerFeedbackService = async (
           : {}),
       },
     },
-    { upsert: true, new: true, runValidators: true }
+    { upsert: true, new: true, runValidators: true },
   );
 
-  return new ApiResponse(200, "Feedback submitted. Thank you!", feedback.toJSON());
+  return new ApiResponse(
+    200,
+    "Feedback submitted. Thank you!",
+    feedback.toJSON(),
+  );
 };
 
 /* ── Submit teacher feedback ── */
@@ -73,21 +77,18 @@ export const submitTeacherFeedbackService = async (
     progressNotes?: string;
     topicsWorkedOn?: string[];
   },
-  caller: CallerContext
+  caller: CallerContext,
 ) => {
   const session = await loadSessionForFeedback(sessionId);
 
   // Pre-platform sessions have no teacher and can't be feedback targets.
-  if (
-    !session.teacherId ||
-    session.teacherId.toString() !== caller.callerId
-  ) {
+  if (!session.teacherId || session.teacherId.toString() !== caller.callerId) {
     throw new ApiError(403, "Only the assigned teacher can submit feedback");
   }
   if (!session.completedAt) {
     throw new ApiError(
       400,
-      "Feedback can only be submitted after the session is completed"
+      "Feedback can only be submitted after the session is completed",
     );
   }
 
@@ -111,17 +112,21 @@ export const submitTeacherFeedbackService = async (
       },
       $set: update,
     },
-    { upsert: true, new: true, runValidators: true }
+    { upsert: true, new: true, runValidators: true },
   );
 
-  return new ApiResponse(200, "Feedback submitted successfully", feedback.toJSON());
+  return new ApiResponse(
+    200,
+    "Feedback submitted successfully",
+    feedback.toJSON(),
+  );
 };
 
 /* ── Get feedback for a session ── */
 
 export const getSessionFeedbackService = async (
   sessionId: string,
-  caller: CallerContext
+  caller: CallerContext,
 ) => {
   const session = await loadSessionForFeedback(sessionId);
 
@@ -130,8 +135,7 @@ export const getSessionFeedbackService = async (
   // simply don't trigger the isTeacher branch.
   const isLearner = session.learnerId.toString() === caller.callerId;
   const isTeacher =
-    !!session.teacherId &&
-    session.teacherId.toString() === caller.callerId;
+    !!session.teacherId && session.teacherId.toString() === caller.callerId;
   const isSameOrg =
     caller.callerRole === "org_admin" &&
     session.orgId.toString() === caller.callerOrgId;
@@ -148,6 +152,6 @@ export const getSessionFeedbackService = async (
   return new ApiResponse(
     200,
     feedback ? "Feedback retrieved" : "No feedback yet",
-    feedback ? feedback.toJSON() : null
+    feedback ? feedback.toJSON() : null,
   );
 };

@@ -17,6 +17,11 @@ const referralTokenSchema = new Schema<IReferralToken>(
     // gets used exactly once by definition).
     created_by: { type: Schema.Types.ObjectId, ref: "User", default: null },
     usage_count: { type: Number, default: 0 },
+    // Reminder tracking — stamped every time the org admin re-sends
+    // the invite email for a still-pending invitation. Surfaced in
+    // the invitations list so the admin can see when they last nudged.
+    lastRemindedAt: { type: Date, default: null },
+    reminder_count: { type: Number, default: 0 },
   },
   {
     timestamps: true,
@@ -25,7 +30,7 @@ const referralTokenSchema = new Schema<IReferralToken>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // token uniqueness is declared via `unique: true` on the field above —
@@ -34,6 +39,9 @@ referralTokenSchema.index({ orgId: 1, isActive: 1 });
 // NB: deliberately NO TTL — would destroy audit trail (usedBy/usedAt).
 // Cleanup of expired-and-unused tokens should be a scheduled job.
 
-const ReferralToken = model<IReferralToken>("ReferralToken", referralTokenSchema);
+const ReferralToken = model<IReferralToken>(
+  "ReferralToken",
+  referralTokenSchema,
+);
 
 export default ReferralToken;

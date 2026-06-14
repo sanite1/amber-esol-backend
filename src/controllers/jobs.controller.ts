@@ -30,7 +30,7 @@ import ApiError from "../errors/apiError";
 export const getJobStatus = async (
   req: Request,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { queue, jobId } = req.params;
@@ -39,8 +39,8 @@ export const getJobStatus = async (
       return next(
         new ApiError(
           404,
-          `Unknown queue: ${queue}. Valid queues: ${Object.keys(allQueues).join(", ")}`
-        )
+          `Unknown queue: ${queue}. Valid queues: ${Object.keys(allQueues).join(", ")}`,
+        ),
       );
     }
 
@@ -49,7 +49,7 @@ export const getJobStatus = async (
 
     if (!job) {
       return next(
-        new ApiError(404, `Job ${jobId} not found in queue ${queue}`)
+        new ApiError(404, `Job ${jobId} not found in queue ${queue}`),
       );
     }
 
@@ -58,9 +58,11 @@ export const getJobStatus = async (
     const progress =
       typeof rawProgress === "number"
         ? rawProgress
-        : typeof rawProgress === "object" && rawProgress !== null && "percent" in rawProgress
-        ? Number((rawProgress as { percent: number }).percent) || 0
-        : 0;
+        : typeof rawProgress === "object" &&
+            rawProgress !== null &&
+            "percent" in rawProgress
+          ? Number((rawProgress as { percent: number }).percent) || 0
+          : 0;
 
     const payload: Record<string, unknown> = {
       jobId: job.id,
@@ -78,9 +80,7 @@ export const getJobStatus = async (
       payload.error = job.failedReason || "Unknown error";
     }
 
-    return _res
-      .status(200)
-      .json(new ApiResponse(200, "Job status", payload));
+    return _res.status(200).json(new ApiResponse(200, "Job status", payload));
   } catch (err) {
     next(err);
   }

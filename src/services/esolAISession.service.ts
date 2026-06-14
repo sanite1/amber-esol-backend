@@ -20,6 +20,7 @@ import {
   ScenarioContext,
 } from "./geminiAI.service";
 import { loadScenario } from "./scenarioLoader.service";
+import { updateLedgerForTurn } from "./vocabLedger.service";
 import { notificationsQueue } from "../queues";
 import logger from "../config/logger";
 
@@ -38,22 +39,25 @@ export const createAISessionService = async (params: {
   callerRole: string;
   callerOrgId?: string | null;
 }) => {
-  const learner = await User.findOne({ _id: params.learnerId, role: "student" });
+  const learner = await User.findOne({
+    _id: params.learnerId,
+    role: "student",
+  });
   if (!learner) {
     throw new ApiError(404, "Learner not found");
   }
   if (!learner.orgId) {
-    throw new ApiError(400, "This learner is not enrolled with an organisation");
+    throw new ApiError(
+      400,
+      "This learner is not enrolled with an organisation",
+    );
   }
   if (!learner.esolLevel) {
     throw new ApiError(400, "Learner does not have an ESOL level assigned");
   }
 
   // Authorisation: teacher creating own session, or org_admin within same org, or platform admin
-  if (
-    params.callerRole === "tutor" &&
-    params.callerId !== params.teacherId
-  ) {
+  if (params.callerRole === "tutor" && params.callerId !== params.teacherId) {
     throw new ApiError(403, "Teachers can only create sessions for themselves");
   }
   if (
@@ -173,7 +177,11 @@ export const getAISessionService = async (params: {
     throw new ApiError(403, "Access denied to this session");
   }
 
-  return new ApiResponse(200, "Session retrieved successfully", session.toJSON());
+  return new ApiResponse(
+    200,
+    "Session retrieved successfully",
+    session.toJSON(),
+  );
 };
 
 /* ── 5-Stage Turn Pipeline ── */
@@ -196,7 +204,7 @@ export const processTurnService = async (params: {
   }
 
   const learner = await User.findById(params.learnerId).select(
-    "firstname lastname l1Language esolLevel orgId"
+    "firstname lastname l1Language esolLevel orgId",
   );
   if (!learner) {
     throw new ApiError(404, "Learner not found");
@@ -289,7 +297,8 @@ export const processTurnService = async (params: {
       learnerId: session.learnerId,
       orgId: session.orgId,
       sessionId: session._id,
-      alertLevel: result.safeguarding_category === "self_harm" ? "critical" : "high",
+      alertLevel:
+        result.safeguarding_category === "self_harm" ? "critical" : "high",
       messageContentHash: sha256(params.input),
       triggerCategory: result.safeguarding_category ?? null,
       triggerSource: "ai_only",
@@ -312,13 +321,13 @@ export const processTurnService = async (params: {
             : new Date()
           ).toISOString(),
         },
-        { priority: 1 }
+        { priority: 1 },
       )
       .catch((err) =>
         logger.error(
           { err, alertId: alert._id.toString() },
-          "Failed to enqueue safeguarding-alert notification (legacy path)"
-        )
+          "Failed to enqueue safeguarding-alert notification (legacy path)",
+        ),
       );
 
     // CRITICAL: do NOT push the safeguarding-triggered message into
@@ -354,6 +363,18 @@ export const processTurnService = async (params: {
   };
 
   session.turns.push(turn);
+  // Per-turn rollups — MUST stay in lockstep with the hardened path in
+  // aiSession.service.ts (line ~715). persistSessionOnEnd computes
+  // final_score as the mean of turn_scores; this path historically
+  // skipped the push, so every session whose turns came through the
+  // legacy route ended with final_score 0 even when Gemini scored
+  // each turn (the score was returned to the client as
+  // comprehensionScore and then dropped).
+  session.turn_scores = [...(session.turn_scores ?? []), result.turn_score];
+  session.teaching_mode_sequence = [
+    ...(session.teaching_mode_sequence ?? []),
+    String(result.mode ?? "bridge").toLowerCase(),
+  ];
   session.sessionMode = result.mode;
   if (result.vocabulary_items_used.length > 0) {
     const existing = new Set(session.vocabIntroduced ?? []);
@@ -367,20 +388,26 @@ export const processTurnService = async (params: {
 
   await session.save();
 
-  // Bulk insert vocab to ledger (best-effort)
+  // Upsert vocab into the ledger (best-effort). Mirrors the hardened
+  // path — one row per learner+word with times_encountered/retained
+  // rollups. The previous raw insertMany created a NEW row on every
+  // turn ("who" × 3 for one learner) and never set the retention
+  // fields, polluting both the learner vocabulary page and
+  // getReinforcementTargets.
   if (result.vocabulary_items_used.length > 0) {
-    const vocabDocs = result.vocabulary_items_used.map((word) => ({
-      learnerId: session.learnerId,
-      orgId: session.orgId,
-      sessionId: session._id,
-      word: word.toLowerCase(),
-      esolLevel: session.esolLevel,
-      topic: session.topic,
-      introducedAt: new Date(),
-    }));
-    await VocabLedger.insertMany(vocabDocs, { ordered: false }).catch((err) =>
-      logger.error({ err }, "Vocab ledger insert failed")
-    );
+    await updateLedgerForTurn(
+      session.learnerId,
+      result.vocabulary_items_used.map((w) => w.toLowerCase()),
+      result.turn_score,
+      session.scenario_id ? String(session.scenario_id) : null,
+      (session.stage3_objective_ids ?? [])[0] ?? null,
+      {
+        orgId: session.orgId,
+        sessionId: session._id as Types.ObjectId,
+        esolLevel: session.esolLevel ?? null,
+        topic: session.topic ?? null,
+      },
+    ).catch((err) => logger.error({ err }, "Vocab ledger upsert failed"));
   }
 
   return new ApiResponse(200, "Turn processed successfully", {
@@ -418,8 +445,7 @@ export const completeAISessionService = async (params: {
   if (
     params.callerRole === "tutor" &&
     // Pre-platform sessions have no teacher; tutors can't own them.
-    (!session.teacherId ||
-      session.teacherId.toString() !== params.callerId)
+    (!session.teacherId || session.teacherId.toString() !== params.callerId)
   ) {
     throw new ApiError(403, "You can only complete your own sessions");
   }
@@ -435,7 +461,7 @@ export const completeAISessionService = async (params: {
     const transcript = session.turns
       .map(
         (t) =>
-          `Turn ${t.turnIndex + 1}\nLearner: ${t.originalInput}\nTutor: ${t.deepSeekResponse}\nAssessment: ${t.claudeAssessment ?? "n/a"}`
+          `Turn ${t.turnIndex + 1}\nLearner: ${t.originalInput}\nTutor: ${t.deepSeekResponse}\nAssessment: ${t.claudeAssessment ?? "n/a"}`,
       )
       .join("\n\n");
 
@@ -446,7 +472,11 @@ export const completeAISessionService = async (params: {
   session.completedAt = new Date();
   await session.save();
 
-  return new ApiResponse(200, "Session completed successfully", session.toJSON());
+  return new ApiResponse(
+    200,
+    "Session completed successfully",
+    session.toJSON(),
+  );
 };
 
 /* ── Teacher Prep Note ── */
@@ -466,8 +496,7 @@ export const getTeacherPrepNoteService = async (params: {
   if (
     params.callerRole === "tutor" &&
     // Pre-platform sessions have no teacher; tutors can't own them.
-    (!session.teacherId ||
-      session.teacherId.toString() !== params.callerId)
+    (!session.teacherId || session.teacherId.toString() !== params.callerId)
   ) {
     throw new ApiError(403, "Access denied to this prep note");
   }
@@ -495,7 +524,7 @@ export const getTeacherPrepNoteService = async (params: {
 
   // Generate new prep note
   const learner = await User.findById(session.learnerId).select(
-    "l1Language esolLevel"
+    "l1Language esolLevel",
   );
 
   const recentSessions = await AISession.find({

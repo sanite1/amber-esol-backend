@@ -17,7 +17,7 @@ const ReportSchema = new Schema(
     reviewedAt: { type: Date },
     createdAt: { type: Date, default: Date.now },
   },
-  { _id: true }
+  { _id: true },
 );
 
 const ReplySchema = new Schema(
@@ -26,7 +26,7 @@ const ReplySchema = new Schema(
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const reviewSchema = new Schema<IReview>(
@@ -80,7 +80,7 @@ const reviewSchema = new Schema<IReview>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // Compound index: one review per student per booking

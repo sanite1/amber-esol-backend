@@ -90,8 +90,7 @@ export const isAuthenticated: ExpressFunction = async (req, _res, next) => {
     // Compare DB value against EITHER naming form on the JWT (older
     // tokens issued before snake_case was added carry only `orgId`).
     const dbOrgId = user.orgId ? user.orgId.toString() : null;
-    const jwtOrgId =
-      (decoded.org_id ?? decoded.orgId ?? null) as string | null;
+    const jwtOrgId = (decoded.org_id ?? decoded.orgId ?? null) as string | null;
     if (dbOrgId !== jwtOrgId) {
       throw new ApiError(401, "Org context changed, please log in again");
     }
@@ -169,7 +168,7 @@ export const isStudent: ExpressFunction = async (req, _res, next) => {
 export const isCronAuthorized = (
   req: Request,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const secret = process.env.CRON_SECRET;
 

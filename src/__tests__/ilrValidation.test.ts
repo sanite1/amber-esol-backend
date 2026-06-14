@@ -15,7 +15,8 @@
  *   Mix   "cohort of 10 mixed-validity rows" example output
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 // PostcodeRouter hits Redis — mock it
 const postcodeLookupMock = jest.fn();
@@ -91,7 +92,10 @@ const makeRow = (overrides: Partial<IlrRow> = {}): IlrRow => ({
 });
 
 const seedConfig = async (overrides: Record<string, unknown> = {}) => {
-  await ComplianceConfig.deleteMany({ domain: "ilr", academic_year: ACADEMIC_YEAR });
+  await ComplianceConfig.deleteMany({
+    domain: "ilr",
+    academic_year: ACADEMIC_YEAR,
+  });
   const rules = {
     field_name_overrides: { SOC2000: "SOC" },
     valid_sof_codes: ["105", "107"],
@@ -110,8 +114,14 @@ const seedConfig = async (overrides: Record<string, unknown> = {}) => {
     ...overrides,
   };
   await ComplianceConfig.create({
-    domain: "ilr", academic_year: ACADEMIC_YEAR, version: 1, active: true,
-    rules, updated_by: null, updated_at: new Date(), changelog: "seed",
+    domain: "ilr",
+    academic_year: ACADEMIC_YEAR,
+    version: 1,
+    active: true,
+    rules,
+    updated_by: null,
+    updated_at: new Date(),
+    changelog: "seed",
   });
   await ComplianceConfigService.loadAll();
 };
@@ -131,10 +141,10 @@ beforeEach(async () => {
 describe("pure validators", () => {
   it("validateUln — 10 numeric digits only", () => {
     expect(validateUln("9999999999")).toBe(true);
-    expect(validateUln(" 9999999999 ")).toBe(true);   // trimmed
-    expect(validateUln("999999999")).toBe(false);     // 9 digits
-    expect(validateUln("99999999999")).toBe(false);   // 11 digits
-    expect(validateUln("999999999A")).toBe(false);    // letter
+    expect(validateUln(" 9999999999 ")).toBe(true); // trimmed
+    expect(validateUln("999999999")).toBe(false); // 9 digits
+    expect(validateUln("99999999999")).toBe(false); // 11 digits
+    expect(validateUln("999999999A")).toBe(false); // letter
     expect(validateUln("")).toBe(false);
     expect(validateUln(null)).toBe(false);
     expect(validateUln(undefined)).toBe(false);
@@ -162,15 +172,17 @@ describe("validateRows", () => {
 
   it("E1 — invalid ULN blocks the row", async () => {
     const rows = [
-      makeRow({ ULN: "999" }),         // too short
-      makeRow({ ULN: null }),          // missing
-      makeRow(),                        // valid
+      makeRow({ ULN: "999" }), // too short
+      makeRow({ ULN: null }), // missing
+      makeRow(), // valid
     ];
     const out = await validateRows(rows, ACADEMIC_YEAR);
     expect(out.valid_rows).toHaveLength(1);
     expect(out.blocked_rows).toHaveLength(2);
     expect(out.blocked_rows[0].errors[0].rule).toBe("uln_invalid");
-    expect(out.blocked_rows[0].errors[0].message).toMatch(/not 10 numeric digits/);
+    expect(out.blocked_rows[0].errors[0].message).toMatch(
+      /not 10 numeric digits/,
+    );
     expect(out.blocked_rows[1].errors[0].message).toMatch(/missing/);
   });
 
@@ -181,16 +193,18 @@ describe("validateRows", () => {
     });
     const out = await validateRows([row], ACADEMIC_YEAR);
     expect(out.blocked_rows).toHaveLength(1);
-    const err = out.blocked_rows[0].errors.find((e) => e.rule === "sof_code_invalid");
+    const err = out.blocked_rows[0].errors.find(
+      (e) => e.rule === "sof_code_invalid",
+    );
     expect(err).toBeDefined();
     expect(err!.message).toMatch(/"999" not on the 2025\/26 whitelist/);
   });
 
   it("E3 — LLDD null or out-of-range blocks the row", async () => {
     const rows = [
-      makeRow({ LLDDHealthProb: null }),    // missing
-      makeRow({ LLDDHealthProb: 3 }),       // not in {1, 2, 9}
-      makeRow({ LLDDHealthProb: 1 }),       // valid
+      makeRow({ LLDDHealthProb: null }), // missing
+      makeRow({ LLDDHealthProb: 3 }), // not in {1, 2, 9}
+      makeRow({ LLDDHealthProb: 1 }), // valid
     ];
     const out = await validateRows(rows, ACADEMIC_YEAR);
     expect(out.valid_rows).toHaveLength(1);
@@ -223,7 +237,9 @@ describe("validateRows", () => {
     expect(out.valid_rows).toHaveLength(1);
     // Row mutated in place
     expect(out.valid_rows[0].AddHours).toBe(0);
-    const warning = out.warnings.find((w) => w.issue.rule === "add_hours_on_non_regulated");
+    const warning = out.warnings.find(
+      (w) => w.issue.rule === "add_hours_on_non_regulated",
+    );
     expect(warning).toBeDefined();
     expect(warning!.issue.severity).toBe("warning");
     expect(warning!.issue.message).toMatch(/Auto-corrected/);
@@ -316,12 +332,14 @@ describe("validateRows", () => {
       makeRow({
         ...stamp(9),
         AddHours: 8,
-        _suppression_notes: ["AddHours suppressed: esol_aim_type=non_regulated"],
+        _suppression_notes: [
+          "AddHours suppressed: esol_aim_type=non_regulated",
+        ],
       }),
     ];
 
     const out = await validateRows(cohort, ACADEMIC_YEAR);
-    expect(out.valid_rows).toHaveLength(7);     // 5 clean + 2 warned-but-valid
+    expect(out.valid_rows).toHaveLength(7); // 5 clean + 2 warned-but-valid
     expect(out.blocked_rows).toHaveLength(3);
     // Warnings include the 3 errors + the 2 soft warnings = 5
     expect(out.warnings.length).toBeGreaterThanOrEqual(5);
@@ -347,13 +365,21 @@ describe("runIlrExport", () => {
       isActive: true,
     });
 
-  const createLearner = async (orgId: unknown, overrides: Record<string, unknown> = {}) =>
+  const createLearner = async (
+    orgId: unknown,
+    overrides: Record<string, unknown> = {},
+  ) =>
     User.create({
-      firstname: "Run", lastname: "Learner",
+      firstname: "Run",
+      lastname: "Learner",
       email: `r-${Date.now()}-${Math.random().toString(16).slice(2)}@run.local`,
-      password: "x", phoneNumber: "07000000000",
-      role: "student", orgId,
-      isActive: true, status: "active", verified: true,
+      password: "x",
+      phoneNumber: "07000000000",
+      role: "student",
+      orgId,
+      isActive: true,
+      status: "active",
+      verified: true,
       dateOfBirth: new Date("1990-01-01"),
       sex: 1,
       esolOnboardedAt: new Date("2025-09-01"),
@@ -369,11 +395,17 @@ describe("runIlrExport", () => {
 
   const seedSession = (learnerId: unknown, orgId: unknown) =>
     AISession.create({
-      learnerId, orgId,
-      sessionMode: "BRIDGE", esolLevel: "e2",
-      turns: [], safeguardingFlagged: false, vocabIntroduced: [],
-      session_source: "ai_tutor", duration_mins: 60,
-      turn_scores: [], teaching_mode_sequence: [],
+      learnerId,
+      orgId,
+      sessionMode: "BRIDGE",
+      esolLevel: "e2",
+      turns: [],
+      safeguardingFlagged: false,
+      vocabIntroduced: [],
+      session_source: "ai_tutor",
+      duration_mins: 60,
+      turn_scores: [],
+      teaching_mode_sequence: [],
       start_time: new Date("2025-11-01T10:00:00Z"),
     });
 

@@ -63,8 +63,8 @@ export interface ForskillsRowIssue {
 
 export interface ForskillsImportSummary {
   total: number;
-  imported: number;   // learners updated this run
-  failed: number;     // rows we couldn't apply (match failures, validation, etc)
+  imported: number; // learners updated this run
+  failed: number; // rows we couldn't apply (match failures, validation, etc)
   errors: ForskillsRowIssue[];
   warnings: ForskillsRowIssue[];
 }
@@ -109,7 +109,11 @@ interface ValidatedForskillsRow {
 const isBlank = (v: unknown): boolean =>
   v === undefined || v === null || (typeof v === "string" && v.trim() === "");
 
-const mkError = (row: number, field: string, message: string): ForskillsRowIssue => ({
+const mkError = (
+  row: number,
+  field: string,
+  message: string,
+): ForskillsRowIssue => ({
   row,
   field,
   message,
@@ -118,7 +122,7 @@ const mkError = (row: number, field: string, message: string): ForskillsRowIssue
 const validateScore = (
   raw: unknown,
   field: string,
-  row: number
+  row: number,
 ): { value: number | null; error: ForskillsRowIssue | null } => {
   if (isBlank(raw)) {
     return {
@@ -133,7 +137,7 @@ const validateScore = (
       error: mkError(
         row,
         field,
-        `${field} must be a number between ${SCORE_MIN} and ${SCORE_MAX}`
+        `${field} must be a number between ${SCORE_MIN} and ${SCORE_MAX}`,
       ),
     };
   }
@@ -144,14 +148,12 @@ const validateLevel = (
   raw: unknown,
   field: string,
   row: number,
-  required: boolean
+  required: boolean,
 ): { value: EsolLevel | null; error: ForskillsRowIssue | null } => {
   if (isBlank(raw)) {
     return {
       value: null,
-      error: required
-        ? mkError(row, field, `${field} is required`)
-        : null,
+      error: required ? mkError(row, field, `${field} is required`) : null,
     };
   }
   const normalised = normaliseEsolLevel(raw);
@@ -161,7 +163,7 @@ const validateLevel = (
       error: mkError(
         row,
         field,
-        `${field} must be one of: ${ESOL_LEVELS.join(", ")}`
+        `${field} must be one of: ${ESOL_LEVELS.join(", ")}`,
       ),
     };
   }
@@ -173,7 +175,7 @@ const validateLevel = (
 
 const validateRow = (
   raw: RawForskillsRow,
-  row: number
+  row: number,
 ): { value: ValidatedForskillsRow | null; errors: ForskillsRowIssue[] } => {
   const errors: ForskillsRowIssue[] = [];
 
@@ -188,7 +190,11 @@ const validateRow = (
     errors.push(mkError(row, "assessment_date", "assessment_date is required"));
   } else if (!ISO_DATE_RE.test(String(raw.assessment_date).trim())) {
     errors.push(
-      mkError(row, "assessment_date", "assessment_date must be in YYYY-MM-DD format")
+      mkError(
+        row,
+        "assessment_date",
+        "assessment_date must be in YYYY-MM-DD format",
+      ),
     );
   }
 
@@ -210,7 +216,7 @@ const validateRow = (
     raw.recommended_level,
     "recommended_level",
     row,
-    true
+    true,
   );
   if (recommended.error) errors.push(recommended.error);
 
@@ -246,10 +252,10 @@ const bufferToStream = (buf: Buffer): Readable => {
 };
 
 async function* streamRows(
-  buf: Buffer
+  buf: Buffer,
 ): AsyncGenerator<
-  { row: number; value: ValidatedForskillsRow; errors: null } |
-  { row: number; value: null; errors: ForskillsRowIssue[] }
+  | { row: number; value: ValidatedForskillsRow; errors: null }
+  | { row: number; value: null; errors: ForskillsRowIssue[] }
 > {
   const parser = bufferToStream(buf).pipe(
     parse({
@@ -258,7 +264,7 @@ async function* streamRows(
       skip_empty_lines: true,
       relax_quotes: true,
       bom: true,
-    })
+    }),
   );
 
   let rowNumber = 0;
@@ -276,13 +282,13 @@ async function* streamRows(
 const applyToLearner = async (
   row: ValidatedForskillsRow,
   orgId: string,
-  actorId: string
+  actorId: string,
 ): Promise<{ learnerId: string; updated: boolean }> => {
   const learner = await findLearnerInOrg(row.match, orgId);
   if (!learner) {
     throw new ApiError(
       404,
-      `No learner in this organisation matched learner_ref=${row.learner_ref}`
+      `No learner in this organisation matched learner_ref=${row.learner_ref}`,
     );
   }
 
@@ -295,7 +301,7 @@ const applyToLearner = async (
   const incomingFlags = flagWeakSkills(row.scores, row.recommended_level);
   const mergedFlags = mergeWeaknessFlags(
     learner.skillWeaknessFlags,
-    incomingFlags
+    incomingFlags,
   );
 
   learner.esolLevel = row.recommended_level;
@@ -328,8 +334,8 @@ const applyToLearner = async (
   }).catch((err) =>
     logger.error(
       { err, learnerId: learner._id, orgId },
-      "AuditLog write failed for forskills_imported"
-    )
+      "AuditLog write failed for forskills_imported",
+    ),
   );
 
   return { learnerId: learner._id.toString(), updated: true };
@@ -342,7 +348,7 @@ const applyToLearner = async (
 export const importForskillsService = async (
   file: Express.Multer.File | undefined,
   orgId: string,
-  actorId: string
+  actorId: string,
 ): Promise<ApiResponse> => {
   if (!file) {
     throw new ApiError(400, "CSV file is required (multipart field 'file')");
@@ -387,7 +393,7 @@ export const importForskillsService = async (
     logger.error({ err, orgId }, "CSV parse aborted during ForSkills import");
     throw new ApiError(
       400,
-      `CSV parse failed: ${err instanceof Error ? err.message : "unknown error"}`
+      `CSV parse failed: ${err instanceof Error ? err.message : "unknown error"}`,
     );
   }
 

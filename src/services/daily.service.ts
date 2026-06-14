@@ -27,7 +27,7 @@ interface DailyRoomResponse {
 export const createDailyRoom = async (
   bookingId: string,
   lessonDate: string,
-  endTime: string
+  endTime: string,
 ): Promise<string | null> => {
   if (!DAILY_API_KEY) {
     logger.warn("DAILY_API_KEY not set — skipping auto room creation");
@@ -70,7 +70,7 @@ export const createDailyRoom = async (
       const errorBody = await response.text();
       logger.error(
         { status: response.status, body: errorBody },
-        "Daily.co room creation failed"
+        "Daily.co room creation failed",
       );
 
       return null;

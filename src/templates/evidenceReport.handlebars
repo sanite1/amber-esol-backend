@@ -1,4 +1,3 @@
-<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -8,9 +7,13 @@
          Global page setup — see docs/EVIDENCE_REPORT_TEMPLATE.md §1
          A4 with 20mm margins, watermark, page-number footer.
          ───────────────────────────────────────────────────────────── */
-      @page { size: A4; margin: 20mm; }
+      @page {
+        size: A4;
+        margin: 20mm;
+      }
 
-      html, body {
+      html,
+      body {
         font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
         font-size: 10.5pt;
         line-height: 1.45;
@@ -37,8 +40,14 @@
       }
 
       /* Section primitives */
-      .section { page-break-before: always; position: relative; z-index: 1; }
-      .section:first-of-type { page-break-before: auto; }
+      .section {
+        page-break-before: always;
+        position: relative;
+        z-index: 1;
+      }
+      .section:first-of-type {
+        page-break-before: auto;
+      }
 
       h1.section-title {
         font-size: 18pt;
@@ -48,12 +57,27 @@
         border-bottom: 2pt solid #facc15; /* Amber yellow */
         color: #0b2343;
       }
-      h2 { font-size: 13pt; font-weight: 600; margin: 6mm 0 2mm 0; }
-      h3 { font-size: 11pt; font-weight: 600; margin: 4mm 0 1mm 0; }
+      h2 {
+        font-size: 13pt;
+        font-weight: 600;
+        margin: 6mm 0 2mm 0;
+      }
+      h3 {
+        font-size: 11pt;
+        font-weight: 600;
+        margin: 4mm 0 1mm 0;
+      }
 
-      p { margin: 0 0 2mm 0; }
-      .muted { color: #5a6b85; font-size: 9.5pt; }
-      .dash { color: #94a3b8; }
+      p {
+        margin: 0 0 2mm 0;
+      }
+      .muted {
+        color: #5a6b85;
+        font-size: 9.5pt;
+      }
+      .dash {
+        color: #94a3b8;
+      }
 
       table {
         width: 100%;
@@ -61,19 +85,40 @@
         font-size: 9.5pt;
         margin: 2mm 0 4mm 0;
       }
-      th, td {
+      th,
+      td {
         text-align: left;
         padding: 2mm 3mm;
         border-bottom: 0.5pt solid #d6deea;
         vertical-align: top;
       }
-      th { background: #f4f6fb; font-weight: 600; color: #0b2343; }
-      tbody tr:nth-child(even) td { background: #fbfcfe; }
+      th {
+        background: #f4f6fb;
+        font-weight: 600;
+        color: #0b2343;
+      }
+      tbody tr:nth-child(even) td {
+        background: #fbfcfe;
+      }
 
-      .kv { display: flex; flex-wrap: wrap; gap: 4mm 8mm; margin-bottom: 3mm; }
-      .kv > div { min-width: 40mm; }
-      .kv .k { color: #5a6b85; font-size: 9pt; }
-      .kv .v { font-size: 11pt; font-weight: 600; color: #0b2343; }
+      .kv {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4mm 8mm;
+        margin-bottom: 3mm;
+      }
+      .kv > div {
+        min-width: 40mm;
+      }
+      .kv .k {
+        color: #5a6b85;
+        font-size: 9pt;
+      }
+      .kv .v {
+        font-size: 11pt;
+        font-weight: 600;
+        color: #0b2343;
+      }
 
       .callout {
         border-left: 3pt solid #facc15;
@@ -97,9 +142,15 @@
         margin-right: 1.5mm;
       }
 
-      .turn { margin: 1mm 0; }
-      .turn--learner { color: #0b2343; }
-      .turn--tutor { color: #047857; }
+      .turn {
+        margin: 1mm 0;
+      }
+      .turn--learner {
+        color: #0b2343;
+      }
+      .turn--tutor {
+        color: #047857;
+      }
       .turn .role {
         font-weight: 600;
         font-size: 8.5pt;
@@ -118,7 +169,9 @@
         flex-direction: column;
         justify-content: space-between;
       }
-      .cover__head { margin-top: 30mm; }
+      .cover__head {
+        margin-top: 30mm;
+      }
       .cover__title {
         font-size: 30pt;
         font-weight: 800;
@@ -131,14 +184,21 @@
         font-weight: 600;
         margin: 6mm 0 2mm 0;
       }
-      .cover__period { font-size: 13pt; color: #334155; }
-      .cover__meta { font-size: 9.5pt; color: #5a6b85; margin-bottom: 10mm; }
+      .cover__period {
+        font-size: 13pt;
+        color: #334155;
+      }
+      .cover__meta {
+        font-size: 9.5pt;
+        color: #5a6b85;
+        margin-bottom: 10mm;
+      }
     </style>
   </head>
   <body>
-    {{!-- ──────────────────────────────────────────────────────────────
+    {{! ──────────────────────────────────────────────────────────────
           §1 — Cover
-          ────────────────────────────────────────────────────────────── --}}
+          ────────────────────────────────────────────────────────────── }}
     <section class="section cover">
       <div class="cover__head">
         <p class="muted">Project Silk — Amber Training Ltd</p>
@@ -158,20 +218,34 @@
       </div>
     </section>
 
-    {{!-- ──────────────────────────────────────────────────────────────
+    {{! ──────────────────────────────────────────────────────────────
           §2 — Cohort summary
-          ────────────────────────────────────────────────────────────── --}}
+          ────────────────────────────────────────────────────────────── }}
     <section class="section">
       <h1 class="section-title">2. Cohort summary</h1>
 
       <div class="kv">
-        <div><div class="k">Learners in cohort</div><div class="v">{{cohort.total_learners}}</div></div>
-        <div><div class="k">Total GLH</div><div class="v">{{round1 cohort.total_glh}}</div></div>
-        <div><div class="k">AI-tutor GLH</div><div class="v">{{round1 cohort.ai_glh}}</div></div>
-        <div><div class="k">Imported (pre-platform) GLH</div><div class="v">{{round1 cohort.imported_glh}}</div></div>
-        <div><div class="k">Teacher-contact GLH</div><div class="v">{{round1 cohort.teacher_contact_glh}}</div></div>
-        <div><div class="k">Scenarios passed</div><div class="v">{{cohort.scenarios_passed_total}}</div></div>
-        <div><div class="k">Level progressions</div><div class="v">{{cohort.level_progression_count}}</div></div>
+        <div><div class="k">Learners in cohort</div><div
+            class="v"
+          >{{cohort.total_learners}}</div></div>
+        <div><div class="k">Total GLH</div><div class="v">{{round1
+              cohort.total_glh
+            }}</div></div>
+        <div><div class="k">AI-tutor GLH</div><div class="v">{{round1
+              cohort.ai_glh
+            }}</div></div>
+        <div><div class="k">Imported (pre-platform) GLH</div><div
+            class="v"
+          >{{round1 cohort.imported_glh}}</div></div>
+        <div><div class="k">Teacher-contact GLH</div><div class="v">{{round1
+              cohort.teacher_contact_glh
+            }}</div></div>
+        <div><div class="k">Scenarios passed</div><div
+            class="v"
+          >{{cohort.scenarios_passed_total}}</div></div>
+        <div><div class="k">Level progressions</div><div
+            class="v"
+          >{{cohort.level_progression_count}}</div></div>
       </div>
 
       <h3>Level distribution</h3>
@@ -190,18 +264,19 @@
         </tbody>
       </table>
 
-      <p class="muted">Level progressions in period: {{cohort.level_progression_breakdown}}</p>
+      <p class="muted">Level progressions in period:
+        {{cohort.level_progression_breakdown}}</p>
     </section>
 
-    {{!-- ──────────────────────────────────────────────────────────────
+    {{! ──────────────────────────────────────────────────────────────
           §3 — Stage 1 (Initial assessment)
-          ────────────────────────────────────────────────────────────── --}}
+          ────────────────────────────────────────────────────────────── }}
     <section class="section">
       <h1 class="section-title">3. Stage 1 — Initial assessment</h1>
       <p class="muted">
-        Learners identified by ULN only. Assessment source is either
-        ForSkills import (carried-forward GLH and prior-attainment
-        evidence) or platform placement.
+        Learners identified by ULN only. Assessment source is either ForSkills
+        import (carried-forward GLH and prior-attainment evidence) or platform
+        placement.
       </p>
       <table>
         <thead>
@@ -215,7 +290,9 @@
         <tbody>
           {{#each stage1_rows}}
             <tr>
-              <td>{{#if this.uln}}{{this.uln}}{{else}}<span class="dash">—</span>{{/if}}</td>
+              <td>{{#if this.uln}}{{this.uln}}{{else}}<span
+                    class="dash"
+                  >—</span>{{/if}}</td>
               <td>{{this.assessment_date_human}}</td>
               <td>{{this.source_label}}</td>
               <td>{{this.recommended_level}}</td>
@@ -225,15 +302,14 @@
       </table>
     </section>
 
-    {{!-- ──────────────────────────────────────────────────────────────
+    {{! ──────────────────────────────────────────────────────────────
           §4 — Stage 2 (Diagnostic / skill-domain analysis)
-          ────────────────────────────────────────────────────────────── --}}
+          ────────────────────────────────────────────────────────────── }}
     <section class="section">
       <h1 class="section-title">4. Stage 2 — Diagnostic assessment</h1>
       <p class="muted">
         Sub-skill weaknesses identified at placement (reading, writing,
-        listening, speaking). Drives the Stage 3 individual learning
-        plan.
+        listening, speaking). Drives the Stage 3 individual learning plan.
       </p>
       <table>
         <thead>
@@ -248,26 +324,28 @@
         <tbody>
           {{#each stage2_rows}}
             <tr>
-              <td>{{#if this.uln}}{{this.uln}}{{else}}<span class="dash">—</span>{{/if}}</td>
+              <td>{{#if this.uln}}{{this.uln}}{{else}}<span
+                    class="dash"
+                  >—</span>{{/if}}</td>
               <td>{{this.source_label}}</td>
               <td>{{this.assessment_date_human}}</td>
               <td>{{this.recommended_level}}</td>
-              <td>{{this.weakness_flags_human}} <span class="muted">({{this.weakness_flags_count}})</span></td>
+              <td>{{this.weakness_flags_human}}
+                <span class="muted">({{this.weakness_flags_count}})</span></td>
             </tr>
           {{/each}}
         </tbody>
       </table>
     </section>
 
-    {{!-- ──────────────────────────────────────────────────────────────
+    {{! ──────────────────────────────────────────────────────────────
           §5 — Stage 3 (Individual learning plan)
-          ────────────────────────────────────────────────────────────── --}}
+          ────────────────────────────────────────────────────────────── }}
     <section class="section">
       <h1 class="section-title">5. Stage 3 — Individual learning plan</h1>
       <p class="muted">
-        Objectives grouped by target level. Source indicates whether
-        the objective was set from placement, a level change, or a
-        teacher override.
+        Objectives grouped by target level. Source indicates whether the
+        objective was set from placement, a level change, or a teacher override.
       </p>
 
       {{#each stage3_rows}}
@@ -295,15 +373,15 @@
       {{/each}}
     </section>
 
-    {{!-- ──────────────────────────────────────────────────────────────
+    {{! ──────────────────────────────────────────────────────────────
           §6 — Stage 4 (Formative evidence)
-          ────────────────────────────────────────────────────────────── --}}
+          ────────────────────────────────────────────────────────────── }}
     <section class="section">
       <h1 class="section-title">6. Stage 4 — Formative evidence</h1>
       <p class="muted">
-        Sessions, scenario completion, vocabulary retention, and
-        sampled turn excerpts (early / mid / late). Safeguarding-flagged
-        sessions are excluded from excerpt selection at the data layer.
+        Sessions, scenario completion, vocabulary retention, and sampled turn
+        excerpts (early / mid / late). Safeguarding-flagged sessions are
+        excluded from excerpt selection at the data layer.
       </p>
 
       {{#each stage4_rows}}
@@ -312,9 +390,15 @@
           {{#if this.uln}}{{this.uln}}{{else}}<span class="dash">—</span>{{/if}}
         </h3>
         <div class="kv">
-          <div><div class="k">Sessions</div><div class="v">{{this.session_count}}</div></div>
-          <div><div class="k">Scenarios passed</div><div class="v">{{this.scenarios_passed}}</div></div>
-          <div><div class="k">Vocab retention</div><div class="v">{{this.vocab_retention_pct}}%</div></div>
+          <div><div class="k">Sessions</div><div
+              class="v"
+            >{{this.session_count}}</div></div>
+          <div><div class="k">Scenarios passed</div><div
+              class="v"
+            >{{this.scenarios_passed}}</div></div>
+          <div><div class="k">Vocab retention</div><div
+              class="v"
+            >{{this.vocab_retention_pct}}%</div></div>
         </div>
 
         {{#if (gt this.top_10_retained.length 0)}}
@@ -345,25 +429,38 @@
       {{/each}}
     </section>
 
-    {{!-- ──────────────────────────────────────────────────────────────
+    {{! ──────────────────────────────────────────────────────────────
           §7 — Stage 5 (RARPA sign-off)
-          ────────────────────────────────────────────────────────────── --}}
+          ────────────────────────────────────────────────────────────── }}
     <section class="section">
       <h1 class="section-title">7. Stage 5 — RARPA reflective sign-off</h1>
 
       <div class="kv">
-        <div><div class="k">Completed sign-offs</div><div class="v">{{stage5.completed_count}}</div></div>
-        <div><div class="k">Pending sign-offs</div><div class="v">{{stage5.pending_count}}</div></div>
+        <div><div class="k">Completed sign-offs</div><div
+            class="v"
+          >{{stage5.completed_count}}</div></div>
+        <div><div class="k">Pending sign-offs</div><div
+            class="v"
+          >{{stage5.pending_count}}</div></div>
       </div>
 
       <h3>Completed</h3>
       {{#if (gt stage5.completed.length 0)}}
         {{#each stage5.completed}}
           <p>
-            <strong>ULN {{#if this.uln}}{{this.uln}}{{else}}<span class="dash">—</span>{{/if}}</strong>
-            — {{this.old_level_label}} → {{this.new_level_label}}
+            <strong>ULN
+              {{#if this.uln}}{{this.uln}}{{else}}<span
+                  class="dash"
+                >—</span>{{/if}}</strong>
+            —
+            {{this.old_level_label}}
+            →
+            {{this.new_level_label}}
             <span class="muted">
-              confirmed {{this.confirmed_at_human}} by {{this.confirmed_by_name}}
+              confirmed
+              {{this.confirmed_at_human}}
+              by
+              {{this.confirmed_by_name}}
             </span>
           </p>
           <p class="muted">Learner self-assessment:</p>
@@ -384,7 +481,9 @@
           <tbody>
             {{#each stage5.pending}}
               <tr>
-                <td>{{#if this.uln}}{{this.uln}}{{else}}<span class="dash">—</span>{{/if}}</td>
+                <td>{{#if this.uln}}{{this.uln}}{{else}}<span
+                      class="dash"
+                    >—</span>{{/if}}</td>
                 <td>{{this.created_at_human}}</td>
               </tr>
             {{/each}}
@@ -395,32 +494,34 @@
       {{/if}}
     </section>
 
-    {{!-- ──────────────────────────────────────────────────────────────
+    {{! ──────────────────────────────────────────────────────────────
           §8 — Teacher oversight  (FINAL ADDENDUM §4 + §12)
           Explicitly demonstrates that a qualified teacher has reviewed
           the AI-led delivery — the centrepiece of the Phase 2 audit
           response.
-          ────────────────────────────────────────────────────────────── --}}
+          ────────────────────────────────────────────────────────────── }}
     <section class="section">
       <h1 class="section-title">8. Teacher oversight</h1>
       <div class="callout">
-        Every learner is assigned to a qualified ESOL teacher. The
-        section below shows cohort-level oversight totals first,
-        then a per-learner breakdown.
-        <strong>Async review</strong> = teacher review of AI turn
-        transcripts;
-        <strong>Contact session</strong> = synchronous teaching;
-        <strong>Pathway adjustment</strong> = Stage 3 objective edit;
-        <strong>RARPA sign-off</strong> = Stage 5 confirmation.
+        Every learner is assigned to a qualified ESOL teacher. The section below
+        shows cohort-level oversight totals first, then a per-learner breakdown.
+        <strong>Async review</strong>
+        = teacher review of AI turn transcripts;
+        <strong>Contact session</strong>
+        = synchronous teaching;
+        <strong>Pathway adjustment</strong>
+        = Stage 3 objective edit;
+        <strong>RARPA sign-off</strong>
+        = Stage 5 confirmation.
       </div>
 
-      {{!-- ── Final Addendum §12 — cohort aggregates ────────────
+      {{! ── Final Addendum §12 — cohort aggregates ────────────
             Three numbers Joey called out as the org admin's "did
             teacher oversight actually happen?" glance-test:
               - total cohort teacher GLH
               - average reviews per learner
               - top reviewers (capped at 5) by GLH contributed
-                in the reporting window. --}}
+                in the reporting window. }}
       <h3>Cohort totals</h3>
       <div class="kv">
         <div>
@@ -429,7 +530,9 @@
         </div>
         <div>
           <div class="k">Avg reviews per learner</div>
-          <div class="v">{{teacher_oversight_aggregates.average_reviews_per_learner}}</div>
+          <div
+            class="v"
+          >{{teacher_oversight_aggregates.average_reviews_per_learner}}</div>
         </div>
         <div>
           <div class="k">Reviews in period</div>
@@ -482,7 +585,9 @@
         <tbody>
           {{#each teacher_oversight_rows}}
             <tr>
-              <td>{{#if this.uln}}{{this.uln}}{{else}}<span class="dash">—</span>{{/if}}</td>
+              <td>{{#if this.uln}}{{this.uln}}{{else}}<span
+                    class="dash"
+                  >—</span>{{/if}}</td>
               <td>{{this.teacher_name_or_dash}}</td>
               <td>{{this.total_teacher_glh}}</td>
               <td>{{this.counts.async_review}}</td>
@@ -496,20 +601,33 @@
       </table>
     </section>
 
-    {{!-- ──────────────────────────────────────────────────────────────
+    {{! ──────────────────────────────────────────────────────────────
           §9 — ILR data summary
-          ────────────────────────────────────────────────────────────── --}}
+          ────────────────────────────────────────────────────────────── }}
     <section class="section">
       <h1 class="section-title">9. ILR data summary</h1>
       {{#if ilr.has_linked_export}}
         <div class="kv">
-          <div><div class="k">Export ID</div><div class="v"><code>{{ilr.export_id}}</code></div></div>
-          <div><div class="k">Generated</div><div class="v">{{ilr.generated_at_human}}</div></div>
-          <div><div class="k">Period</div><div class="v">{{ilr.period_start_human}} – {{ilr.period_end_human}}</div></div>
-          <div><div class="k">Config version</div><div class="v">{{ilr.compliance_config_version}}</div></div>
-          <div><div class="k">Rows exported</div><div class="v">{{ilr.rows_exported}}</div></div>
-          <div><div class="k">Rows blocked</div><div class="v">{{ilr.rows_blocked}}</div></div>
-          <div><div class="k">Warnings</div><div class="v">{{ilr.warnings_count}}</div></div>
+          <div><div class="k">Export ID</div><div class="v"><code
+              >{{ilr.export_id}}</code></div></div>
+          <div><div class="k">Generated</div><div
+              class="v"
+            >{{ilr.generated_at_human}}</div></div>
+          <div><div class="k">Period</div><div
+              class="v"
+            >{{ilr.period_start_human}} – {{ilr.period_end_human}}</div></div>
+          <div><div class="k">Config version</div><div
+              class="v"
+            >{{ilr.compliance_config_version}}</div></div>
+          <div><div class="k">Rows exported</div><div
+              class="v"
+            >{{ilr.rows_exported}}</div></div>
+          <div><div class="k">Rows blocked</div><div
+              class="v"
+            >{{ilr.rows_blocked}}</div></div>
+          <div><div class="k">Warnings</div><div
+              class="v"
+            >{{ilr.warnings_count}}</div></div>
         </div>
 
         {{#if (gt ilr.warnings_by_type.length 0)}}
@@ -528,30 +646,46 @@
       {{/if}}
     </section>
 
-    {{!-- ──────────────────────────────────────────────────────────────
+    {{! ──────────────────────────────────────────────────────────────
           §10 — Safeguarding overview  (AGGREGATE-ONLY)
           No learner_id, no messageContentHash, no alert detail crosses
           this boundary. Brief Function 10 + Function 14 To-Do 1.
-          ────────────────────────────────────────────────────────────── --}}
+          ────────────────────────────────────────────────────────────── }}
     <section class="section">
       <h1 class="section-title">10. Safeguarding overview</h1>
 
       <div class="callout callout--privacy">
-        <strong>Privacy notice:</strong> this section reports
-        aggregate counts and resolution metrics only. Individual
-        learners, message content, and alert detail are NEVER included
-        in this report. Alert detail is accessible only to
+        <strong>Privacy notice:</strong>
+        this section reports aggregate counts and resolution metrics only.
+        Individual learners, message content, and alert detail are NEVER
+        included in this report. Alert detail is accessible only to
         designated-safeguarding-lead users via the live console.
       </div>
 
       <div class="kv">
-        <div><div class="k">Period</div><div class="v">{{safeguarding.period_start_human}} – {{safeguarding.period_end_human}}</div></div>
-        <div><div class="k">Total alerts</div><div class="v">{{safeguarding.total}}</div></div>
-        <div><div class="k">Resolved</div><div class="v">{{safeguarding.resolved_count}}</div></div>
-        <div><div class="k">Resolution rate</div><div class="v">{{safeguarding.resolution_rate_pct}}%</div></div>
-        <div><div class="k">Avg resolution (days)</div><div class="v">{{safeguarding.avg_resolution_days}}</div></div>
-        <div><div class="k">Median resolution (days)</div><div class="v">{{safeguarding.median_resolution_days}}</div></div>
-        <div><div class="k">Oldest unresolved (days)</div><div class="v">{{safeguarding.oldest_unresolved_days}}</div></div>
+        <div><div class="k">Period</div><div
+            class="v"
+          >{{safeguarding.period_start_human}}
+            –
+            {{safeguarding.period_end_human}}</div></div>
+        <div><div class="k">Total alerts</div><div
+            class="v"
+          >{{safeguarding.total}}</div></div>
+        <div><div class="k">Resolved</div><div
+            class="v"
+          >{{safeguarding.resolved_count}}</div></div>
+        <div><div class="k">Resolution rate</div><div
+            class="v"
+          >{{safeguarding.resolution_rate_pct}}%</div></div>
+        <div><div class="k">Avg resolution (days)</div><div
+            class="v"
+          >{{safeguarding.avg_resolution_days}}</div></div>
+        <div><div class="k">Median resolution (days)</div><div
+            class="v"
+          >{{safeguarding.median_resolution_days}}</div></div>
+        <div><div class="k">Oldest unresolved (days)</div><div
+            class="v"
+          >{{safeguarding.oldest_unresolved_days}}</div></div>
       </div>
 
       {{#if (gt safeguarding.by_category.length 0)}}
@@ -567,69 +701,124 @@
       {{/if}}
     </section>
 
-    {{!-- ──────────────────────────────────────────────────────────────
-          §11 — Methodology appendix
-          ────────────────────────────────────────────────────────────── --}}
+    {{! ──────────────────────────────────────────────────────────────
+          §11 — Evidence provenance  (FINAL ADDENDUM §6)
+          Each RARPA stage's evidence traced back to dated, append-only
+          audit entries + the rule-set version active at generation.
+          ────────────────────────────────────────────────────────────── }}
     <section class="section">
-      <h1 class="section-title">11. Appendix — Methodology</h1>
+      <h1 class="section-title">11. Evidence provenance</h1>
+
+      <p>
+        Every compliance event behind this report is recorded in an append-only
+        audit log. The table below confirms, per RARPA stage, how the evidence
+        in sections 3–7 was generated and when the most recent entry was
+        written. RARPA stage-completion criteria were evaluated under rule set
+        <strong>
+          {{#if provenance.rarpa_config_version}}
+            version
+            {{provenance.rarpa_config_version}}
+          {{else}}
+            (no active RARPA rule set)
+          {{/if}}
+        </strong>
+        for academic year
+        <strong>{{provenance.rarpa_academic_year}}</strong>.
+      </p>
+
+      {{#if provenance.rows.length}}
+        <table>
+          <thead>
+            <tr>
+              <th>RARPA stage</th>
+              <th>Audit event</th>
+              <th>Entries in period</th>
+              <th>Most recent</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each provenance.rows}}
+              <tr>
+                <td>{{this.stage_label}}</td>
+                <td>{{this.action_label}}</td>
+                <td>{{this.count}}</td>
+                <td>{{this.latest_human}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      {{else}}
+        <p class="muted">
+          No stage-evidence audit entries were recorded in the reporting period.
+        </p>
+      {{/if}}
+    </section>
+
+    {{! ──────────────────────────────────────────────────────────────
+          §12 — Methodology appendix
+          ────────────────────────────────────────────────────────────── }}
+    <section class="section">
+      <h1 class="section-title">12. Appendix — Methodology</h1>
 
       <h3>RARPA</h3>
       <p>
-        Recognising and Recording Progress and Achievement in
-        non-accredited learning. The five-stage RARPA process is the
-        Department for Education's framework for evidencing progress in
-        community learning. This report follows the five stages in
-        order: initial assessment (Stage 1), diagnostic assessment
-        (Stage 2), individual learning plan (Stage 3), formative
-        assessment (Stage 4), and reflective summative review (Stage 5).
+        Recognising and Recording Progress and Achievement in non-accredited
+        learning. The five-stage RARPA process is the Department for Education's
+        framework for evidencing progress in community learning. This report
+        follows the five stages in order: initial assessment (Stage 1),
+        diagnostic assessment (Stage 2), individual learning plan (Stage 3),
+        formative assessment (Stage 4), and reflective summative review (Stage
+        5).
       </p>
 
       <h3>Teacher oversight</h3>
       <p>
-        AI-led delivery is supplemented by a qualified ESOL teacher
-        for every learner. Section 8 summarises teacher activity
-        across four review types. Teacher GLH is counted separately
-        from AI-tutor GLH in the cohort totals.
+        AI-led delivery is supplemented by a qualified ESOL teacher for every
+        learner. Section 8 summarises teacher activity across four review types.
+        Teacher GLH is counted separately from AI-tutor GLH in the cohort
+        totals.
       </p>
 
       <h3>Vocabulary retention</h3>
       <p>
-        Vocabulary retention is computed from the per-learner
-        VocabLedger: a word is retained when the learner has
-        demonstrated correct use across at least three independent
-        sessions. Top retained words are ranked by encounter count and
-        most-recent use.
+        Vocabulary retention is computed from the per-learner VocabLedger: a
+        word is retained when the learner has demonstrated correct use across at
+        least three independent sessions. Top retained words are ranked by
+        encounter count and most-recent use.
       </p>
 
       <h3>Sampling — Stage 4 excerpts</h3>
       <p>
-        For each learner, up to three session excerpts are sampled
-        across the reporting period — one early, one mid, one late.
-        Safeguarding-flagged sessions are excluded from the sample at
-        the data layer (not the rendering layer).
+        For each learner, up to three session excerpts are sampled across the
+        reporting period — one early, one mid, one late. Safeguarding-flagged
+        sessions are excluded from the sample at the data layer (not the
+        rendering layer).
       </p>
 
       <h3>ILR data</h3>
       <p>
-        Field mappings and validation rules are read from the
-        versioned ComplianceConfig collection (domain <code>ilr</code>).
-        Demo organisations cannot generate ILR exports. The linked
-        export referenced in section 9 carries its own config-version
+        Field mappings and validation rules are read from the versioned
+        ComplianceConfig collection (domain
+        <code>ilr</code>). Demo organisations cannot generate ILR exports. The
+        linked export referenced in section 9 carries its own config-version
         stamp.
       </p>
 
       <h3>Privacy</h3>
       <p>
-        Learners are identified by ULN only across this document.
-        Safeguarding alerts are reported in aggregate only — no
-        learner identifier, message content, or alert detail crosses
-        the report boundary. The report is watermarked and the disk
-        copy is access-controlled.
+        Learners are identified by ULN only across this document. Safeguarding
+        alerts are reported in aggregate only — no learner identifier, message
+        content, or alert detail crosses the report boundary. The report is
+        watermarked and the disk copy is access-controlled.
       </p>
 
       <p class="muted">
-        Report ID <code>{{report_id}}</code> · Generated
-        {{generated_at_human}} · {{org.name}}
+        Report ID
+        <code>{{report_id}}</code>
+        · Generated
+        {{generated_at_human}}
+        ·
+        {{org.name}}
       </p>
     </section>
   </body>

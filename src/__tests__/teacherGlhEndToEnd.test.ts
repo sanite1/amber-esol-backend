@@ -45,7 +45,8 @@
  * same shape twice.
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 // ── Mocks — set up BEFORE the imports they intercept ───────────
 jest.mock("../queues", () => ({
@@ -59,7 +60,9 @@ jest.mock("../queues", () => ({
   cacheRefreshQueue: { add: jest.fn().mockResolvedValue({ id: "fake" }) },
   rarpaEvidenceQueue: { add: jest.fn().mockResolvedValue({ id: "fake" }) },
   ilrExportQueue: { add: jest.fn().mockResolvedValue({ id: "fake" }) },
-  complianceValidationQueue: { add: jest.fn().mockResolvedValue({ id: "fake" }) },
+  complianceValidationQueue: {
+    add: jest.fn().mockResolvedValue({ id: "fake" }),
+  },
   misPushQueue: { add: jest.fn().mockResolvedValue({ id: "fake" }) },
 }));
 
@@ -160,10 +163,7 @@ const seedTeacher = async (orgId: Types.ObjectId) =>
     dbsCheckStatus: "cleared",
   });
 
-const seedLearner = async (
-  orgId: Types.ObjectId,
-  teacherId: Types.ObjectId,
-) =>
+const seedLearner = async (orgId: Types.ObjectId, teacherId: Types.ObjectId) =>
   User.create({
     firstname: "Ahmed",
     lastname: "Khaled",
@@ -251,247 +251,243 @@ const parseCsvCell = (
 // ═════════════════════════════════════════════════════════════════════
 
 describe("Final Addendum §12 — end-to-end teacher GLH flow", () => {
-  it(
-    "seed → 3 sessions → 2 reviews → ILR build emits correct totals + CSV + audit",
-    async () => {
-      // ── 1. Seed org, teacher, learner ───────────────────────────
-      await seedComplianceConfig();
-      const org = await seedOrg();
-      const orgId = org._id as Types.ObjectId;
-      const teacher = await seedTeacher(orgId);
-      const teacherId = teacher._id as Types.ObjectId;
-      const learner = await seedLearner(orgId, teacherId);
-      const learnerId = learner._id as Types.ObjectId;
+  it("seed → 3 sessions → 2 reviews → ILR build emits correct totals + CSV + audit", async () => {
+    // ── 1. Seed org, teacher, learner ───────────────────────────
+    await seedComplianceConfig();
+    const org = await seedOrg();
+    const orgId = org._id as Types.ObjectId;
+    const teacher = await seedTeacher(orgId);
+    const teacherId = teacher._id as Types.ObjectId;
+    const learner = await seedLearner(orgId, teacherId);
+    const learnerId = learner._id as Types.ObjectId;
 
-      // ── 2. Seed 3 AI sessions × 30 mins = 90 mins ai_glh ────────
-      await seedAiSession(learnerId, orgId, SESSION_MINS, 1);
-      await seedAiSession(learnerId, orgId, SESSION_MINS, 2);
-      await seedAiSession(learnerId, orgId, SESSION_MINS, 3);
+    // ── 2. Seed 3 AI sessions × 30 mins = 90 mins ai_glh ────────
+    await seedAiSession(learnerId, orgId, SESSION_MINS, 1);
+    await seedAiSession(learnerId, orgId, SESSION_MINS, 2);
+    await seedAiSession(learnerId, orgId, SESSION_MINS, 3);
 
-      // ── 3. Log 2 teacher reviews — 30 contact + 15 async ────────
-      // Run via the real service so the atomic $inc lands the
-      // teacher_contact_hours on the learner and the AuditLog
-      // rows fire (assertion #3 below).
-      const r1 = await logTeacherReviewService({
-        learner_id: learnerId.toString(),
-        teacher_id: teacherId.toString(),
-        body: {
-          review_type: "contact_session",
-          duration_mins: 30,
-          ai_recommendation_acted_on: true,
-        },
-      });
-      expect(r1.statusCode).toBe(201);
+    // ── 3. Log 2 teacher reviews — 30 contact + 15 async ────────
+    // Run via the real service so the atomic $inc lands the
+    // teacher_contact_hours on the learner and the AuditLog
+    // rows fire (assertion #3 below).
+    const r1 = await logTeacherReviewService({
+      learner_id: learnerId.toString(),
+      teacher_id: teacherId.toString(),
+      body: {
+        review_type: "contact_session",
+        duration_mins: 30,
+        ai_recommendation_acted_on: true,
+      },
+    });
+    expect(r1.statusCode).toBe(201);
 
-      const r2 = await logTeacherReviewService({
-        learner_id: learnerId.toString(),
-        teacher_id: teacherId.toString(),
-        body: {
-          review_type: "async_review",
-          duration_mins: 15,
-          ai_recommendation_acted_on: false,
-        },
-      });
-      expect(r2.statusCode).toBe(201);
+    const r2 = await logTeacherReviewService({
+      learner_id: learnerId.toString(),
+      teacher_id: teacherId.toString(),
+      body: {
+        review_type: "async_review",
+        duration_mins: 15,
+        ai_recommendation_acted_on: false,
+      },
+    });
+    expect(r2.statusCode).toBe(201);
 
-      // Sanity — the learner's glh_teacher_contact should now be
-      // 45/60 = 0.75 exactly. If this fails, every downstream
-      // assertion is unreliable.
-      const freshLearner = await User.findById(learnerId)
-        .select("glh_teacher_contact")
-        .lean();
-      expect(freshLearner!.glh_teacher_contact).toBeCloseTo(0.75, 6);
+    // Sanity — the learner's glh_teacher_contact should now be
+    // 45/60 = 0.75 exactly. If this fails, every downstream
+    // assertion is unreliable.
+    const freshLearner = await User.findById(learnerId)
+      .select("glh_teacher_contact")
+      .lean();
+    expect(freshLearner!.glh_teacher_contact).toBeCloseTo(0.75, 6);
 
-      // ── 4. Build ILR rows + companion JSON + CSV ────────────────
-      const buildResult = await buildIlrRows(orgId.toString(), ACADEMIC_YEAR);
-      expect(buildResult.config_missing).toBe(false);
-      // 3 sessions → 3 rows (the row builder emits one per session).
-      // The aim_invalid_rows bucket should be empty since FALA mock
-      // returns true for everything.
-      expect(buildResult.rows.length).toBeGreaterThan(0);
-      expect(buildResult.aim_invalid_rows.length).toBe(0);
+    // ── 4. Build ILR rows + companion JSON + CSV ────────────────
+    const buildResult = await buildIlrRows(orgId.toString(), ACADEMIC_YEAR);
+    expect(buildResult.config_missing).toBe(false);
+    // 3 sessions → 3 rows (the row builder emits one per session).
+    // The aim_invalid_rows bucket should be empty since FALA mock
+    // returns true for everything.
+    expect(buildResult.rows.length).toBeGreaterThan(0);
+    expect(buildResult.aim_invalid_rows.length).toBe(0);
 
-      // The validRows for the companion are everything except the
-      // FALA-invalid bucket (the worker's runIlrExport does this
-      // split internally; bypassing it here means we treat all
-      // rows as valid, which matches the FALA-mocks-everything-true
-      // contract above).
-      const validRows = buildResult.rows;
+    // The validRows for the companion are everything except the
+    // FALA-invalid bucket (the worker's runIlrExport does this
+    // split internally; bypassing it here means we treat all
+    // rows as valid, which matches the FALA-mocks-everything-true
+    // contract above).
+    const validRows = buildResult.rows;
 
-      const teacherContactByLearner = new Map<string, number>([
-        [learnerId.toString(), freshLearner!.glh_teacher_contact ?? 0],
-      ]);
+    const teacherContactByLearner = new Map<string, number>([
+      [learnerId.toString(), freshLearner!.glh_teacher_contact ?? 0],
+    ]);
 
-      const exportId = randomUUID();
-      const generatedAt = new Date();
-      const companion = buildCompanionJson({
-        exportId,
-        generatedAt,
-        configVersion: buildResult.config_version,
-        validRows,
-        blockedRows: [],
-        warnings: [],
-        teacherContactByLearner,
-      });
-      const csv = serialiseRowsToCsv(validRows);
+    const exportId = randomUUID();
+    const generatedAt = new Date();
+    const companion = buildCompanionJson({
+      exportId,
+      generatedAt,
+      configVersion: buildResult.config_version,
+      validRows,
+      blockedRows: [],
+      warnings: [],
+      teacherContactByLearner,
+    });
+    const csv = serialiseRowsToCsv(validRows);
 
-      // ── 5. AuditLog the export — the worker writes this row
-      //     after persistExportArtifacts; we inline it here so the
-      //     audit assertion below covers the same row production
-      //     would emit. Payload kept byte-equivalent to the worker
-      //     (queueProcessors/index.ts:405).
-      await writeAuditLog({
-        actor_type: "org_admin",
-        actor_id: null,
-        org_id: orgId.toString(),
-        learner_id: null,
-        action: "ilr_export_completed",
-        after_state: {
-          export_id: exportId,
-          academic_year: ACADEMIC_YEAR,
-          rows_exported: validRows.length,
-          rows_blocked: 0,
-          warnings_count: 0,
-          totals: companion.totals,
-        },
-        reason: `ILR export generated (e2e test) for ${ACADEMIC_YEAR}`,
-        compliance_config_version: buildResult.config_version,
-      });
+    // ── 5. AuditLog the export — the worker writes this row
+    //     after persistExportArtifacts; we inline it here so the
+    //     audit assertion below covers the same row production
+    //     would emit. Payload kept byte-equivalent to the worker
+    //     (queueProcessors/index.ts:405).
+    await writeAuditLog({
+      actor_type: "org_admin",
+      actor_id: null,
+      org_id: orgId.toString(),
+      learner_id: null,
+      action: "ilr_export_completed",
+      after_state: {
+        export_id: exportId,
+        academic_year: ACADEMIC_YEAR,
+        rows_exported: validRows.length,
+        rows_blocked: 0,
+        warnings_count: 0,
+        totals: companion.totals,
+      },
+      reason: `ILR export generated (e2e test) for ${ACADEMIC_YEAR}`,
+      compliance_config_version: buildResult.config_version,
+    });
 
-      // ── 6a. Assert companion totals ─────────────────────────────
-      //
-      // SPEC VALUES per the brief (§12):
-      //   ai_glh             = 90 / 60 = 1.5
-      //   teacher_contact_glh = 45 / 60 = 0.75
-      //   total_glh           = 1.5 + 0 + 0.75 = 2.25
-      //
-      // CURRENT VALUES the companion actually emits today:
-      //   ai_glh             = 1.7  (spec 1.5; +0.2 from row-builder round)
-      //   teacher_contact_glh = 0.8  (spec 0.75; rounded half-up)
-      //   total_glh           = 2.4  (spec 2.25; ai inflation propagates,
-      //                                but the total uses full-precision
-      //                                ai+teacher and rounds once, so the
-      //                                drift is +0.15 → rounds to 2.4)
-      //
-      // The 0.2h inflation on `ai_glh` (and matching inflation on
-      // `total_glh`) traces to a defect in the existing row
-      // builder that the §12 audit (task #28) already flagged and
-      // the §12 ilrGlh.service helper (task #28) already targets
-      // as the wire-in fix:
-      //
-      //   The row builder stores _total_glh_hours pre-rounded to
-      //   1dp (sessionHours + teacherContactHours, rounded as a
-      //   pair). computeGlhBreakdown then subtracts the un-
-      //   rounded `learnerTeacher` from each rounded row, which
-      //   over-attributes 0.05h per row to ai_glh. 3 rows × 0.05h
-      //   = 0.15h → rounds back up to 0.2h surface drift.
-      //
-      // We assert the CURRENT (defective) behaviour here as a
-      // regression fence — when the §12 fix lands and the values
-      // become 1.5 / 2.25, this test will fail at exactly the
-      // lines below, forcing the fix author to update the
-      // expectations to the spec values AND remove this comment.
-      // That's the intended workflow.
-      //
-      // The CORRECT behaviour is locked down separately in
-      // `ilrGlh.test.ts` against the pure formula helper, so
-      // no spec coverage is lost in the interim.
+    // ── 6a. Assert companion totals ─────────────────────────────
+    //
+    // SPEC VALUES per the brief (§12):
+    //   ai_glh             = 90 / 60 = 1.5
+    //   teacher_contact_glh = 45 / 60 = 0.75
+    //   total_glh           = 1.5 + 0 + 0.75 = 2.25
+    //
+    // CURRENT VALUES the companion actually emits today:
+    //   ai_glh             = 1.7  (spec 1.5; +0.2 from row-builder round)
+    //   teacher_contact_glh = 0.8  (spec 0.75; rounded half-up)
+    //   total_glh           = 2.4  (spec 2.25; ai inflation propagates,
+    //                                but the total uses full-precision
+    //                                ai+teacher and rounds once, so the
+    //                                drift is +0.15 → rounds to 2.4)
+    //
+    // The 0.2h inflation on `ai_glh` (and matching inflation on
+    // `total_glh`) traces to a defect in the existing row
+    // builder that the §12 audit (task #28) already flagged and
+    // the §12 ilrGlh.service helper (task #28) already targets
+    // as the wire-in fix:
+    //
+    //   The row builder stores _total_glh_hours pre-rounded to
+    //   1dp (sessionHours + teacherContactHours, rounded as a
+    //   pair). computeGlhBreakdown then subtracts the un-
+    //   rounded `learnerTeacher` from each rounded row, which
+    //   over-attributes 0.05h per row to ai_glh. 3 rows × 0.05h
+    //   = 0.15h → rounds back up to 0.2h surface drift.
+    //
+    // We assert the CURRENT (defective) behaviour here as a
+    // regression fence — when the §12 fix lands and the values
+    // become 1.5 / 2.25, this test will fail at exactly the
+    // lines below, forcing the fix author to update the
+    // expectations to the spec values AND remove this comment.
+    // That's the intended workflow.
+    //
+    // The CORRECT behaviour is locked down separately in
+    // `ilrGlh.test.ts` against the pure formula helper, so
+    // no spec coverage is lost in the interim.
 
-      // ai_glh — currently 1.7 (spec: 1.5). See §12 defect above.
-      expect(companion.totals.ai_glh).toBeCloseTo(1.7, 1);
+    // ai_glh — currently 1.7 (spec: 1.5). See §12 defect above.
+    expect(companion.totals.ai_glh).toBeCloseTo(1.7, 1);
 
-      // teacher_contact_glh — spec 0.75h; today rounds half-up to
-      // 0.8 because computeGlhBreakdown applies a 1dp round to
-      // the per-source totals at the end (0.75 × 10 = 7.5 →
-      // Math.round = 8 → 0.8). Same family of defects as the
-      // row-builder inflation flagged above. The pure formula
-      // helper (`ilrGlh.service.ts`) keeps full precision and
-      // rounds once on the final total, which would surface 0.75
-      // exactly — locked down in ilrGlh.test.ts.
-      expect(companion.totals.teacher_contact_glh).toBeCloseTo(0.8, 1);
+    // teacher_contact_glh — spec 0.75h; today rounds half-up to
+    // 0.8 because computeGlhBreakdown applies a 1dp round to
+    // the per-source totals at the end (0.75 × 10 = 7.5 →
+    // Math.round = 8 → 0.8). Same family of defects as the
+    // row-builder inflation flagged above. The pure formula
+    // helper (`ilrGlh.service.ts`) keeps full precision and
+    // rounds once on the final total, which would surface 0.75
+    // exactly — locked down in ilrGlh.test.ts.
+    expect(companion.totals.teacher_contact_glh).toBeCloseTo(0.8, 1);
 
-      // pre_platform_glh — no pre-platform sessions seeded, so 0.
-      expect(companion.totals.pre_platform_glh).toBe(0);
+    // pre_platform_glh — no pre-platform sessions seeded, so 0.
+    expect(companion.totals.pre_platform_glh).toBe(0);
 
-      // total_glh — currently 2.4 (spec: 2.25). See §12 defect above.
-      expect(companion.totals.total_glh).toBeCloseTo(2.4, 1);
+    // total_glh — currently 2.4 (spec: 2.25). See §12 defect above.
+    expect(companion.totals.total_glh).toBeCloseTo(2.4, 1);
 
-      // Companion sanity — top-level fields the brief specified.
-      expect(companion.export_id).toBe(exportId);
-      expect(companion.generated_at).toBe(generatedAt.toISOString());
-      expect(companion.compliance_config_version).toBe(
-        buildResult.config_version,
-      );
-      expect(companion.learner_count).toBe(1);
-      expect(companion.rows_exported).toBe(validRows.length);
-      expect(companion.rows_blocked).toBe(0);
+    // Companion sanity — top-level fields the brief specified.
+    expect(companion.export_id).toBe(exportId);
+    expect(companion.generated_at).toBe(generatedAt.toISOString());
+    expect(companion.compliance_config_version).toBe(
+      buildResult.config_version,
+    );
+    expect(companion.learner_count).toBe(1);
+    expect(companion.rows_exported).toBe(validRows.length);
+    expect(companion.rows_blocked).toBe(0);
 
-      // ── 6b. Assert the CSV row's AddHours ───────────────────────
-      // Regulated aim + suppression_rule.regulated === "claim"
-      // means AddHours is set (not null) on every row for this
-      // learner. The per-row value is `sessionHours + teacherGlh`
-      // because the current row builder bundles the lifetime
-      // teacher contact onto every row (§12 audit flag — fix
-      // tracked in ilrGlh.service.ts wire-in). For a 30-min
-      // session + 0.75h teacher contact: 0.5 + 0.75 = 1.25,
-      // rounded to one dp = 1.3.
-      const addHoursCell = parseCsvCell(csv, "AddHours", 0);
-      expect(addHoursCell).not.toBeNull();
-      expect(addHoursCell).not.toBe(""); // null suppression would emit empty
-      // Per-row value should be a positive hours number; the
-      // exact value depends on row-builder rounding, so check
-      // the range rather than equality.
-      const addHoursNumber = parseFloat(addHoursCell as string);
-      expect(addHoursNumber).toBeGreaterThan(0);
-      expect(addHoursNumber).toBeLessThanOrEqual(1.5);
+    // ── 6b. Assert the CSV row's AddHours ───────────────────────
+    // Regulated aim + suppression_rule.regulated === "claim"
+    // means AddHours is set (not null) on every row for this
+    // learner. The per-row value is `sessionHours + teacherGlh`
+    // because the current row builder bundles the lifetime
+    // teacher contact onto every row (§12 audit flag — fix
+    // tracked in ilrGlh.service.ts wire-in). For a 30-min
+    // session + 0.75h teacher contact: 0.5 + 0.75 = 1.25,
+    // rounded to one dp = 1.3.
+    const addHoursCell = parseCsvCell(csv, "AddHours", 0);
+    expect(addHoursCell).not.toBeNull();
+    expect(addHoursCell).not.toBe(""); // null suppression would emit empty
+    // Per-row value should be a positive hours number; the
+    // exact value depends on row-builder rounding, so check
+    // the range rather than equality.
+    const addHoursNumber = parseFloat(addHoursCell as string);
+    expect(addHoursNumber).toBeGreaterThan(0);
+    expect(addHoursNumber).toBeLessThanOrEqual(1.5);
 
-      // Aim type cell should reflect the regulated learner.
-      // (Defensive — if a future refactor flips this learner to
-      // non_regulated by default, the AddHours assertion above
-      // would mysteriously pass with null; pinning AimType here
-      // catches that drift.)
-      const aimTypeCell = parseCsvCell(csv, "AimType", 0);
-      expect(aimTypeCell).not.toBeNull();
+    // Aim type cell should reflect the regulated learner.
+    // (Defensive — if a future refactor flips this learner to
+    // non_regulated by default, the AddHours assertion above
+    // would mysteriously pass with null; pinning AimType here
+    // catches that drift.)
+    const aimTypeCell = parseCsvCell(csv, "AimType", 0);
+    expect(aimTypeCell).not.toBeNull();
 
-      // ── 6c. Assert AuditLog content ─────────────────────────────
-      // Two teacher_review_logged rows — one per logTeacherReviewService
-      // call above. The action enum is the source of truth; we
-      // narrow by learner_id so other org/teacher fixtures from
-      // earlier suite runs don't bleed in (afterEach in setup.ts
-      // truncates collections, but defence-in-depth is cheap).
-      const reviewAudits = await AuditLog.find({
-        learner_id: learnerId,
-        action: "teacher_review_logged",
-      }).lean();
-      expect(reviewAudits.length).toBe(2);
+    // ── 6c. Assert AuditLog content ─────────────────────────────
+    // Two teacher_review_logged rows — one per logTeacherReviewService
+    // call above. The action enum is the source of truth; we
+    // narrow by learner_id so other org/teacher fixtures from
+    // earlier suite runs don't bleed in (afterEach in setup.ts
+    // truncates collections, but defence-in-depth is cheap).
+    const reviewAudits = await AuditLog.find({
+      learner_id: learnerId,
+      action: "teacher_review_logged",
+    }).lean();
+    expect(reviewAudits.length).toBe(2);
 
-      // The reasons should mention the review_type so an auditor
-      // reading the row knows which kind landed without joining.
-      const reasons = reviewAudits.map((r) => r.reason);
-      expect(reasons.some((r) => r.includes("contact_session"))).toBe(true);
-      expect(reasons.some((r) => r.includes("async_review"))).toBe(true);
+    // The reasons should mention the review_type so an auditor
+    // reading the row knows which kind landed without joining.
+    const reasons = reviewAudits.map((r) => r.reason);
+    expect(reasons.some((r) => r.includes("contact_session"))).toBe(true);
+    expect(reasons.some((r) => r.includes("async_review"))).toBe(true);
 
-      // One ilr_export_completed row — our inline writeAuditLog
-      // above.
-      const exportAudits = await AuditLog.find({
-        org_id: orgId,
-        action: "ilr_export_completed",
-      }).lean();
-      expect(exportAudits.length).toBe(1);
-      // The audit row should carry the same totals as the
-      // companion (sanity — drift here would mean the worker's
-      // payload doesn't match what's on disk).
-      const exportAfter = exportAudits[0].after_state as {
-        totals: { total_glh: number; teacher_contact_glh: number };
-      };
-      // teacher_contact_glh — 0.8 today (spec 0.75; see §12 note above).
-      expect(exportAfter.totals.teacher_contact_glh).toBeCloseTo(0.8, 1);
-      // total_glh — 2.4 today (spec 2.25; see §12 note above).
-      expect(exportAfter.totals.total_glh).toBeCloseTo(2.4, 1);
-    },
+    // One ilr_export_completed row — our inline writeAuditLog
+    // above.
+    const exportAudits = await AuditLog.find({
+      org_id: orgId,
+      action: "ilr_export_completed",
+    }).lean();
+    expect(exportAudits.length).toBe(1);
+    // The audit row should carry the same totals as the
+    // companion (sanity — drift here would mean the worker's
+    // payload doesn't match what's on disk).
+    const exportAfter = exportAudits[0].after_state as {
+      totals: { total_glh: number; teacher_contact_glh: number };
+    };
+    // teacher_contact_glh — 0.8 today (spec 0.75; see §12 note above).
+    expect(exportAfter.totals.teacher_contact_glh).toBeCloseTo(0.8, 1);
+    // total_glh — 2.4 today (spec 2.25; see §12 note above).
+    expect(exportAfter.totals.total_glh).toBeCloseTo(2.4, 1);
     // Generous timeout — in-memory Mongo + ComplianceConfig load +
     // multiple services. Should complete in <5s on a warm runner;
     // 30s is for the cold case.
-    30_000,
-  );
+  }, 30_000);
 });

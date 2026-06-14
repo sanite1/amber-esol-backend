@@ -18,7 +18,8 @@
  *  L10   Invalid / missing learner id → throws
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 // Queue mock — levelProgression.service.ts imports rarpaEvidenceQueue
 // at module load (used by triggerStage5Review). The real queue calls
@@ -57,7 +58,7 @@ const createOrg = async () =>
 
 const createLearner = async (
   orgId: unknown,
-  opts: { esolLevel?: string | null; createdAt?: Date } = {}
+  opts: { esolLevel?: string | null; createdAt?: Date } = {},
 ) => {
   const learner = await User.create({
     firstname: "LP",
@@ -76,7 +77,7 @@ const createLearner = async (
   if (opts.createdAt) {
     await User.collection.updateOne(
       { _id: learner._id as unknown as never },
-      { $set: { createdAt: opts.createdAt } }
+      { $set: { createdAt: opts.createdAt } },
     );
   }
   return learner;
@@ -120,7 +121,7 @@ const seedSession = async (args: SeedSessionArgs) => {
   if (args.completedAt) {
     await AISession.collection.updateOne(
       { _id: session._id as unknown as never },
-      { $set: { completedAt: args.completedAt } }
+      { $set: { completedAt: args.completedAt } },
     );
   }
   return session;
@@ -184,28 +185,39 @@ describe("checkLevelProgression", () => {
     // 3 distinct scenarios passed, all comfortably above 0.75 average,
     // touching speaking + listening + reading + writing (4 domains).
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s1_gp_appointment", finalScore: PASS,
-      skillCodes: ["Sc", "Lr"], modeSequence: ["bridge", "bridge", "immersion"],
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s1_gp_appointment",
+      finalScore: PASS,
+      skillCodes: ["Sc", "Lr"],
+      modeSequence: ["bridge", "bridge", "immersion"],
       completedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s2_payslip", finalScore: PASS,
-      skillCodes: ["Rt", "Wt"], modeSequence: ["bridge", "bridge"],
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s2_payslip",
+      finalScore: PASS,
+      skillCodes: ["Rt", "Wt"],
+      modeSequence: ["bridge", "bridge"],
       completedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s3_housing_rights", finalScore: PASS,
-      skillCodes: ["Sc", "Lr"], modeSequence: ["bridge", "immersion"],
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s3_housing_rights",
+      finalScore: PASS,
+      skillCodes: ["Sc", "Lr"],
+      modeSequence: ["bridge", "immersion"],
       completedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
     });
 
     const res = await checkLevelProgression(learner._id.toString());
     expect(res.ready_for_progression).toBe(true);
     expect(res.criteria_met.scenario_completion.passed).toBe(true);
-    expect(res.criteria_met.scenario_completion.distinct_scenarios_passed).toBe(3);
+    expect(res.criteria_met.scenario_completion.distinct_scenarios_passed).toBe(
+      3,
+    );
     expect(res.criteria_met.score_threshold.passed).toBe(true);
     expect(res.criteria_met.score_threshold.average_score).toBeCloseTo(PASS, 5);
     expect(res.criteria_met.skill_domain_coverage.passed).toBe(true);
@@ -223,25 +235,33 @@ describe("checkLevelProgression", () => {
 
     // Two distinct scenarios, three passes (one scenario twice)
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s1_gp_appointment", finalScore: PASS,
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s1_gp_appointment",
+      finalScore: PASS,
       skillCodes: ["Sc", "Lr", "Rt"],
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s1_gp_appointment", finalScore: PASS,
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s1_gp_appointment",
+      finalScore: PASS,
       skillCodes: ["Sc", "Lr"],
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s2_payslip", finalScore: PASS,
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s2_payslip",
+      finalScore: PASS,
       skillCodes: ["Rt", "Wt"],
     });
 
     const res = await checkLevelProgression(learner._id.toString());
     expect(res.ready_for_progression).toBe(false);
     expect(res.criteria_met.scenario_completion.passed).toBe(false);
-    expect(res.criteria_met.scenario_completion.distinct_scenarios_passed).toBe(2);
+    expect(res.criteria_met.scenario_completion.distinct_scenarios_passed).toBe(
+      2,
+    );
   });
 
   it("L3 — passing scores below 0.75 average → C2 fails", async () => {
@@ -252,18 +272,24 @@ describe("checkLevelProgression", () => {
 
     // All three above pass_threshold (0.7) but average is 0.72 — below 0.75
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s1_gp_appointment", finalScore: 0.71,
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s1_gp_appointment",
+      finalScore: 0.71,
       skillCodes: ["Sc", "Lr", "Rt", "Wt"],
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s2_payslip", finalScore: 0.72,
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s2_payslip",
+      finalScore: 0.72,
       skillCodes: ["Rt", "Wt"],
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s3_housing_rights", finalScore: 0.73,
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s3_housing_rights",
+      finalScore: 0.73,
       skillCodes: ["Sc", "Lr"],
     });
 
@@ -280,18 +306,24 @@ describe("checkLevelProgression", () => {
     });
 
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s1_gp_appointment", finalScore: PASS,
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s1_gp_appointment",
+      finalScore: PASS,
       skillCodes: ["Sc"], // speaking only
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s2_payslip", finalScore: PASS,
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s2_payslip",
+      finalScore: PASS,
       skillCodes: ["Lr"], // listening only
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s3_housing_rights", finalScore: PASS,
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s3_housing_rights",
+      finalScore: PASS,
       skillCodes: ["Sc", "Lr"], // same two
     });
 
@@ -310,20 +342,28 @@ describe("checkLevelProgression", () => {
     // 3 earlier sessions are clean (bridge-only), but the most recent
     // is 4/5 anchor = 80%. That single recent session fails C4.
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s1_gp_appointment", finalScore: PASS,
-      skillCodes: ["Sc", "Lr"], modeSequence: ["bridge", "bridge"],
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s1_gp_appointment",
+      finalScore: PASS,
+      skillCodes: ["Sc", "Lr"],
+      modeSequence: ["bridge", "bridge"],
       completedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s2_payslip", finalScore: PASS,
-      skillCodes: ["Rt", "Wt"], modeSequence: ["bridge", "bridge"],
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s2_payslip",
+      finalScore: PASS,
+      skillCodes: ["Rt", "Wt"],
+      modeSequence: ["bridge", "bridge"],
       completedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s3_housing_rights", finalScore: PASS,
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s3_housing_rights",
+      finalScore: PASS,
       skillCodes: ["Sc", "Lr"],
       modeSequence: ["anchor", "anchor", "anchor", "anchor", "bridge"],
       completedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
@@ -332,7 +372,9 @@ describe("checkLevelProgression", () => {
     const res = await checkLevelProgression(learner._id.toString());
     expect(res.ready_for_progression).toBe(false);
     expect(res.criteria_met.no_anchor_dominance.passed).toBe(false);
-    expect(res.criteria_met.no_anchor_dominance.recent_session_anchor_ratios[0]).toBeCloseTo(0.8, 5);
+    expect(
+      res.criteria_met.no_anchor_dominance.recent_session_anchor_ratios[0],
+    ).toBeCloseTo(0.8, 5);
   });
 
   it("L6 — < 14 days since level assignment → C5 fails", async () => {
@@ -343,16 +385,25 @@ describe("checkLevelProgression", () => {
     });
 
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s1_gp_appointment", finalScore: PASS, skillCodes: ["Sc", "Lr"],
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s1_gp_appointment",
+      finalScore: PASS,
+      skillCodes: ["Sc", "Lr"],
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s2_payslip", finalScore: PASS, skillCodes: ["Rt", "Wt"],
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s2_payslip",
+      finalScore: PASS,
+      skillCodes: ["Rt", "Wt"],
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s3_housing_rights", finalScore: PASS, skillCodes: ["Sc", "Lr"],
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s3_housing_rights",
+      finalScore: PASS,
+      skillCodes: ["Sc", "Lr"],
     });
 
     const res = await checkLevelProgression(learner._id.toString());
@@ -369,24 +420,35 @@ describe("checkLevelProgression", () => {
 
     // 3 pre-platform sessions with great scores — should NOT count
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s1_gp_appointment", finalScore: PASS,
-      skillCodes: ["Sc", "Lr", "Rt", "Wt"], source: "pre_platform",
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s1_gp_appointment",
+      finalScore: PASS,
+      skillCodes: ["Sc", "Lr", "Rt", "Wt"],
+      source: "pre_platform",
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s2_payslip", finalScore: PASS,
-      skillCodes: ["Rt", "Wt"], source: "pre_platform",
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s2_payslip",
+      finalScore: PASS,
+      skillCodes: ["Rt", "Wt"],
+      source: "pre_platform",
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s3_housing_rights", finalScore: PASS,
-      skillCodes: ["Sc", "Lr"], source: "pre_platform",
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s3_housing_rights",
+      finalScore: PASS,
+      skillCodes: ["Sc", "Lr"],
+      source: "pre_platform",
     });
 
     const res = await checkLevelProgression(learner._id.toString());
     expect(res.ready_for_progression).toBe(false);
-    expect(res.criteria_met.scenario_completion.distinct_scenarios_passed).toBe(0);
+    expect(res.criteria_met.scenario_completion.distinct_scenarios_passed).toBe(
+      0,
+    );
   });
 
   it("L8 — sessions whose scenario file is missing are excluded", async () => {
@@ -396,22 +458,35 @@ describe("checkLevelProgression", () => {
     });
 
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s1_gp_appointment", finalScore: PASS, skillCodes: ["Sc", "Lr"],
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s1_gp_appointment",
+      finalScore: PASS,
+      skillCodes: ["Sc", "Lr"],
     });
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s2_payslip", finalScore: PASS, skillCodes: ["Rt", "Wt"],
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s2_payslip",
+      finalScore: PASS,
+      skillCodes: ["Rt", "Wt"],
     });
     // Bogus scenario id — file doesn't exist
     await seedSession({
-      learnerId: learner._id, orgId: org._id,
-      scenarioId: "s99_does_not_exist", finalScore: PASS, skillCodes: ["Sc", "Lr"],
+      learnerId: learner._id,
+      orgId: org._id,
+      scenarioId: "s99_does_not_exist",
+      finalScore: PASS,
+      skillCodes: ["Sc", "Lr"],
     });
 
     const res = await checkLevelProgression(learner._id.toString());
-    expect(res.criteria_met.scenario_completion.distinct_scenarios_passed).toBe(2);
-    expect(res.criteria_met.scenario_completion.scenario_ids).not.toContain("s99_does_not_exist");
+    expect(res.criteria_met.scenario_completion.distinct_scenarios_passed).toBe(
+      2,
+    );
+    expect(res.criteria_met.scenario_completion.scenario_ids).not.toContain(
+      "s99_does_not_exist",
+    );
   });
 
   it("L9 — level_assigned_at prefers latest matching LevelChange over User.createdAt", async () => {
@@ -440,7 +515,7 @@ describe("checkLevelProgression", () => {
     await expect(checkLevelProgression("not-an-objectid")).rejects.toThrow();
     await expect(checkLevelProgression("")).rejects.toThrow();
     await expect(
-      checkLevelProgression(new Types.ObjectId().toString())
+      checkLevelProgression(new Types.ObjectId().toString()),
     ).rejects.toThrow(/not found/i);
   });
 });

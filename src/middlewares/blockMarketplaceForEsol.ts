@@ -14,15 +14,15 @@ import { isEsolUser } from "../utils/userType";
 export const blockMarketplaceForEsol: ExpressFunction = async (
   req,
   _res,
-  next
+  next,
 ) => {
   try {
     if (isEsolUser(req.user)) {
       return next(
         new ApiError(
           403,
-          "This feature is not available to ESOL learners. Please use your organisation dashboard."
-        )
+          "This feature is not available to ESOL learners. Please use your organisation dashboard.",
+        ),
       );
     }
     next();

@@ -21,7 +21,7 @@ const INACTIVE_DAYS = 30; // no lesson in 30 days → inactive
 
 function determineStatus(
   bookings: any[],
-  hasUpcoming: boolean
+  hasUpcoming: boolean,
 ): "active" | "inactive" | "trial" {
   const completed = bookings.filter((b: any) => b.status === "completed");
   const trials = completed.filter((b: any) => b.type === "trial");
@@ -41,14 +41,14 @@ function determineStatus(
   const lastCompleted = completed.sort(
     (a: any, b: any) =>
       new Date(`${b.date}T${b.endTime}`).getTime() -
-      new Date(`${a.date}T${a.endTime}`).getTime()
+      new Date(`${a.date}T${a.endTime}`).getTime(),
   )[0];
 
   if (lastCompleted) {
     const daysSince = Math.floor(
       (Date.now() -
         new Date(`${lastCompleted.date}T${lastCompleted.endTime}`).getTime()) /
-        86400000
+        86400000,
     );
     if (daysSince <= INACTIVE_DAYS) return "active";
   }
@@ -62,20 +62,20 @@ function determineStatus(
 async function buildStudentItem(
   tutorId: string,
   studentUser: any,
-  allBookings: any[]
+  allBookings: any[],
 ): Promise<IMyStudentItem> {
   const studentId = studentUser._id.toString();
 
   // Bookings for this specific student
   const bookings = allBookings.filter(
-    (b: any) => b.studentId.toString() === studentId
+    (b: any) => b.studentId.toString() === studentId,
   );
 
   const completed = bookings.filter((b: any) => b.status === "completed");
   const cancelled = bookings.filter((b: any) =>
     ["cancelled_student", "cancelled_tutor", "cancelled_admin"].includes(
-      b.status
-    )
+      b.status,
+    ),
   );
   const noShows = bookings.filter((b: any) => b.status === "no_show");
 
@@ -84,7 +84,7 @@ async function buildStudentItem(
   const upcoming = bookings
     .filter(
       (b: any) =>
-        ["pending", "confirmed"].includes(b.status) && b.date >= todayStr
+        ["pending", "confirmed"].includes(b.status) && b.date >= todayStr,
     )
     .sort((a: any, b: any) => a.date.localeCompare(b.date));
 
@@ -98,7 +98,7 @@ async function buildStudentItem(
   // Total spent
   const totalSpent = completed.reduce(
     (sum: number, b: any) => sum + (b.price || 0),
-    0
+    0,
   );
 
   // Average rating: reviews this student left for this tutor
@@ -113,13 +113,13 @@ async function buildStudentItem(
       ? Math.round(
           (reviews.reduce((s: number, r: any) => s + r.rating, 0) /
             reviews.length) *
-            10
+            10,
         ) / 10
       : undefined;
 
   // Last lesson date
   const lastCompleted = completed.sort((a: any, b: any) =>
-    b.date.localeCompare(a.date)
+    b.date.localeCompare(a.date),
   )[0];
 
   /// Recent lessons (last 4)
@@ -163,7 +163,7 @@ async function buildStudentItem(
 
   // First booking date with this tutor → "joined"
   const firstBooking = bookings.sort((a: any, b: any) =>
-    a.createdAt > b.createdAt ? 1 : -1
+    a.createdAt > b.createdAt ? 1 : -1,
   )[0];
 
   const hasUpcoming = upcoming.length > 0;
@@ -223,7 +223,7 @@ async function buildStudentItem(
    ══════════════════════════════════════════════ */
 export const listMyStudentsService = async (
   tutorId: string,
-  query: IMyStudentsQuery
+  query: IMyStudentsQuery,
 ) => {
   const page = parseInt(query.page || "1", 10);
   const limit = parseInt(query.limit || "20", 10);
@@ -278,7 +278,7 @@ export const listMyStudentsService = async (
 
   // 4. Build items
   const itemPromises = studentUsers.map((su) =>
-    buildStudentItem(tutorId, su, allBookings)
+    buildStudentItem(tutorId, su, allBookings),
   );
   let students = await Promise.all(itemPromises);
 
@@ -287,23 +287,23 @@ export const listMyStudentsService = async (
   const activeStudents = students.filter((s) => s.status === "active").length;
   const trialStudents = students.filter((s) => s.status === "trial").length;
   const inactiveStudents = students.filter(
-    (s) => s.status === "inactive"
+    (s) => s.status === "inactive",
   ).length;
   const avgLessonsPerStudent =
     totalStudents > 0
       ? Math.round(
           (students.reduce((s, st) => s + st.completedLessons, 0) /
             totalStudents) *
-            10
+            10,
         ) / 10
       : 0;
   const totalRevenue = students.reduce((s, st) => s + st.totalSpent, 0);
   // Retention: students who came back after first lesson (completedLessons > 1) / total who completed at least 1
   const studentsWithLessons = students.filter(
-    (s) => s.completedLessons >= 1
+    (s) => s.completedLessons >= 1,
   ).length;
   const returnedStudents = students.filter(
-    (s) => s.completedLessons > 1
+    (s) => s.completedLessons > 1,
   ).length;
   const retentionRate =
     studentsWithLessons > 0
@@ -336,7 +336,7 @@ export const listMyStudentsService = async (
     case "joined":
       students.sort(
         (a, b) =>
-          new Date(b.joinedDate).getTime() - new Date(a.joinedDate).getTime()
+          new Date(b.joinedDate).getTime() - new Date(a.joinedDate).getTime(),
       );
       break;
     case "recent":
@@ -344,7 +344,7 @@ export const listMyStudentsService = async (
       students.sort(
         (a, b) =>
           new Date(b.lastLessonDate).getTime() -
-          new Date(a.lastLessonDate).getTime()
+          new Date(a.lastLessonDate).getTime(),
       );
       break;
   }
@@ -366,7 +366,7 @@ export const listMyStudentsService = async (
    ══════════════════════════════════════════════ */
 export const getMyStudentDetailService = async (
   tutorId: string,
-  studentId: string
+  studentId: string,
 ) => {
   // Verify this student has bookings with this tutor
   const bookingExists = await Booking.findOne({
@@ -401,7 +401,7 @@ export const getMyStudentDetailService = async (
 export const updateStudentNotesService = async (
   tutorId: string,
   studentId: string,
-  notes: string
+  notes: string,
 ) => {
   // Verify relationship exists
   const bookingExists = await Booking.findOne({
@@ -421,7 +421,7 @@ export const updateStudentNotesService = async (
       studentId: new Types.ObjectId(studentId),
     },
     { notes },
-    { upsert: true, new: true }
+    { upsert: true, new: true },
   );
 
   return new ApiResponse(200, "Notes updated successfully", {

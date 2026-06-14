@@ -1,5 +1,5 @@
 import { Queue, JobsOptions, ConnectionOptions } from "bullmq";
-import { createBullmqConnection } from "../lib/redis";
+import { createBullmqConnection, isRedisAvailable } from "../lib/redis";
 import logger from "../config/logger";
 
 /**
@@ -65,41 +65,94 @@ const connection = rawConnection as unknown as ConnectionOptions;
  *   • Cron pipelines — daily fan-out jobs are idempotent; a missed
  *     run catches up on the next day. Better than a 500 cascade.
  */
-const makeQueue = <T>(name: string, opts: { defaultJobOptions: JobsOptions }) => {
-  if (rawConnection) {
-    return new Queue<T>(name, { connection, ...opts });
+// Throttle the "ignored — Redis degraded" log line per queue. Without this,
+// a code path that fans out N jobs while Redis is down emits N identical
+// warnings. 30s window matches the redis.ts DEGRADE_COOLDOWN_MS.
+const _lastDropLogAt = new Map<string, number>();
+const DROP_LOG_THROTTLE_MS = 30_000;
+
+const logQueueDrop = (queue: string, jobName: string, count = 1): void => {
+  const now = Date.now();
+  const last = _lastDropLogAt.get(queue) ?? 0;
+  if (now - last > DROP_LOG_THROTTLE_MS) {
+    logger.warn(
+      { queue, jobName, droppedSinceWarn: count },
+      "Queue enqueue ignored (Redis degraded). Job(s) dropped. " +
+        "Further drops on this queue suppressed for 30s.",
+    );
+    _lastDropLogAt.set(queue, now);
   }
-  // Eslint-disable: we mimic enough of the Queue surface for typical
-  // call sites; producer code only touches .add() / .name / .close().
-  const stub = {
-    name,
-    add: async (jobName: string, _data: T, _options?: JobsOptions) => {
-      logger.warn(
-        { queue: name, jobName },
-        "Queue stub: enqueue ignored (Redis unavailable). Job dropped."
-      );
-      return { id: null, name: jobName, data: _data } as unknown as never;
-    },
-    addBulk: async (jobs: { name: string; data: T }[]) => {
-      logger.warn(
-        { queue: name, count: jobs.length },
-        "Queue stub: bulk enqueue ignored (Redis unavailable). Jobs dropped."
-      );
+};
+
+const makeQueue = <T>(
+  name: string,
+  opts: { defaultJobOptions: JobsOptions },
+) => {
+  if (!rawConnection) {
+    // REDIS_URL not set at boot — return the no-op stub directly. Stable for
+    // local dev without an Upstash instance.
+    const stub = {
+      name,
+      add: async (jobName: string, _data: T, _options?: JobsOptions) => {
+        logQueueDrop(name, jobName);
+        return { id: null, name: jobName, data: _data } as unknown as never;
+      },
+      addBulk: async (jobs: { name: string; data: T }[]) => {
+        logQueueDrop(name, "(bulk)", jobs.length);
+        return [] as unknown as never;
+      },
+      close: async () => undefined,
+      getJob: async () => null,
+      getJobs: async () => [],
+      getJobCounts: async () => ({
+        waiting: 0,
+        active: 0,
+        completed: 0,
+        failed: 0,
+        delayed: 0,
+        paused: 0,
+      }),
+    };
+    return stub as unknown as Queue<T>;
+  }
+
+  // Redis IS configured at boot, so we build a real Queue. But at runtime
+  // Upstash can drop into a degraded state (quota exhausted, OOM, LOADING)
+  // — in which case isRedisAvailable() flips false and we want .add() /
+  // .addBulk() to fall through to the same no-op path the boot-stub uses
+  // instead of throwing every command into the void.
+  //
+  // We intercept by replacing the two enqueue methods on the real Queue
+  // instance. The original implementations are bound and called only when
+  // Redis is healthy; otherwise we log (throttled) and return a stub job.
+  const realQueue = new Queue<T>(name, { connection, ...opts });
+  const realAdd = realQueue.add.bind(realQueue);
+  const realAddBulk = realQueue.addBulk.bind(realQueue);
+
+  // The casts on the next two assignments and on `realAdd` / `realAddBulk`
+  // arguments below: BullMQ's Queue.add / addBulk are generically typed with
+  // `ExtractNameType<T, string>` to enforce job-name narrowing in stricter
+  // setups. Our queue payloads use plain string names, so we widen via
+  // `unknown as` at the boundary. Internal types are unaffected.
+  realQueue.add = (async (jobName: string, data: T, options?: JobsOptions) => {
+    if (!isRedisAvailable()) {
+      logQueueDrop(name, jobName);
+      return { id: null, name: jobName, data } as unknown as never;
+    }
+    return realAdd(jobName as never, data as never, options);
+  }) as unknown as Queue<T>["add"];
+
+  realQueue.addBulk = (async (
+    jobs: Array<{ name: string; data: T; opts?: JobsOptions }>,
+  ) => {
+    if (!isRedisAvailable()) {
+      logQueueDrop(name, "(bulk)", jobs.length);
       return [] as unknown as never;
-    },
-    close: async () => undefined,
-    getJob: async () => null,
-    getJobs: async () => [],
-    getJobCounts: async () => ({
-      waiting: 0,
-      active: 0,
-      completed: 0,
-      failed: 0,
-      delayed: 0,
-      paused: 0,
-    }),
-  };
-  return stub as unknown as Queue<T>;
+    }
+    return realAddBulk(jobs as unknown as Parameters<typeof realAddBulk>[0]);
+  }) as unknown as Queue<T>["addBulk"];
+
+  return realQueue;
 };
 
 // ── Job payload types ───────────────────────────────────────────────────
@@ -392,9 +445,12 @@ export const esolSessionQueue = makeQueue<EsolSessionJob>("esol-session", {
   defaultJobOptions: { ...baseDefaults, priority: PRIORITY_HIGH },
 });
 
-export const rarpaEvidenceQueue = makeQueue<RarpaEvidenceJob>("rarpa-evidence", {
-  defaultJobOptions: { ...baseDefaults, priority: PRIORITY_STANDARD },
-});
+export const rarpaEvidenceQueue = makeQueue<RarpaEvidenceJob>(
+  "rarpa-evidence",
+  {
+    defaultJobOptions: { ...baseDefaults, priority: PRIORITY_STANDARD },
+  },
+);
 
 export const ilrExportQueue = makeQueue<IlrExportJob>("ilr-export", {
   defaultJobOptions: { ...baseDefaults, priority: PRIORITY_STANDARD },
@@ -404,16 +460,19 @@ export const complianceValidationQueue = makeQueue<ComplianceValidationJob>(
   "compliance-validation",
   {
     defaultJobOptions: { ...baseDefaults, priority: PRIORITY_HIGH },
-  }
+  },
 );
 
 export const misPushQueue = makeQueue<MisPushJob>("mis-push", {
   defaultJobOptions: { ...baseDefaults, priority: PRIORITY_STANDARD },
 });
 
-export const priorityQueueQueue = makeQueue<PriorityQueueJob>("priority-queue", {
-  defaultJobOptions: { ...baseDefaults, priority: PRIORITY_LOW },
-});
+export const priorityQueueQueue = makeQueue<PriorityQueueJob>(
+  "priority-queue",
+  {
+    defaultJobOptions: { ...baseDefaults, priority: PRIORITY_LOW },
+  },
+);
 
 export const deltaSyncQueue = makeQueue<DeltaSyncJob>("delta-sync", {
   defaultJobOptions: { ...baseDefaults, priority: PRIORITY_LOW },
@@ -427,13 +486,15 @@ export const deltaSyncQueue = makeQueue<DeltaSyncJob>("delta-sync", {
  * The processor narrows by `job.name`. New typed payloads should be added
  * to this union rather than smuggled inside NotificationJob.payload.
  */
-export type NotificationsQueuePayload = NotificationJob | SafeguardingAlertEmailJob;
+export type NotificationsQueuePayload =
+  | NotificationJob
+  | SafeguardingAlertEmailJob;
 
 export const notificationsQueue = makeQueue<NotificationsQueuePayload>(
   "notifications",
   {
     defaultJobOptions: { ...baseDefaults, priority: PRIORITY_HIGH },
-  }
+  },
 );
 
 export const cacheRefreshQueue = makeQueue<CacheRefreshJob>("cache-refresh", {

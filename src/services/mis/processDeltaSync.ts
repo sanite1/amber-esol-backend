@@ -90,17 +90,9 @@ type Bucket = "active" | "withdrawn" | "completed" | "other";
  */
 const bucketMisStatus = (raw: string): Bucket => {
   const s = raw.toLowerCase().trim();
-  if (
-    s.includes("withdraw") ||
-    s.includes("transferr") ||
-    s === "left"
-  )
+  if (s.includes("withdraw") || s.includes("transferr") || s === "left")
     return "withdrawn";
-  if (
-    s.includes("complete") ||
-    s.includes("achiev") ||
-    s.includes("finish")
-  )
+  if (s.includes("complete") || s.includes("achiev") || s.includes("finish"))
     return "completed";
   if (
     s.includes("active") ||
@@ -125,8 +117,7 @@ const bucketPlatformStatus = (learner: {
     return "withdrawn";
   }
   if (learner.status === "completed") return "completed";
-  if (learner.status === "active" || learner.isActive === true)
-    return "active";
+  if (learner.status === "active" || learner.isActive === true) return "active";
   return "other";
 };
 
@@ -210,15 +201,15 @@ const mapWithConcurrency = async <T, R>(
 ): Promise<R[]> => {
   const results: R[] = new Array(items.length);
   let idx = 0;
-  const lanes = new Array(Math.min(limit, items.length)).fill(0).map(
-    async () => {
+  const lanes = new Array(Math.min(limit, items.length))
+    .fill(0)
+    .map(async () => {
       while (true) {
         const i = idx++;
         if (i >= items.length) return;
         results[i] = await worker(items[i]);
       }
-    },
-  );
+    });
   await Promise.all(lanes);
   return results;
 };
@@ -316,9 +307,7 @@ const recordUnknownLearner = async (input: {
   // problem than a status discrepancy (the MIS may have been
   // reset, the learner may have been wrongly pushed, etc).
   try {
-    const amberAdmins = await User.find({ role: "admin" })
-      .select("_id")
-      .lean();
+    const amberAdmins = await User.find({ role: "admin" }).select("_id").lean();
     await Promise.all(
       amberAdmins.map((a) =>
         createNotification({

@@ -43,10 +43,11 @@ export const declareUlnValidation = () =>
             }),
           }),
         skip: Joi.boolean().required().messages({
-          "any.required": "skip is required (true to defer, false to confirm a ULN)",
+          "any.required":
+            "skip is required (true to defer, false to confirm a ULN)",
         }),
       }).unknown(false),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

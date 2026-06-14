@@ -55,7 +55,9 @@ describe("mapCategoryToBankKey", () => {
     expect(mapCategoryToBankKey("domestic_abuse")).toBe("domestic_abuse");
     expect(mapCategoryToBankKey("radicalisation")).toBe("radicalisation");
     expect(mapCategoryToBankKey("exploitation")).toBe("exploitation");
-    expect(mapCategoryToBankKey("mental_health_crisis")).toBe("mental_health_crisis");
+    expect(mapCategoryToBankKey("mental_health_crisis")).toBe(
+      "mental_health_crisis",
+    );
     expect(mapCategoryToBankKey(null)).toBeNull();
     expect(mapCategoryToBankKey("not_a_category")).toBeNull();
   });
@@ -95,7 +97,10 @@ describe("loadSafeguardingMessage", () => {
   });
 
   it("M4 — unrecognised category falls back to mental_health_crisis English", () => {
-    const reply = loadSafeguardingMessage("not_a_real_category" as never, "english");
+    const reply = loadSafeguardingMessage(
+      "not_a_real_category" as never,
+      "english",
+    );
     expect(reply).toMatch(/NHS 111|SHOUT/);
   });
 
@@ -122,7 +127,8 @@ describe("loadSafeguardingMessage", () => {
 
 describe("processTurnService — alert payload (Function 10 To-Do 2 spec)", () => {
   beforeAll(() => {
-    process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+    process.env.REFERRAL_JWT_SECRET =
+      process.env.REFERRAL_JWT_SECRET ?? "test-secret";
   });
 
   // Heavy mocks to keep the test self-contained
@@ -150,7 +156,7 @@ describe("processTurnService — alert payload (Function 10 To-Do 2 spec)", () =
     }));
     jest.doMock("../queues", () => ({
       __esModule: true,
-      esolSessionQueue:   { add: jest.fn().mockResolvedValue(undefined) },
+      esolSessionQueue: { add: jest.fn().mockResolvedValue(undefined) },
       notificationsQueue: { add: jest.fn().mockResolvedValue(undefined) },
       priorityQueueQueue: { add: jest.fn().mockResolvedValue(undefined) },
     }));
@@ -170,9 +176,11 @@ describe("processTurnService — alert payload (Function 10 To-Do 2 spec)", () =
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     SafeguardingKeyword = require("../models/SafeguardingKeyword").default;
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    SafeguardingDetector = require("../services/safeguardingDetector.service").default;
+    SafeguardingDetector =
+      require("../services/safeguardingDetector.service").default;
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    processTurnService = require("../services/aiSession.service").processTurnService;
+    processTurnService =
+      require("../services/aiSession.service").processTurnService;
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     Types = require("mongoose").Types;
   });

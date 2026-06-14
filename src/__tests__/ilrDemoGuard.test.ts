@@ -23,7 +23,8 @@
  *   D8   `is_demo` defaults to false on Organisation create
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 // Stub Redis-backed dependencies — irrelevant to the guard test
 jest.mock("../services/falaCache.service", () => ({
@@ -50,22 +51,34 @@ const ACADEMIC_YEAR = "2025/26";
 // ─────────────────────────────────────────────────────────────────────
 
 const seedConfig = async () => {
-  await ComplianceConfig.deleteMany({ domain: "ilr", academic_year: ACADEMIC_YEAR });
+  await ComplianceConfig.deleteMany({
+    domain: "ilr",
+    academic_year: ACADEMIC_YEAR,
+  });
   await ComplianceConfig.create({
-    domain: "ilr", academic_year: ACADEMIC_YEAR, version: 1, active: true,
+    domain: "ilr",
+    academic_year: ACADEMIC_YEAR,
+    version: 1,
+    active: true,
     rules: {
       field_name_overrides: {},
       valid_sof_codes: ["105"],
-      expired_llddt_codes: [], llddt_remapping: {},
-      fund_model: 38, aim_type_default: 4,
+      expired_llddt_codes: [],
+      llddt_remapping: {},
+      fund_model: 38,
+      aim_type_default: 4,
       esol_level_to_aim_ref: { e2: "60139572" },
       english_prog_type_default: "25",
       add_hours_suppression_rule: {
-        regulated: "claim", non_regulated: "suppress", missing: "suppress",
+        regulated: "claim",
+        non_regulated: "suppress",
+        missing: "suppress",
       },
       valid_dam_codes: ["SOF"],
     },
-    updated_by: null, updated_at: new Date(), changelog: "seed",
+    updated_by: null,
+    updated_at: new Date(),
+    changelog: "seed",
   });
   await ComplianceConfigService.loadAll();
 };
@@ -83,27 +96,41 @@ const createOrg = (opts: { is_demo?: boolean; name?: string } = {}) =>
 
 const createLearner = (orgId: unknown) =>
   User.create({
-    firstname: "Demo", lastname: "Learner",
+    firstname: "Demo",
+    lastname: "Learner",
     email: `d-${Date.now()}-${Math.random().toString(16).slice(2)}@test.local`,
-    password: "x", phoneNumber: "07000000000",
-    role: "student", orgId,
-    isActive: true, status: "active", verified: true,
-    dateOfBirth: new Date("1990-01-01"), sex: 1,
+    password: "x",
+    phoneNumber: "07000000000",
+    role: "student",
+    orgId,
+    isActive: true,
+    status: "active",
+    verified: true,
+    dateOfBirth: new Date("1990-01-01"),
+    sex: 1,
     esolOnboardedAt: new Date("2025-09-01"),
     uln: "9999999999",
     esol_aim_type: "regulated",
-    esolLevel: "e2", sof_code: "105",
-    lldd_health_prob: 9, english_prog_type: "25",
+    esolLevel: "e2",
+    sof_code: "105",
+    lldd_health_prob: 9,
+    english_prog_type: "25",
     postcode_prior: "NE1 1AA",
   });
 
 const seedSession = (learnerId: unknown, orgId: unknown) =>
   AISession.create({
-    learnerId, orgId,
-    sessionMode: "BRIDGE", esolLevel: "e2",
-    turns: [], safeguardingFlagged: false, vocabIntroduced: [],
-    session_source: "ai_tutor", duration_mins: 60,
-    turn_scores: [], teaching_mode_sequence: [],
+    learnerId,
+    orgId,
+    sessionMode: "BRIDGE",
+    esolLevel: "e2",
+    turns: [],
+    safeguardingFlagged: false,
+    vocabIntroduced: [],
+    session_source: "ai_tutor",
+    duration_mins: 60,
+    turn_scores: [],
+    teaching_mode_sequence: [],
     start_time: new Date("2025-11-01T10:00:00Z"),
   });
 

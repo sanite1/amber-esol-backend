@@ -221,15 +221,13 @@ export const evaluatePriority = async (
 
   // ── Load the learner skeleton ──────────────────────────────────
   // Used by every trigger. Cheap projection — no populate.
-  const learner = await cache.getOrLoad<LearnerSkeleton | null>(
-    "learner",
-    () =>
-      User.findById(learnerObjectId)
-        .select(
-          "_id role esolLevel createdAt last_session_at stage3_objectives " +
-            "progression_notification_level",
-        )
-        .lean<LearnerSkeleton | null>(),
+  const learner = await cache.getOrLoad<LearnerSkeleton | null>("learner", () =>
+    User.findById(learnerObjectId)
+      .select(
+        "_id role esolLevel createdAt last_session_at stage3_objectives " +
+          "progression_notification_level",
+      )
+      .lean<LearnerSkeleton | null>(),
   );
   if (!learner) {
     // Treat as P4-maintenance so the cron doesn't blow up; the
@@ -429,36 +427,34 @@ const evalVocabDrift = async (
 
   // One aggregation, two buckets — single round-trip beats two finds.
   type Bucket = { _id: "recent" | "baseline"; total: number; retained: number };
-  const buckets = await cache.getOrLoad<Bucket[]>(
-    "vocab_drift_buckets",
-    () =>
-      VocabLedger.aggregate<Bucket>([
-        {
-          $match: {
-            learnerId: learnerObjectId,
-            last_seen_at: { $gte: baselineCutoff },
+  const buckets = await cache.getOrLoad<Bucket[]>("vocab_drift_buckets", () =>
+    VocabLedger.aggregate<Bucket>([
+      {
+        $match: {
+          learnerId: learnerObjectId,
+          last_seen_at: { $gte: baselineCutoff },
+        },
+      },
+      {
+        $project: {
+          retained: { $cond: ["$retained", 1, 0] },
+          bucket: {
+            $cond: [
+              { $gte: ["$last_seen_at", recentCutoff] },
+              "recent",
+              "baseline",
+            ],
           },
         },
-        {
-          $project: {
-            retained: { $cond: ["$retained", 1, 0] },
-            bucket: {
-              $cond: [
-                { $gte: ["$last_seen_at", recentCutoff] },
-                "recent",
-                "baseline",
-              ],
-            },
-          },
+      },
+      {
+        $group: {
+          _id: "$bucket",
+          total: { $sum: 1 },
+          retained: { $sum: "$retained" },
         },
-        {
-          $group: {
-            _id: "$bucket",
-            total: { $sum: 1 },
-            retained: { $sum: "$retained" },
-          },
-        },
-      ]),
+      },
+    ]),
   );
 
   const recent = buckets.find((b) => b._id === "recent");
@@ -507,30 +503,28 @@ const evalStaleObjective = async (
   // Latest touch per objective_id. One pass over AISession with
   // an unwind + group; bounded by this learner's sessions only.
   type TouchAgg = { _id: string; last_touched: Date };
-  const touches = await cache.getOrLoad<TouchAgg[]>(
-    "objective_touches",
-    () =>
-      AISession.aggregate<TouchAgg>([
-        {
-          $match: {
-            learnerId: learnerObjectId,
-            completedAt: { $ne: null },
-          },
+  const touches = await cache.getOrLoad<TouchAgg[]>("objective_touches", () =>
+    AISession.aggregate<TouchAgg>([
+      {
+        $match: {
+          learnerId: learnerObjectId,
+          completedAt: { $ne: null },
         },
-        {
-          $project: {
-            ids: { $ifNull: ["$stage3_objective_ids", []] },
-            completedAt: 1,
-          },
+      },
+      {
+        $project: {
+          ids: { $ifNull: ["$stage3_objective_ids", []] },
+          completedAt: 1,
         },
-        { $unwind: "$ids" },
-        {
-          $group: {
-            _id: "$ids",
-            last_touched: { $max: "$completedAt" },
-          },
+      },
+      { $unwind: "$ids" },
+      {
+        $group: {
+          _id: "$ids",
+          last_touched: { $max: "$completedAt" },
         },
-      ]),
+      },
+    ]),
   );
   const touchById = new Map<string, Date>(
     touches.map((t) => [t._id, t.last_touched]),
@@ -659,7 +653,10 @@ const makeCache = (runId: string | undefined, learner_id: string): Cache => {
   }
   const baseKey = `priority:run:${runId}:learner:${learner_id}`;
   return {
-    getOrLoad: async <T>(kind: string, loader: () => Promise<T>): Promise<T> => {
+    getOrLoad: async <T>(
+      kind: string,
+      loader: () => Promise<T>,
+    ): Promise<T> => {
       const key = `${baseKey}:${kind}`;
       try {
         const cached = await redis.get(key);

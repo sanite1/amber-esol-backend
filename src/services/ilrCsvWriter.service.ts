@@ -32,8 +32,7 @@ import logger from "../config/logger";
 // Storage location — env override for ops; /tmp default for MVP.
 // ─────────────────────────────────────────────────────────────────────
 
-export const EXPORT_DIR =
-  process.env.ILR_EXPORT_DIR ?? "/tmp/ilr-exports";
+export const EXPORT_DIR = process.env.ILR_EXPORT_DIR ?? "/tmp/ilr-exports";
 
 const ensureDir = async () => {
   await mkdir(EXPORT_DIR, { recursive: true });
@@ -283,9 +282,8 @@ export const fieldNameOverridesForYear = (
 ): Record<string, string> => {
   const config = ComplianceConfigService.getConfig("ilr", academicYear);
   if (!config) return {};
-  return (
-    ((config.rules as Record<string, unknown>).field_name_overrides ?? {}) as Record<string, string>
-  );
+  return ((config.rules as Record<string, unknown>).field_name_overrides ??
+    {}) as Record<string, string>;
 };
 
 export const __internals__ = {

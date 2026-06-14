@@ -45,7 +45,11 @@
 import { Types } from "mongoose";
 import { Request } from "express";
 import AuditLog from "../models/AuditLog";
-import { IAuditLog, AuditAction, AuditActorType } from "../interfaces/auditLog.interface";
+import {
+  IAuditLog,
+  AuditAction,
+  AuditActorType,
+} from "../interfaces/auditLog.interface";
 import { IUserDecoded } from "../middlewares/authMiddleWare";
 import logger from "../config/logger";
 
@@ -110,8 +114,8 @@ const resolveImpersonatedBy = (
 ): Types.ObjectId | null => {
   const decoded =
     options.actor ??
-    ((options.req as Request & { user?: IUserDecoded } | undefined)?.user ??
-      null);
+    (options.req as (Request & { user?: IUserDecoded }) | undefined)?.user ??
+    null;
   const claim = decoded?.impersonated_by ?? null;
   return toObjectIdOrNull(claim);
 };
@@ -144,7 +148,9 @@ export const writeAuditLog = async (
       after_state: input.after_state ?? null,
       reason: input.reason,
       compliance_config_version: input.compliance_config_version ?? null,
-      acting_as_teacher_id: toObjectIdOrNull(input.acting_as_teacher_id ?? null),
+      acting_as_teacher_id: toObjectIdOrNull(
+        input.acting_as_teacher_id ?? null,
+      ),
       impersonated_by: impersonatedBy,
     });
     return doc;

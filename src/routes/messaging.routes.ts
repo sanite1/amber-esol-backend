@@ -56,7 +56,7 @@ router.get(
   "/",
   isAuthenticated,
   listConversationsValidation(),
-  listConversations
+  listConversations,
 );
 
 // ── Start / get conversation ──
@@ -64,7 +64,7 @@ router.post(
   "/",
   isAuthenticated,
   startConversationValidation(),
-  startConversation
+  startConversation,
 );
 
 // ── Get messages for a conversation ──
@@ -72,7 +72,7 @@ router.get(
   "/:id/messages",
   isAuthenticated,
   listMessagesValidation(),
-  listMessages
+  listMessages,
 );
 
 // ── Send text message ──
@@ -80,7 +80,7 @@ router.post(
   "/:id/messages",
   isAuthenticated,
   sendMessageValidation(),
-  sendMessage
+  sendMessage,
 );
 
 // ── Send file/image message ──
@@ -89,7 +89,7 @@ router.post(
   isAuthenticated,
   sendFileMessageValidation(),
   upload.single("file"),
-  sendFileMessage
+  sendFileMessage,
 );
 
 // ── Mark all messages in conversation as read ──
@@ -97,7 +97,7 @@ router.patch(
   "/:id/read",
   isAuthenticated,
   conversationIdValidation(),
-  markAllRead
+  markAllRead,
 );
 
 // ── Toggle pin ──
@@ -105,7 +105,7 @@ router.patch(
   "/:id/pin",
   isAuthenticated,
   conversationIdValidation(),
-  togglePin
+  togglePin,
 );
 
 // ── Toggle mute ──
@@ -113,7 +113,7 @@ router.patch(
   "/:id/mute",
   isAuthenticated,
   conversationIdValidation(),
-  toggleMute
+  toggleMute,
 );
 
 // ── Toggle archive ──
@@ -121,7 +121,7 @@ router.patch(
   "/:id/archive",
   isAuthenticated,
   conversationIdValidation(),
-  toggleArchive
+  toggleArchive,
 );
 
 export default router;

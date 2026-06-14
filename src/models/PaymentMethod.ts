@@ -28,14 +28,14 @@ const paymentMethodSchema = new Schema<IPaymentMethod>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 paymentMethodSchema.index({ userId: 1 });
 
 const PaymentMethod = model<IPaymentMethod>(
   "PaymentMethod",
-  paymentMethodSchema
+  paymentMethodSchema,
 );
 
 export default PaymentMethod;

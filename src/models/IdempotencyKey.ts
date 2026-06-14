@@ -83,18 +83,21 @@ const idempotencyKeySchema = new Schema<IIdempotencyKey>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // TTL index: Mongo automatically deletes documents 90 days after created_at.
-idempotencyKeySchema.index({ created_at: 1 }, { expireAfterSeconds: 7_776_000 });
+idempotencyKeySchema.index(
+  { created_at: 1 },
+  { expireAfterSeconds: 7_776_000 },
+);
 
 // Scoped lookups, e.g. "all completed exports this month for this org".
 idempotencyKeySchema.index({ org_id: 1, operation: 1, created_at: -1 });
 
 const IdempotencyKey = model<IIdempotencyKey>(
   "IdempotencyKey",
-  idempotencyKeySchema
+  idempotencyKeySchema,
 );
 
 export default IdempotencyKey;

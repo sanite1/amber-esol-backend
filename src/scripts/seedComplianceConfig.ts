@@ -26,8 +26,25 @@ const ACADEMIC_YEAR = "2025/26";
 const ilrRules = {
   field_name_overrides: { SOC2000: "SOC" },
   valid_sof_codes: [
-    "105", "106", "107", "108", "109", "110", "111", "112", "113",
-    "114", "115", "116", "117", "118", "119", "120", "121", "122", "123",
+    "105",
+    "106",
+    "107",
+    "108",
+    "109",
+    "110",
+    "111",
+    "112",
+    "113",
+    "114",
+    "115",
+    "116",
+    "117",
+    "118",
+    "119",
+    "120",
+    "121",
+    "122",
+    "123",
   ],
   expired_llddt_codes: ["15"],
   llddt_remapping: { "15": "14" },
@@ -51,25 +68,61 @@ const rarpaRules = {
 // Do NOT trust these for funding routing in production until verified.
 const asfRoutingRules = {
   sof_authority_map: {
-    "105": { name: "ESFA / DfE Direct (non-devolved national pool)", needs_verification: false },
-    "106": { name: "(Reserved / TBD)",                                needs_verification: true  },
-    "107": { name: "(Reserved / TBD)",                                needs_verification: true  },
-    "108": { name: "Cambridgeshire & Peterborough CA (CPCA)",         needs_verification: true  },
-    "109": { name: "West of England Combined Authority (WECA)",       needs_verification: true  },
-    "110": { name: "Greater Manchester Combined Authority (GMCA)",    needs_verification: false },
-    "111": { name: "Liverpool City Region CA (LCRCA)",                needs_verification: false },
-    "112": { name: "West Midlands Combined Authority (WMCA)",         needs_verification: false },
-    "113": { name: "Tees Valley Combined Authority (TVCA)",           needs_verification: false },
-    "114": { name: "South Yorkshire MCA (SYMCA)",                     needs_verification: false },
-    "115": { name: "West Yorkshire Combined Authority (WYCA)",        needs_verification: false },
-    "116": { name: "Greater London Authority (GLA)",                  needs_verification: false },
-    "117": { name: "(Reserved / TBD)",                                needs_verification: true  },
-    "118": { name: "North East Combined Authority (NECA)",            needs_verification: true  },
-    "119": { name: "(Reserved / TBD)",                                needs_verification: true  },
-    "120": { name: "(Reserved / TBD)",                                needs_verification: true  },
-    "121": { name: "East Midlands Combined County Authority (EMCCA)", needs_verification: false },
-    "122": { name: "York and North Yorkshire Combined Authority (YNYCA)", needs_verification: false },
-    "123": { name: "Cornwall Council",                                needs_verification: false },
+    "105": {
+      name: "ESFA / DfE Direct (non-devolved national pool)",
+      needs_verification: false,
+    },
+    "106": { name: "(Reserved / TBD)", needs_verification: true },
+    "107": { name: "(Reserved / TBD)", needs_verification: true },
+    "108": {
+      name: "Cambridgeshire & Peterborough CA (CPCA)",
+      needs_verification: true,
+    },
+    "109": {
+      name: "West of England Combined Authority (WECA)",
+      needs_verification: true,
+    },
+    "110": {
+      name: "Greater Manchester Combined Authority (GMCA)",
+      needs_verification: false,
+    },
+    "111": {
+      name: "Liverpool City Region CA (LCRCA)",
+      needs_verification: false,
+    },
+    "112": {
+      name: "West Midlands Combined Authority (WMCA)",
+      needs_verification: false,
+    },
+    "113": {
+      name: "Tees Valley Combined Authority (TVCA)",
+      needs_verification: false,
+    },
+    "114": { name: "South Yorkshire MCA (SYMCA)", needs_verification: false },
+    "115": {
+      name: "West Yorkshire Combined Authority (WYCA)",
+      needs_verification: false,
+    },
+    "116": {
+      name: "Greater London Authority (GLA)",
+      needs_verification: false,
+    },
+    "117": { name: "(Reserved / TBD)", needs_verification: true },
+    "118": {
+      name: "North East Combined Authority (NECA)",
+      needs_verification: true,
+    },
+    "119": { name: "(Reserved / TBD)", needs_verification: true },
+    "120": { name: "(Reserved / TBD)", needs_verification: true },
+    "121": {
+      name: "East Midlands Combined County Authority (EMCCA)",
+      needs_verification: false,
+    },
+    "122": {
+      name: "York and North Yorkshire Combined Authority (YNYCA)",
+      needs_verification: false,
+    },
+    "123": { name: "Cornwall Council", needs_verification: false },
   },
   default_sof: "105",
   // Authorities that apply higher earnings thresholds than the DfE default.
@@ -114,8 +167,12 @@ const main = async () => {
 
     if (existing) {
       logger.info(
-        { domain: seed.domain, academic_year: ACADEMIC_YEAR, version: existing.version },
-        "Skip: active config already exists"
+        {
+          domain: seed.domain,
+          academic_year: ACADEMIC_YEAR,
+          version: existing.version,
+        },
+        "Skip: active config already exists",
       );
       continue;
     }
@@ -133,7 +190,7 @@ const main = async () => {
 
     logger.info(
       { domain: seed.domain, academic_year: ACADEMIC_YEAR },
-      "Seeded compliance config"
+      "Seeded compliance config",
     );
   }
 

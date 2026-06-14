@@ -83,9 +83,17 @@ const LANGUAGES: Language[] = [
   { code: "en", displayName: "English", expectedScript: "latin" },
   { code: "ar", displayName: "Arabic", expectedScript: "arabic" },
   { code: "so", displayName: "Somali", expectedScript: "latin" },
-  { code: "fa-AF", displayName: "Dari (Afghan Persian)", expectedScript: "arabic" },
+  {
+    code: "fa-AF",
+    displayName: "Dari (Afghan Persian)",
+    expectedScript: "arabic",
+  },
   { code: "ps", displayName: "Pashto", expectedScript: "arabic" },
-  { code: "zh-HK", displayName: "Cantonese (Traditional Chinese)", expectedScript: "cjk" },
+  {
+    code: "zh-HK",
+    displayName: "Cantonese (Traditional Chinese)",
+    expectedScript: "cjk",
+  },
 ];
 
 // ── 10 ESOL-relevant seed prompts (English) ─────────────────────────────
@@ -125,7 +133,9 @@ const ARABIC_RX = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/;
 const CJK_RX = /[　-〿㐀-䶿一-鿿豈-﫿]/;
 const LATIN_RX = /[A-Za-z]/;
 
-const detectScript = (text: string): "latin" | "arabic" | "cjk" | "mixed" | "unknown" => {
+const detectScript = (
+  text: string,
+): "latin" | "arabic" | "cjk" | "mixed" | "unknown" => {
   const hasArabic = ARABIC_RX.test(text);
   const hasCjk = CJK_RX.test(text);
   const hasLatin = LATIN_RX.test(text);
@@ -158,15 +168,24 @@ ${SEED_PROMPTS_EN.map((p, i) => `${i + 1}. ${p}`).join("\n")}`;
     },
   });
 
-  const raw = result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]";
+  const raw =
+    result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]";
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error(`Failed to parse translation JSON for ${target.displayName}: ${raw.slice(0, 200)}`);
+    throw new Error(
+      `Failed to parse translation JSON for ${target.displayName}: ${raw.slice(0, 200)}`,
+    );
   }
-  if (!Array.isArray(parsed) || parsed.length !== 10 || parsed.some((p) => typeof p !== "string")) {
-    throw new Error(`Translation for ${target.displayName} did not return 10 strings — got ${JSON.stringify(parsed).slice(0, 200)}`);
+  if (
+    !Array.isArray(parsed) ||
+    parsed.length !== 10 ||
+    parsed.some((p) => typeof p !== "string")
+  ) {
+    throw new Error(
+      `Translation for ${target.displayName} did not return 10 strings — got ${JSON.stringify(parsed).slice(0, 200)}`,
+    );
   }
   return parsed as string[];
 };
@@ -195,7 +214,7 @@ const sendTurn = async (
   lang: Language,
   index: number,
   promptInLang: string,
-  promptEn: string
+  promptEn: string,
 ): Promise<TurnResult> => {
   const result: TurnResult = {
     language: lang.displayName,
@@ -218,7 +237,10 @@ const sendTurn = async (
   try {
     const resp = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: promptInLang }] }],
-      systemInstruction: { role: "system", parts: [{ text: SYSTEM_INSTRUCTION }] },
+      systemInstruction: {
+        role: "system",
+        parts: [{ text: SYSTEM_INSTRUCTION }],
+      },
     });
     result.responseTimeMs = Date.now() - t0;
 
@@ -297,7 +319,9 @@ const CSV_HEADER =
 // ── Main ────────────────────────────────────────────────────────────────
 const main = async () => {
   console.log(`${c.bold}Gemini language smoke test${c.reset}`);
-  console.log(`${c.dim}Project: ${PROJECT_ID} | Region: ${LOCATION} | Model: ${MODEL_NAME}${c.reset}`);
+  console.log(
+    `${c.dim}Project: ${PROJECT_ID} | Region: ${LOCATION} | Model: ${MODEL_NAME}${c.reset}`,
+  );
   console.log(`${c.dim}Output:  ${OUTPUT_CSV}${c.reset}\n`);
 
   const rows: TurnResult[] = [];
@@ -313,7 +337,9 @@ const main = async () => {
         console.log(`${c.ok}✓${c.reset} translated 10 prompts`);
       }
     } catch (err) {
-      console.log(`${c.err}✗${c.reset} translation prep failed: ${(err as Error).message}`);
+      console.log(
+        `${c.err}✗${c.reset} translation prep failed: ${(err as Error).message}`,
+      );
       // Record a synthetic failure row per prompt so the CSV still shows the gap.
       for (let i = 0; i < SEED_PROMPTS_EN.length; i++) {
         rows.push({
@@ -344,18 +370,19 @@ const main = async () => {
       const mark = result.error
         ? `${c.err}✗${c.reset}`
         : result.scriptMatchesExpected && !result.suspectedTruncation
-        ? `${c.ok}✓${c.reset}`
-        : `${c.warn}!${c.reset}`;
+          ? `${c.ok}✓${c.reset}`
+          : `${c.warn}!${c.reset}`;
 
       const flags: string[] = [];
-      if (!result.scriptMatchesExpected) flags.push(`script=${result.detectedScript}`);
+      if (!result.scriptMatchesExpected)
+        flags.push(`script=${result.detectedScript}`);
       if (result.suspectedTruncation) flags.push("truncated?");
       if (result.error) flags.push(`error: ${result.error.slice(0, 80)}`);
 
       console.log(
         `${mark} ${String(i + 1).padStart(2)}/10 ${String(result.responseTimeMs).padStart(5)}ms` +
           ` ${String(result.totalTokens).padStart(4)} tok` +
-          (flags.length ? `  ${c.warn}[${flags.join(", ")}]${c.reset}` : "")
+          (flags.length ? `  ${c.warn}[${flags.join(", ")}]${c.reset}` : ""),
       );
     }
     console.log("");
@@ -371,15 +398,21 @@ const main = async () => {
   for (const lang of LANGUAGES) {
     const langRows = rows.filter((r) => r.language === lang.displayName);
     const errors = langRows.filter((r) => r.error).length;
-    const scriptOk = langRows.filter((r) => r.scriptMatchesExpected && !r.error).length;
-    const truncated = langRows.filter((r) => r.suspectedTruncation && !r.error).length;
+    const scriptOk = langRows.filter(
+      (r) => r.scriptMatchesExpected && !r.error,
+    ).length;
+    const truncated = langRows.filter(
+      (r) => r.suspectedTruncation && !r.error,
+    ).length;
     const avgMs = Math.round(
-      langRows.filter((r) => !r.error).reduce((s, r) => s + r.responseTimeMs, 0) /
-        Math.max(1, langRows.filter((r) => !r.error).length)
+      langRows
+        .filter((r) => !r.error)
+        .reduce((s, r) => s + r.responseTimeMs, 0) /
+        Math.max(1, langRows.filter((r) => !r.error).length),
     );
     const avgTok = Math.round(
       langRows.filter((r) => !r.error).reduce((s, r) => s + r.totalTokens, 0) /
-        Math.max(1, langRows.filter((r) => !r.error).length)
+        Math.max(1, langRows.filter((r) => !r.error).length),
     );
 
     const verdict =
@@ -390,13 +423,13 @@ const main = async () => {
     console.log(
       `  ${verdict}  ${lang.displayName.padEnd(32)} ` +
         `script_ok=${scriptOk}/10 errors=${errors} truncated=${truncated} ` +
-        `avg_ms=${avgMs} avg_tok=${avgTok}`
+        `avg_ms=${avgMs} avg_tok=${avgTok}`,
     );
   }
 
   console.log(
     `\n${c.bold}Next step:${c.reset} open ${OUTPUT_CSV} in a spreadsheet and read the Somali responses.` +
-      ` Engage NATECLA (info@natecla.org.uk) for a native-speaker review before any real Somali learner uses the platform.`
+      ` Engage NATECLA (info@natecla.org.uk) for a native-speaker review before any real Somali learner uses the platform.`,
   );
 };
 

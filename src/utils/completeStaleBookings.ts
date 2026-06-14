@@ -8,7 +8,7 @@ import { lessonDurationHours } from "./timeHelpers";
 
 export const completeStaleBookings = async (
   userId: string,
-  role: "student" | "tutor"
+  role: "student" | "tutor",
 ) => {
   const todayStr = todayInTz("Europe/London");
   const now = new Date();
@@ -42,7 +42,7 @@ export const completeStaleBookings = async (
           totalLessonsTaken: 1,
           totalHoursLearned: lessonDurationHours(
             booking.startTime,
-            booking.endTime
+            booking.endTime,
           ),
         },
       });
@@ -65,7 +65,7 @@ export const completeStaleBookings = async (
     } catch (err) {
       logger.error(
         { err, bookingId: booking._id },
-        "Error auto-completing stale booking on dashboard load"
+        "Error auto-completing stale booking on dashboard load",
       );
     }
   }

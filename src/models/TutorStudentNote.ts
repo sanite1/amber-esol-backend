@@ -33,7 +33,7 @@ const tutorStudentNoteSchema = new Schema<ITutorStudentNote>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // One note per tutor–student pair
@@ -41,7 +41,7 @@ tutorStudentNoteSchema.index({ tutorId: 1, studentId: 1 }, { unique: true });
 
 const TutorStudentNote = model<ITutorStudentNote>(
   "TutorStudentNote",
-  tutorStudentNoteSchema
+  tutorStudentNoteSchema,
 );
 
 export default TutorStudentNote;

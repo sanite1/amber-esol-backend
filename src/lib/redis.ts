@@ -43,6 +43,88 @@ const REDIS_URL = process.env.REDIS_URL || "";
 let _redis: Redis | null = null;
 let _available = false;
 
+// ── Runtime degradation detection ───────────────────────────────────────
+// Upstash quota exhaustion ("max requests limit exceeded"), OOM, and the
+// LOADING/BUSY states surface as command-level ReplyErrors — the socket
+// stays open, so the connection-level `end` listener never fires. Without
+// special handling, `_available` stays true, the `redis` Proxy never trips
+// the RedisUnavailableError path, and the documented fallback ("rate
+// limiters fall back to in-memory; cache-aside reads fall through to Mongo;
+// BullMQ enqueue attempts log + drop") silently breaks.
+//
+// `markRedisDegraded()` flips `_available = false` for a cooldown window
+// and schedules a PING reprobe. Errors that match this set get logged once
+// per cooldown window per emitter — without this, 9 workers polling Upstash
+// at ~10 cmd/s each can produce 90+ identical log lines per second.
+//
+// Re-probe lifts the degraded flag the moment commands work again, so a
+// transient quota window (e.g. Upstash hourly rollover on the free tier)
+// recovers without needing a restart.
+const DEGRADED_ERROR_SIGNATURES = [
+  "max requests limit exceeded", // Upstash request quota
+  "OOM command not allowed", // Redis memory cap
+  "LOADING Redis is loading", // post-restart warmup
+  "BUSY Redis is busy", // long-running script in progress
+  "READONLY", // replica fail-over mid-write
+] as const;
+
+const DEGRADE_COOLDOWN_MS = 30_000;
+const DEGRADE_REPROBE_MS = 30_000;
+
+let _lastDegradeLogAt = 0;
+let _lastLiftLogAt = 0;
+let _reprobeScheduled = false;
+
+/**
+ * True if the error message matches a "Redis is up but won't serve commands"
+ * signature. Exported so worker/queue layers can apply the same throttle.
+ */
+export const isDegradedRedisError = (err: Error): boolean => {
+  const msg = err?.message || "";
+  return DEGRADED_ERROR_SIGNATURES.some((sig) => msg.includes(sig));
+};
+
+const scheduleReprobe = (): void => {
+  if (_reprobeScheduled || !_redis) return;
+  _reprobeScheduled = true;
+  setTimeout(async () => {
+    _reprobeScheduled = false;
+    if (!_redis) return;
+    try {
+      await _redis.ping();
+      if (!_available) {
+        _available = true;
+        const now = Date.now();
+        if (now - _lastLiftLogAt > DEGRADE_COOLDOWN_MS) {
+          logger.info("Redis reprobe succeeded — degraded mode lifted");
+          _lastLiftLogAt = now;
+        }
+      }
+    } catch {
+      scheduleReprobe();
+    }
+  }, DEGRADE_REPROBE_MS).unref?.();
+};
+
+/**
+ * Flip `_available = false` on a runtime degraded-error, throttle the log,
+ * and arm the re-probe loop. Idempotent — calling repeatedly inside a
+ * cooldown window is a no-op besides the flag flip.
+ */
+export const markRedisDegraded = (reason: string): void => {
+  _available = false;
+  const now = Date.now();
+  if (now - _lastDegradeLogAt > DEGRADE_COOLDOWN_MS) {
+    logger.warn(
+      { reason },
+      "Redis degraded — cache-aside reads will skip cache, queue enqueues will no-op, " +
+        "rate limiters fall back to in-memory. Will reprobe every 30s.",
+    );
+    _lastDegradeLogAt = now;
+  }
+  scheduleReprobe();
+};
+
 const buildOptions = (url: string): RedisOptions => {
   const opts: RedisOptions = {
     // Non-negotiable for BullMQ. Without this, blocking workers throw.
@@ -100,13 +182,13 @@ export const initRedis = async (): Promise<boolean> => {
     if (process.env.NODE_ENV === "production") {
       throw new Error(
         "Redis init failed: REDIS_URL is not set in production. " +
-          "Provision an Upstash instance and add the rediss:// URL to the deploy env."
+          "Provision an Upstash instance and add the rediss:// URL to the deploy env.",
       );
     }
     logger.warn(
       "REDIS_URL not set — Redis-backed features disabled (rate limiters " +
         "fall back to in-memory, cache reads fall through to DB, queue " +
-        "enqueues will no-op). Set REDIS_URL in .env to enable."
+        "enqueues will no-op). Set REDIS_URL in .env to enable.",
     );
     _available = false;
     return false;
@@ -119,7 +201,7 @@ export const initRedis = async (): Promise<boolean> => {
     logger.error(
       { err: (err as Error).message },
       "Redis init failed during connection construction — continuing with " +
-        "in-memory fallbacks"
+        "in-memory fallbacks",
     );
     _available = false;
     return false;
@@ -130,6 +212,15 @@ export const initRedis = async (): Promise<boolean> => {
   client.on("error", (err: Error) => {
     // Logged but not thrown — ioredis emits errors during reconnect attempts
     // that are recoverable; the process should not crash on every blip.
+    //
+    // Degraded-error classification: Upstash quota exhaustion / OOM / LOADING
+    // come as command-level errors with the socket still open. Without this
+    // routing, _available stays true and the documented fallbacks
+    // (in-memory rate limit, cache-aside skip, queue no-op) never engage.
+    if (isDegradedRedisError(err)) {
+      markRedisDegraded(err.message);
+      return;
+    }
     logger.error({ err: err.message }, "Redis error");
   });
   client.on("end", () => {
@@ -152,7 +243,7 @@ export const initRedis = async (): Promise<boolean> => {
     logger.error(
       { err: (err as Error).message, host: safeHost(REDIS_URL) },
       "Redis init PING failed — continuing with in-memory fallbacks. " +
-        "Check the Upstash dashboard for quota / connection-limit alerts."
+        "Check the Upstash dashboard for quota / connection-limit alerts.",
     );
     // Disconnect cleanly so we don't leak a half-open socket retrying
     // forever in the background.
@@ -212,7 +303,7 @@ export const redis: Redis = new Proxy({} as Redis, {
     if (!_redis || !_available) {
       throw new RedisUnavailableError(
         `Redis not available (accessed property "${String(prop)}"). ` +
-          "Caller should catch RedisUnavailableError and use its fallback path."
+          "Caller should catch RedisUnavailableError and use its fallback path.",
       );
     }
     return Reflect.get(_redis, prop, receiver);
@@ -240,11 +331,28 @@ export const createBullmqConnection = (): Redis | null => {
   if (!REDIS_URL) {
     logger.warn(
       "createBullmqConnection called without REDIS_URL — returning null. " +
-        "BullMQ queue producers / workers will no-op."
+        "BullMQ queue producers / workers will no-op.",
     );
     return null;
   }
-  return new Redis(REDIS_URL, buildOptions(REDIS_URL));
+  const client = new Redis(REDIS_URL, buildOptions(REDIS_URL));
+  // Without an explicit error listener, ioredis dumps raw stack traces
+  // to stderr on every reconnect attempt. When Upstash is down or the
+  // URL is wrong, that means 5+ stack traces per second. Routing errors
+  // through the structured logger silences the noise without hiding
+  // the underlying problem.
+  client.on("error", (err: Error) => {
+    // Same degraded-error routing as the singleton: when Upstash quota
+    // exhausts, BullMQ connections start failing every command. Throttle
+    // those into a single "Redis degraded" log line instead of one per
+    // poll per worker (which is 90+ lines/sec at typical concurrency).
+    if (isDegradedRedisError(err)) {
+      markRedisDegraded(err.message);
+      return;
+    }
+    logger.error({ err: err.message }, "BullMQ Redis connection error");
+  });
+  return client;
 };
 
 /**

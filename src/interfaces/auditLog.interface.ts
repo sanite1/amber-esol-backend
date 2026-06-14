@@ -80,6 +80,8 @@ export type AuditAction =
   | "teacher_added_to_org"
   | "teacher_removed_from_org"
   | "learner_teacher_assigned"
+  // Final Addendum §2 — safeguarding response-text CMS
+  | "safeguarding_message_updated"
   // Function 13 To-Do 4 — ILR export pipeline completion
   | "ilr_export_completed"
   // Function 14 To-Do 4 — consolidated RARPA evidence-report PDF generated
@@ -96,7 +98,13 @@ export type AuditAction =
   | "mis_test_connection_attempted"
   // Final Addendum §1 — failed-job review dashboard actions
   | "failed_job_retried"
-  | "failed_job_dismissed";
+  | "failed_job_dismissed"
+  // Phase 2 / Final Addendum §13 (BE-G) — org_admin completed (or
+  // explicitly skipped) the ROI-calculator onboarding embed. Single-
+  // shot: only written the first time `org_onboarding_completed_at`
+  // flips from null; subsequent POST /onboarding/complete calls are
+  // idempotent no-ops with no second audit row.
+  | "org_onboarding_completed";
 
 export interface IAuditLog extends Document {
   _id: Types.ObjectId;

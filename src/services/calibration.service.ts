@@ -46,7 +46,7 @@ const COHORT_TARGET = 20;
  */
 export const computeOutcome = (
   known: EsolLevel,
-  assigned: EsolLevel
+  assigned: EsolLevel,
 ): CalibrationOutcome => {
   const knownIdx = LEVELS_ASC.indexOf(known);
   const assignedIdx = LEVELS_ASC.indexOf(assigned);
@@ -72,23 +72,26 @@ interface LogCalibrationBody {
 
 const validateLevel = (v: unknown, field: string): EsolLevel => {
   if (typeof v !== "string" || !LEVELS_ASC.includes(v as EsolLevel)) {
-    throw new ApiError(
-      400,
-      `${field} must be one of ${LEVELS_ASC.join(", ")}`
-    );
+    throw new ApiError(400, `${field} must be one of ${LEVELS_ASC.join(", ")}`);
   }
   return v as EsolLevel;
 };
 
 export const logCalibrationService = async (
   body: LogCalibrationBody,
-  loggedBy: string
+  loggedBy: string,
 ): Promise<ApiResponse> => {
   if (!body.learner_id || !Types.ObjectId.isValid(body.learner_id)) {
-    throw new ApiError(400, "learner_id is required and must be a valid ObjectId");
+    throw new ApiError(
+      400,
+      "learner_id is required and must be a valid ObjectId",
+    );
   }
   if (!body.practitioner?.trim()) {
-    throw new ApiError(400, "practitioner is required (the ESOL practitioner's name)");
+    throw new ApiError(
+      400,
+      "practitioner is required (the ESOL practitioner's name)",
+    );
   }
 
   const known = validateLevel(body.known_level, "known_level");
@@ -101,7 +104,7 @@ export const logCalibrationService = async (
   if (learner.role !== "student") {
     throw new ApiError(
       403,
-      `Calibration logs are only valid for learners (student role)`
+      `Calibration logs are only valid for learners (student role)`,
     );
   }
 
@@ -126,7 +129,7 @@ export const logCalibrationService = async (
       bankVersion: row.bank_version,
       outcome,
     },
-    "Calibration row logged"
+    "Calibration row logged",
   );
 
   return new ApiResponse(201, "Calibration row logged", {
@@ -145,7 +148,7 @@ export const logCalibrationService = async (
 // ─────────────────────────────────────────────────────────────────────
 
 export const deleteCalibrationService = async (
-  id: string
+  id: string,
 ): Promise<ApiResponse> => {
   if (!Types.ObjectId.isValid(id)) {
     throw new ApiError(400, "id must be a valid ObjectId");
@@ -177,11 +180,11 @@ export interface CalibrationSummary {
   counts: Record<CalibrationOutcome, number>;
   totals: {
     logged: number;
-    acceptable: number;       // correct + one_below
+    acceptable: number; // correct + one_below
     over_assignments: number; // one_above + over
   };
   pass: boolean;
-  pass_reasons: string[];     // empty if pass, populated if fail
+  pass_reasons: string[]; // empty if pass, populated if fail
 }
 
 /**
@@ -191,7 +194,7 @@ export interface CalibrationSummary {
  * runs.
  */
 export const summariseCalibrationService = async (
-  bankVersion?: number
+  bankVersion?: number,
 ): Promise<ApiResponse> => {
   const version =
     typeof bankVersion === "number" && bankVersion > 0
@@ -211,24 +214,23 @@ export const summariseCalibrationService = async (
   };
   for (const r of rows) counts[r.outcome] += 1;
 
-  const acceptable =
-    counts.correct + counts.one_below;
+  const acceptable = counts.correct + counts.one_below;
   const overAssignments = counts.one_above + counts.over;
 
   const passReasons: string[] = [];
   if (rows.length < COHORT_TARGET) {
     passReasons.push(
-      `Cohort size ${rows.length} is below the ${COHORT_TARGET}-learner target`
+      `Cohort size ${rows.length} is below the ${COHORT_TARGET}-learner target`,
     );
   }
   if (acceptable < PASS_THRESHOLD_ACCEPTABLE) {
     passReasons.push(
-      `Only ${acceptable} learners landed in correct/one_below — need ≥ ${PASS_THRESHOLD_ACCEPTABLE}`
+      `Only ${acceptable} learners landed in correct/one_below — need ≥ ${PASS_THRESHOLD_ACCEPTABLE}`,
     );
   }
   if (overAssignments > 0) {
     passReasons.push(
-      `${overAssignments} over-assignment(s) recorded — the protocol requires zero`
+      `${overAssignments} over-assignment(s) recorded — the protocol requires zero`,
     );
   }
   const pass = passReasons.length === 0;
@@ -261,7 +263,7 @@ export const summariseCalibrationService = async (
     pass
       ? "Calibration passes the protocol criteria"
       : "Calibration does not yet meet the protocol criteria",
-    summary
+    summary,
   );
 };
 

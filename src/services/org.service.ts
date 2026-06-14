@@ -71,7 +71,7 @@ type ContractStatus = "upcoming" | "active" | "expired" | "no_contract";
 
 const computeContractStatus = (
   start?: Date | null,
-  end?: Date | null
+  end?: Date | null,
 ): ContractStatus => {
   if (!start && !end) return "no_contract";
   const now = Date.now();
@@ -89,11 +89,14 @@ const computeContractStatus = (
  */
 const toResponseShape = (
   doc: IOrganisation,
-  extras: { learner_count?: number } = {}
+  extras: { learner_count?: number } = {},
 ) => {
   const obj: any = doc.toJSON ? doc.toJSON() : { ...doc };
   delete obj.misApiCredentials;
-  obj.contract_status = computeContractStatus(doc.contractStart, doc.contractEnd);
+  obj.contract_status = computeContractStatus(
+    doc.contractStart,
+    doc.contractEnd,
+  );
   if (extras.learner_count !== undefined) {
     obj.learner_count = extras.learner_count;
   }
@@ -146,7 +149,7 @@ export interface ListOrgsQuery {
  */
 export const createOrgService = async (
   body: CreateOrgBody,
-  createdByUserId: string
+  createdByUserId: string,
 ) => {
   const slug = await uniqueSlug(slugify(body.name));
 
@@ -208,10 +211,7 @@ export const listOrgsService = async (query: ListOrgsQuery) => {
   }
 
   const [orgs, total] = await Promise.all([
-    Organisation.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit),
+    Organisation.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
     Organisation.countDocuments(filter),
   ]);
 
@@ -222,13 +222,13 @@ export const listOrgsService = async (query: ListOrgsQuery) => {
     { $group: { _id: "$orgId", n: { $sum: 1 } } },
   ]);
   const counts = new Map<string, number>(
-    countAgg.map((c) => [c._id.toString(), c.n])
+    countAgg.map((c) => [c._id.toString(), c.n]),
   );
 
   const data = orgs.map((doc) =>
     toResponseShape(doc, {
       learner_count: counts.get(doc._id.toString()) ?? 0,
-    })
+    }),
   );
 
   return new ApiResponse(200, "Organisations", {
@@ -248,7 +248,11 @@ export const getOrgService = async (id: string) => {
   if (!doc) throw new ApiError(404, "Organisation not found");
 
   const learner_count = await User.countDocuments({ orgId: doc._id });
-  return new ApiResponse(200, "Organisation", toResponseShape(doc, { learner_count }));
+  return new ApiResponse(
+    200,
+    "Organisation",
+    toResponseShape(doc, { learner_count }),
+  );
 };
 
 /* ── Referral link generation (brief Function 1) ─────────────────── */
@@ -275,7 +279,7 @@ const ESOL_LANDING_URL =
  */
 export const generateReferralToken = (
   org_id: string,
-  expires_at: Date
+  expires_at: Date,
 ): string => {
   const secret = process.env.REFERRAL_JWT_SECRET;
   if (!secret) {
@@ -283,17 +287,15 @@ export const generateReferralToken = (
   }
 
   const expiresInSeconds = Math.floor(
-    (expires_at.getTime() - Date.now()) / 1000
+    (expires_at.getTime() - Date.now()) / 1000,
   );
   if (expiresInSeconds <= 0) {
     throw new ApiError(400, "expires_at must be in the future");
   }
 
-  return jwt.sign(
-    { org_id, type: "esol_referral" },
-    secret,
-    { expiresIn: expiresInSeconds }
-  );
+  return jwt.sign({ org_id, type: "esol_referral" }, secret, {
+    expiresIn: expiresInSeconds,
+  });
 };
 
 /**
@@ -310,7 +312,7 @@ export const generateReferralToken = (
 export const createOrgReferralLinkService = async (
   org_id: string,
   body: { expires_at?: string | Date },
-  callerId: string
+  callerId: string,
 ) => {
   const org = await Organisation.findById(org_id);
   if (!org) throw new ApiError(404, "Organisation not found");
@@ -327,7 +329,7 @@ export const createOrgReferralLinkService = async (
   } else {
     throw new ApiError(
       400,
-      "expires_at is required when the organisation has no contract_end set"
+      "expires_at is required when the organisation has no contract_end set",
     );
   }
 
@@ -368,7 +370,7 @@ export const createOrgReferralLinkService = async (
  */
 export const listOrgReferralLinksService = async (
   org_id: string,
-  options: { page?: string | number; limit?: string | number } = {}
+  options: { page?: string | number; limit?: string | number } = {},
 ) => {
   // Cheap upfront validation — clearer error than the empty array a
   // bad org_id would otherwise produce.
@@ -428,7 +430,7 @@ export const listOrgReferralLinksService = async (
  */
 export const deactivateOrgReferralLinkService = async (
   org_id: string,
-  token_id: string
+  token_id: string,
 ) => {
   if (!Types.ObjectId.isValid(org_id)) {
     throw new ApiError(400, "Invalid organisation ID");
@@ -486,7 +488,7 @@ export const createOrgAdminUserService = async (
     firstname: string;
     lastname: string;
     password: string;
-  }
+  },
 ) => {
   if (!Types.ObjectId.isValid(org_id)) {
     throw new ApiError(400, "Invalid organisation ID");
@@ -547,8 +549,8 @@ export const createOrgAdminUserService = async (
   }).catch((err) =>
     logger.error(
       { err, userId: orgAdmin._id, orgId: org._id },
-      "Org admin welcome email failed"
-    )
+      "Org admin welcome email failed",
+    ),
   );
 
   return new ApiResponse(201, "Organisation admin user created", {
@@ -582,5 +584,9 @@ export const updateOrgService = async (id: string, body: UpdateOrgBody) => {
   if (!doc) throw new ApiError(404, "Organisation not found");
 
   const learner_count = await User.countDocuments({ orgId: doc._id });
-  return new ApiResponse(200, "Organisation updated", toResponseShape(doc, { learner_count }));
+  return new ApiResponse(
+    200,
+    "Organisation updated",
+    toResponseShape(doc, { learner_count }),
+  );
 };

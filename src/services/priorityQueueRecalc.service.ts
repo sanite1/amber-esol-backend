@@ -103,7 +103,13 @@ export interface RecalcOrgPrioritiesResult {
 // Localised template lookup
 // ─────────────────────────────────────────────────────────────────────
 
-type LangSlot = { en: string; ar?: string; so?: string; fa?: string; zh?: string };
+type LangSlot = {
+  en: string;
+  ar?: string;
+  so?: string;
+  fa?: string;
+  zh?: string;
+};
 type RecommendedActions = Record<PriorityTriggerKey, LangSlot> &
   Record<`$${string}`, unknown>;
 
@@ -362,8 +368,8 @@ const evaluateAndWriteForLearner = async (
     return { status: "error" };
   }
 
-  const previousLevel =
-    (learner.teacher_priority_level ?? "p4") as PriorityLevel;
+  const previousLevel = (learner.teacher_priority_level ??
+    "p4") as PriorityLevel;
   const previousAction = learner.teacher_recommended_action ?? null;
   const localisedAction = getLocalisedAction(verdict.trigger_key, "en");
   const now = new Date();
@@ -413,8 +419,7 @@ const evaluateAndWriteForLearner = async (
         teacher_recommended_action: localisedAction,
         trigger_key: verdict.trigger_key,
       },
-      reason:
-        `Priority shifted ${previousLevel.toUpperCase()} → ${verdict.level.toUpperCase()}: ${verdict.reason}`,
+      reason: `Priority shifted ${previousLevel.toUpperCase()} → ${verdict.level.toUpperCase()}: ${verdict.reason}`,
     });
   }
 
@@ -455,7 +460,10 @@ export const runLearnerPriorityRecalc = async (
     .select(
       "_id firstname lastname role orgId teacher_priority_level teacher_recommended_action assigned_teacher_id",
     )
-    .lean<(LearnerSkeleton & { role?: string; orgId?: Types.ObjectId | null }) | null>();
+    .lean<
+      | (LearnerSkeleton & { role?: string; orgId?: Types.ObjectId | null })
+      | null
+    >();
 
   if (!learner) {
     logger.warn(

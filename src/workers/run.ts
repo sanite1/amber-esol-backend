@@ -24,7 +24,10 @@ import logger from "../config/logger";
   try {
     await connectDb();
   } catch (err) {
-    logger.fatal({ err: (err as Error).message }, "Worker process: DB init failed");
+    logger.fatal(
+      { err: (err as Error).message },
+      "Worker process: DB init failed",
+    );
     process.exit(1);
   }
 
@@ -33,21 +36,30 @@ import logger from "../config/logger";
   try {
     await ComplianceConfigService.loadAll();
   } catch (err) {
-    logger.fatal({ err: (err as Error).message }, "Worker process: ComplianceConfig load failed");
+    logger.fatal(
+      { err: (err as Error).message },
+      "Worker process: ComplianceConfig load failed",
+    );
     process.exit(1);
   }
 
   try {
     await initRedis();
   } catch (err) {
-    logger.fatal({ err: (err as Error).message }, "Worker process: Redis init failed");
+    logger.fatal(
+      { err: (err as Error).message },
+      "Worker process: Redis init failed",
+    );
     process.exit(1);
   }
 
   try {
     initGeminiClient();
   } catch (err) {
-    logger.fatal({ err: (err as Error).message }, "Worker process: Vertex AI init failed");
+    logger.fatal(
+      { err: (err as Error).message },
+      "Worker process: Vertex AI init failed",
+    );
     process.exit(1);
   }
 
@@ -59,7 +71,7 @@ import logger from "../config/logger";
   } catch (err) {
     logger.error(
       { err: (err as Error).message },
-      "Worker process: SafeguardingDetector load failed (continuing)"
+      "Worker process: SafeguardingDetector load failed (continuing)",
     );
   }
 
@@ -71,7 +83,10 @@ import logger from "../config/logger";
     try {
       await stopWorkers(workers);
     } catch (err) {
-      logger.error({ err: (err as Error).message }, "Error during worker shutdown");
+      logger.error(
+        { err: (err as Error).message },
+        "Error during worker shutdown",
+      );
     }
     process.exit(0);
   };

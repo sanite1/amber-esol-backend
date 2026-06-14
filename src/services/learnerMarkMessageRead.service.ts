@@ -82,9 +82,7 @@ export const markMessageReadService = async (
   if (!existing) {
     throw new ApiError(404, "Message not found");
   }
-  if (
-    (existing.learner_id as Types.ObjectId).toString() !== learner_id
-  ) {
+  if ((existing.learner_id as Types.ObjectId).toString() !== learner_id) {
     // Opaque 404 — see service-file rationale.
     throw new ApiError(404, "Message not found");
   }

@@ -11,7 +11,7 @@ router.get(
   isAuthenticated,
   isTutor,
   getTutorDashboardValidation(),
-  getTutorDashboard
+  getTutorDashboard,
 );
 
 export default router;

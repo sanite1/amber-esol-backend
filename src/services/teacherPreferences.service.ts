@@ -38,10 +38,7 @@ export const updateAutoReEngagementService = async (
     throw new ApiError(400, "Authenticated teacher id required");
   }
   if (typeof input.body?.auto_re_engagement_enabled !== "boolean") {
-    throw new ApiError(
-      400,
-      "auto_re_engagement_enabled is required (boolean)",
-    );
+    throw new ApiError(400, "auto_re_engagement_enabled is required (boolean)");
   }
   const teacherObjectId = new Types.ObjectId(input.teacher_id);
   const nextValue = input.body.auto_re_engagement_enabled;

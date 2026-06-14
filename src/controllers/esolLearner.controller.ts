@@ -12,7 +12,7 @@ export const listLearners: ExpressFunction = async (req, res, next) => {
     const data = await listLearnersService(
       req.user!.orgId,
       req.user!.role,
-      req.query as any
+      req.query as any,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -32,7 +32,7 @@ export const getLearner: ExpressFunction = async (req, res, next) => {
       orgId,
       params.learnerId,
       req.user!.role,
-      req.user!.orgId
+      req.user!.orgId,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -63,13 +63,17 @@ export const updateLearner: ExpressFunction = async (req, res, next) => {
  * admin bypasses. We pass req.user.role + req.user.orgId in and let
  * the service decide.
  */
-export const getLearnerVocabLedger: ExpressFunction = async (req, res, next) => {
+export const getLearnerVocabLedger: ExpressFunction = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const params = req.params as Record<string, string>;
     const data = await getLearnerVocabLedgerService(
       params.learnerId,
       req.user!.role,
-      req.user!.orgId
+      req.user!.orgId,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -96,7 +100,7 @@ export const getLearnerSessions: ExpressFunction = async (req, res, next) => {
       {
         page: Number.isFinite(page) ? page : undefined,
         limit: Number.isFinite(limit) ? limit : undefined,
-      }
+      },
     );
     return res.status(200).json(data);
   } catch (error) {

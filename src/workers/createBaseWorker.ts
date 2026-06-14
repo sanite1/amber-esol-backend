@@ -1,8 +1,21 @@
 import { Worker, Job, Processor, WorkerOptions } from "bullmq";
-import { createBullmqConnection } from "../lib/redis";
+import {
+  createBullmqConnection,
+  isDegradedRedisError,
+  markRedisDegraded,
+} from "../lib/redis";
 import { notificationsQueue, QueueName } from "../queues";
 import FailedJob from "../models/FailedJob";
 import logger from "../config/logger";
+
+// Per-queue throttle on the "worker emitted error" log when the underlying
+// error is a Redis degraded-class error. Without this, each worker polling
+// Upstash at ~10 cmd/s emits ~10 identical errors per second; 9 workers
+// × 10/s = 90 lines/sec of the same "max requests limit exceeded" message.
+// We log once per 30s per queue and trust the singleton's degraded-mode
+// flag + reprobe loop to surface the recovery.
+const _lastWorkerErrLogAt = new Map<string, number>();
+const WORKER_ERR_LOG_THROTTLE_MS = 30_000;
 
 /**
  * Shared factory for BullMQ workers in Project Silk.
@@ -54,12 +67,15 @@ export const createBaseWorker = <T = unknown>({
   // recommendation. Sharing a connection across workers causes "client[name]
   // is not a function" errors and MaxListenersExceeded warnings.
   const workerOptions: WorkerOptions = {
-    connection: createBullmqConnection() as unknown as WorkerOptions["connection"],
+    connection:
+      createBullmqConnection() as unknown as WorkerOptions["connection"],
     concurrency,
     ...(lockDurationMs ? { lockDuration: lockDurationMs } : {}),
     settings: {
       backoffStrategy: (attemptsMade: number) =>
-        BACKOFF_DELAYS_MS[Math.min(attemptsMade - 1, BACKOFF_DELAYS_MS.length - 1)],
+        BACKOFF_DELAYS_MS[
+          Math.min(attemptsMade - 1, BACKOFF_DELAYS_MS.length - 1)
+        ],
     },
   };
 
@@ -67,15 +83,20 @@ export const createBaseWorker = <T = unknown>({
 
   worker.on("active", (job) => {
     logger.debug(
-      { queue: queueName, jobId: job.id, name: job.name, attempt: job.attemptsMade + 1 },
-      "Worker started job"
+      {
+        queue: queueName,
+        jobId: job.id,
+        name: job.name,
+        attempt: job.attemptsMade + 1,
+      },
+      "Worker started job",
     );
   });
 
   worker.on("completed", (job) => {
     logger.info(
       { queue: queueName, jobId: job.id, name: job.name },
-      "Worker completed job"
+      "Worker completed job",
     );
   });
 
@@ -83,7 +104,10 @@ export const createBaseWorker = <T = unknown>({
     if (!job) {
       // Job-less failure (very rare — usually a Redis disconnect during
       // fetch). Log and bail; nothing else we can persist about it.
-      logger.error({ queue: queueName, err: err.message }, "Worker failure with no job context");
+      logger.error(
+        { queue: queueName, err: err.message },
+        "Worker failure with no job context",
+      );
       return;
     }
 
@@ -100,7 +124,7 @@ export const createBaseWorker = <T = unknown>({
         terminal: isTerminal,
         err: err.message,
       },
-      "Worker job failed"
+      "Worker job failed",
     );
 
     if (!isTerminal) return; // retry pending — wait for next attempt
@@ -117,8 +141,12 @@ export const createBaseWorker = <T = unknown>({
       });
     } catch (persistErr) {
       logger.error(
-        { queue: queueName, jobId: job.id, persistErr: (persistErr as Error).message },
-        "Failed to persist failed_job row"
+        {
+          queue: queueName,
+          jobId: job.id,
+          persistErr: (persistErr as Error).message,
+        },
+        "Failed to persist failed_job row",
       );
     }
 
@@ -140,19 +168,45 @@ export const createBaseWorker = <T = unknown>({
               attempts: job.attemptsMade,
             },
           },
-          { priority: 1 }
+          { priority: 1 },
         );
       } catch (notifyErr) {
         logger.error(
-          { queue: queueName, jobId: job.id, notifyErr: (notifyErr as Error).message },
-          "Failed to enqueue admin failure notification"
+          {
+            queue: queueName,
+            jobId: job.id,
+            notifyErr: (notifyErr as Error).message,
+          },
+          "Failed to enqueue admin failure notification",
         );
       }
     }
   });
 
   worker.on("error", (err) => {
-    logger.error({ queue: queueName, err: err.message }, "Worker emitted error");
+    if (isDegradedRedisError(err)) {
+      // Flag the singleton so cache-aside readers / queue producers also
+      // notice. (It's idempotent — only the first call within a cooldown
+      // window logs.)
+      markRedisDegraded(err.message);
+      // Throttle the per-worker log so 9 workers polling Upstash don't
+      // produce 90 lines/sec of the same message.
+      const now = Date.now();
+      const last = _lastWorkerErrLogAt.get(queueName) ?? 0;
+      if (now - last > WORKER_ERR_LOG_THROTTLE_MS) {
+        logger.warn(
+          { queue: queueName, err: err.message },
+          "Worker stalled on Redis degraded-class error. " +
+            "Further errors on this queue suppressed for 30s; will resume when Redis recovers.",
+        );
+        _lastWorkerErrLogAt.set(queueName, now);
+      }
+      return;
+    }
+    logger.error(
+      { queue: queueName, err: err.message },
+      "Worker emitted error",
+    );
   });
 
   logger.info({ queue: queueName, concurrency }, "Worker attached");

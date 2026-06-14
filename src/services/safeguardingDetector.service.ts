@@ -57,7 +57,7 @@ const compile = (pattern: string): CompiledKeyword["matcher"] => {
       // but we want it visible in logs.
       logger.warn(
         { pattern, err: (err as Error).message },
-        "Invalid regex pattern in SafeguardingKeyword — falling back to literal substring"
+        "Invalid regex pattern in SafeguardingKeyword — falling back to literal substring",
       );
     }
   }
@@ -97,7 +97,7 @@ const loadAll = async (): Promise<void> => {
     .map(([lang, arr]) => `${lang}=${arr.length}`)
     .join(", ");
   logger.info(
-    `SafeguardingDetector loaded: ${docs.length} patterns across ${next.size} languages${summary ? ` (${summary})` : ""}`
+    `SafeguardingDetector loaded: ${docs.length} patterns across ${next.size} languages${summary ? ` (${summary})` : ""}`,
   );
 };
 

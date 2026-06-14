@@ -16,7 +16,7 @@ router.post(
   "/complete",
   authLimiter,
   upload.single("file"),
-  completeOnboarding
+  completeOnboarding,
 );
 
 export default router;

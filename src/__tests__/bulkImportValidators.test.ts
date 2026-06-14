@@ -100,15 +100,12 @@ describe("validateEnum", () => {
 });
 
 describe("validateUkPostcode", () => {
-  it.each([
-    "M1 1AE",
-    "SW1A 1AA",
-    "B15 2TT",
-    "EC1A 1BB",
-    "LS1 4DT",
-  ])("accepts %s", (postcode) => {
-    expect(validateUkPostcode(postcode, ROW)).toBeNull();
-  });
+  it.each(["M1 1AE", "SW1A 1AA", "B15 2TT", "EC1A 1BB", "LS1 4DT"])(
+    "accepts %s",
+    (postcode) => {
+      expect(validateUkPostcode(postcode, ROW)).toBeNull();
+    },
+  );
 
   it.each([
     ["empty", ""],
@@ -205,15 +202,11 @@ describe("validateEmail", () => {
 
 describe("validateAgeAtEnrolment", () => {
   it("accepts a learner who is ≥ 16 on enrolment_date", () => {
-    expect(
-      validateAgeAtEnrolment("2000-01-01", "2026-01-15", ROW)
-    ).toBeNull();
+    expect(validateAgeAtEnrolment("2000-01-01", "2026-01-15", ROW)).toBeNull();
   });
 
   it("accepts a learner who turns 16 exactly on enrolment_date", () => {
-    expect(
-      validateAgeAtEnrolment("2010-01-15", "2026-01-15", ROW)
-    ).toBeNull();
+    expect(validateAgeAtEnrolment("2010-01-15", "2026-01-15", ROW)).toBeNull();
   });
 
   it("rejects a learner who is 15 on enrolment_date", () => {
@@ -226,17 +219,11 @@ describe("validateAgeAtEnrolment", () => {
   });
 
   it("returns null silently when either date is missing — per-field validators already errored", () => {
-    expect(
-      validateAgeAtEnrolment(undefined, "2026-01-15", ROW)
-    ).toBeNull();
-    expect(
-      validateAgeAtEnrolment("2000-01-01", undefined, ROW)
-    ).toBeNull();
+    expect(validateAgeAtEnrolment(undefined, "2026-01-15", ROW)).toBeNull();
+    expect(validateAgeAtEnrolment("2000-01-01", undefined, ROW)).toBeNull();
   });
 
   it("returns null silently when either date is malformed", () => {
-    expect(
-      validateAgeAtEnrolment("not-a-date", "2026-01-15", ROW)
-    ).toBeNull();
+    expect(validateAgeAtEnrolment("not-a-date", "2026-01-15", ROW)).toBeNull();
   });
 });

@@ -14,8 +14,7 @@ import { Joi, validate } from "express-validation";
 const schema = {
   body: Joi.object({
     auto_re_engagement_enabled: Joi.boolean().required().messages({
-      "any.required":
-        "auto_re_engagement_enabled is required (boolean)",
+      "any.required": "auto_re_engagement_enabled is required (boolean)",
     }),
   }).unknown(false),
 };

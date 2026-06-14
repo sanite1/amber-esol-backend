@@ -6,7 +6,7 @@ import { handleStripeWebhookService } from "../services/webhook.service";
 export const stripeWebhook = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const signature = req.headers["stripe-signature"] as string;

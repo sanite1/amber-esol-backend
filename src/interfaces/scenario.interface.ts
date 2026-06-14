@@ -21,10 +21,15 @@ import { EsolLevel } from "./placementQuestion.interface";
 
 /** ILR Skills for Life sub-skill codes — same set as esolSkills.ts. */
 export type IlrSkillCode =
-  | "Rt" | "Rs" | "Rw"
-  | "Wt" | "Ws" | "Ww"
+  | "Rt"
+  | "Rs"
+  | "Rw"
+  | "Wt"
+  | "Ws"
+  | "Ww"
   | "Lr"
-  | "Sc" | "Sd";
+  | "Sc"
+  | "Sd";
 
 /**
  * Stage 3 RARPA "anchor" ILR codes — what objective(s) this scenario
@@ -144,6 +149,6 @@ export interface IScenarioFile {
     english_author?: string;
     translators?: Partial<Record<ScenarioLanguage, string>>;
     esol_practitioner_reviewer?: string;
-    signed_off_at?: string;     // ISO date
+    signed_off_at?: string; // ISO date
   };
 }

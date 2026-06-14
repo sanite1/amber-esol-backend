@@ -35,7 +35,7 @@ import logger from "../config/logger";
  */
 export const declareUlnService = async (
   userId: string,
-  body: { uln?: string; skip: boolean }
+  body: { uln?: string; skip: boolean },
 ) => {
   const user = await User.findById(userId);
   if (!user) {
@@ -93,8 +93,8 @@ export const declareUlnService = async (
   }).catch((err) =>
     logger.error(
       { err, learnerId: user._id, orgId: user.orgId },
-      "AuditLog write failed for uln_recorded"
-    )
+      "AuditLog write failed for uln_recorded",
+    ),
   );
 
   return new ApiResponse(200, "ULN recorded", {

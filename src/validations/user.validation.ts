@@ -8,7 +8,7 @@ import { Types } from "mongoose";
 export function parseJsonFields(
   req: Request,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
     const jsonFields = [
@@ -148,7 +148,7 @@ const teachingPreferencesSchema = Joi.object({
     .items(
       Joi.string().valid("one-on-one", "group").messages({
         "any.only": 'Each lesson type must be either "one-on-one" or "group"',
-      })
+      }),
     )
     .optional()
     .messages({
@@ -162,12 +162,12 @@ const teachingPreferencesSchema = Joi.object({
           "elementary",
           "intermediate",
           "upper-intermediate",
-          "advanced"
+          "advanced",
         )
         .messages({
           "any.only":
             "Each level must be one of: beginner, elementary, intermediate, upper-intermediate, advanced",
-        })
+        }),
     )
     .optional()
     .messages({
@@ -191,7 +191,7 @@ const learningPreferencesSchema = Joi.object({
       "intermediate",
       "upper-intermediate",
       "advanced",
-      "proficiency"
+      "proficiency",
     )
     .optional()
     .messages({
@@ -206,7 +206,7 @@ const learningPreferencesSchema = Joi.object({
       "intermediate",
       "upper-intermediate",
       "advanced",
-      "proficiency"
+      "proficiency",
     )
     .optional()
     .messages({
@@ -218,7 +218,7 @@ const learningPreferencesSchema = Joi.object({
     .items(
       Joi.string().messages({
         "string.base": "Each goal must be a string",
-      })
+      }),
     )
     .optional()
     .messages({
@@ -231,7 +231,7 @@ const learningPreferencesSchema = Joi.object({
         .messages({
           "any.only":
             "Each schedule slot must be one of: morning, afternoon, evening, weekend",
-        })
+        }),
     )
     .optional()
     .messages({
@@ -445,7 +445,7 @@ const registerTutorSchema = {
       .items(
         Joi.string().messages({
           "string.base": "Each specialization must be a string",
-        })
+        }),
       )
       .optional()
       .messages({
@@ -733,7 +733,7 @@ const updateUserSchema = {
       .items(
         Joi.string().messages({
           "string.base": "Each specialization must be a string",
-        })
+        }),
       )
       .optional()
       .messages({
@@ -800,7 +800,7 @@ const getTutorsSchema = {
         "elementary",
         "intermediate",
         "upper-intermediate",
-        "advanced"
+        "advanced",
       )
       .optional()
       .messages({

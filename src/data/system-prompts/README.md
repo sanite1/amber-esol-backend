@@ -3,14 +3,14 @@
 This directory holds the static layers of the system prompt Gemini reads
 on every AI tutor turn. The full ordering at call time is:
 
-| # | Layer            | Source                                   | Cacheable? |
-| - | ---------------- | ---------------------------------------- | ---------- |
-| 1 | Identity         | `layer1-identity.md`                     | yes        |
-| 2 | Hard rules       | `layer2-hard-rules.md`                   | yes        |
-| 3 | Level calibration| `layer3-level-calibration/{level}.md`    | yes        |
-| 4 | Scenario         | the live `Scenario` document             | yes (per scenario) |
-| 5 | Learner profile  | built at runtime from `User` + session   | **no** — dynamic |
-| 6 | Output format    | `layer6-output-format.md`                | yes        |
+| #   | Layer             | Source                                 | Cacheable?         |
+| --- | ----------------- | -------------------------------------- | ------------------ |
+| 1   | Identity          | `layer1-identity.md`                   | yes                |
+| 2   | Hard rules        | `layer2-hard-rules.md`                 | yes                |
+| 3   | Level calibration | `layer3-level-calibration/{level}.md`  | yes                |
+| 4   | Scenario          | the live `Scenario` document           | yes (per scenario) |
+| 5   | Learner profile   | built at runtime from `User` + session | **no** — dynamic   |
+| 6   | Output format     | `layer6-output-format.md`              | yes                |
 
 **Concatenation order at the wire:**
 `1 → 2 → 3 → 4 → 6 → 5`

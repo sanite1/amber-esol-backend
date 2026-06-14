@@ -72,9 +72,9 @@ jest.mock("../services/safeguardingDetector.service", () => {
 
 jest.mock("../queues", () => ({
   __esModule: true,
-  esolSessionQueue:    { add: jest.fn().mockResolvedValue(undefined) },
-  notificationsQueue:  { add: jest.fn().mockResolvedValue(undefined) },
-  priorityQueueQueue:  { add: jest.fn().mockResolvedValue(undefined) },
+  esolSessionQueue: { add: jest.fn().mockResolvedValue(undefined) },
+  notificationsQueue: { add: jest.fn().mockResolvedValue(undefined) },
+  priorityQueueQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
 jest.mock("../services/ComplianceConfigService", () => ({
@@ -84,7 +84,8 @@ jest.mock("../services/ComplianceConfigService", () => ({
 
 // Required env for the placement bank / referral JWT modules that load
 // transitively when aiSession.service imports the orchestration chain.
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 import { Types } from "mongoose";
 import Organisation from "../models/Organisation";
@@ -106,8 +107,8 @@ const LIVE_GEMINI = process.env.ENABLE_LIVE_TESTS === "true";
 // Pull the mock handle the gemini.ts factory exports when in mocked mode.
 // In live mode this is undefined and we never use it.
 const mockGenerateContent = !LIVE_GEMINI
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  ? (require("../lib/gemini") as { __mockGenerateContent: jest.Mock })
+  ? // eslint-disable-next-line @typescript-eslint/no-var-requires
+    (require("../lib/gemini") as { __mockGenerateContent: jest.Mock })
       .__mockGenerateContent
   : null;
 
@@ -129,7 +130,7 @@ const createOrg = async () =>
 
 const createLearner = async (
   orgId: Types.ObjectId | unknown,
-  overrides: Record<string, unknown> = {}
+  overrides: Record<string, unknown> = {},
 ) =>
   User.create({
     firstname: "Aamina",
@@ -150,7 +151,7 @@ const createLearner = async (
 const createSession = async (
   learnerId: Types.ObjectId | unknown,
   orgId: Types.ObjectId | unknown,
-  overrides: Record<string, unknown> = {}
+  overrides: Record<string, unknown> = {},
 ) =>
   AISession.create({
     learnerId,
@@ -174,7 +175,8 @@ const createSession = async (
  */
 const validTurnJson = (overrides: Record<string, unknown> = {}) =>
   JSON.stringify({
-    reply: "Good — you used 'appointment' correctly. Try 'I would like an appointment'.",
+    reply:
+      "Good — you used 'appointment' correctly. Try 'I would like an appointment'.",
     mode: "bridge",
     skill_codes_used: ["Sc"],
     turn_score: 0.75,
@@ -214,136 +216,204 @@ beforeEach(() => {
 // LIVE tests (T1–T5, T11, T12)
 // ═════════════════════════════════════════════════════════════════════
 
-describeLive("D2-T1 — voice principle 2 (no 'wrong'/'incorrect' phrases)", () => {
-  it("rejects nothing — 10 turns with grammar errors produce zero forbidden phrases", async () => {
-    const FORBIDDEN = [
-      /\b(that is|that's)\s+wrong\b/i,
-      /\bincorrect\b/i,
-      /\bwrong answer\b/i,
-      /\bno, that's wrong\b/i,
-    ];
-    const org = await createOrg();
-    const learner = await createLearner(org._id, { esolLevel: "e2" });
-    const session = await createSession(learner._id, org._id);
+describeLive(
+  "D2-T1 — voice principle 2 (no 'wrong'/'incorrect' phrases)",
+  () => {
+    it(
+      "rejects nothing — 10 turns with grammar errors produce zero forbidden phrases",
+      async () => {
+        const FORBIDDEN = [
+          /\b(that is|that's)\s+wrong\b/i,
+          /\bincorrect\b/i,
+          /\bwrong answer\b/i,
+          /\bno, that's wrong\b/i,
+        ];
+        const org = await createOrg();
+        const learner = await createLearner(org._id, { esolLevel: "e2" });
+        const session = await createSession(learner._id, org._id);
 
-    const errorfulInputs = [
-      "I goes to shops yesterday",
-      "She no understand me",
-      "I am very tired the work",
-      "Yesterday I am eating chicken",
-      "He don't have the keys",
-      "I want a apple",
-      "She say me to come",
-      "I no can hear you",
-      "We was in London last week",
-      "Mary and me went to park",
-    ];
+        const errorfulInputs = [
+          "I goes to shops yesterday",
+          "She no understand me",
+          "I am very tired the work",
+          "Yesterday I am eating chicken",
+          "He don't have the keys",
+          "I want a apple",
+          "She say me to come",
+          "I no can hear you",
+          "We was in London last week",
+          "Mary and me went to park",
+        ];
 
-    for (const text of errorfulInputs) {
-      const res = await processTurnService({
-        sessionId: session._id.toString(),
-        message: text,
-        learnerId: learner._id.toString(),
-        orgId: org._id.toString(),
-      });
-      const reply = (res.data as { reply: string }).reply;
-      for (const re of FORBIDDEN) {
-        expect(reply).not.toMatch(re);
-      }
-    }
-  }, 5 * 60 * 1000);
-});
+        for (const text of errorfulInputs) {
+          const res = await processTurnService({
+            sessionId: session._id.toString(),
+            message: text,
+            learnerId: learner._id.toString(),
+            orgId: org._id.toString(),
+          });
+          const reply = (res.data as { reply: string }).reply;
+          for (const re of FORBIDDEN) {
+            expect(reply).not.toMatch(re);
+          }
+        }
+      },
+      5 * 60 * 1000,
+    );
+  },
+);
 
 describeLive("D2-T2 — response length cap at e1 (≤ 3 sentences)", () => {
-  it("10 turns at e1 all return ≤ 3 sentences", async () => {
-    const org = await createOrg();
-    const learner = await createLearner(org._id, { esolLevel: "e1" });
-    const session = await createSession(learner._id, org._id, { esolLevel: "e1" });
-
-    for (let i = 0; i < 10; i++) {
-      const res = await processTurnService({
-        sessionId: session._id.toString(),
-        message: `Hello Amber, this is turn ${i + 1}.`,
-        learnerId: learner._id.toString(),
-        orgId: org._id.toString(),
+  it(
+    "10 turns at e1 all return ≤ 3 sentences",
+    async () => {
+      const org = await createOrg();
+      const learner = await createLearner(org._id, { esolLevel: "e1" });
+      const session = await createSession(learner._id, org._id, {
+        esolLevel: "e1",
       });
-      const reply = (res.data as { reply: string }).reply;
-      // Count sentence-ending punctuation. "Mr. Smith" undercounts as one
-      // sentence — fine for e1 where idioms / honorifics aren't used.
-      const sentenceCount = (reply.match(/[.!?]+(?=\s|$)/g) ?? []).length;
-      expect(sentenceCount).toBeLessThanOrEqual(3);
-    }
-  }, 5 * 60 * 1000);
+
+      for (let i = 0; i < 10; i++) {
+        const res = await processTurnService({
+          sessionId: session._id.toString(),
+          message: `Hello Amber, this is turn ${i + 1}.`,
+          learnerId: learner._id.toString(),
+          orgId: org._id.toString(),
+        });
+        const reply = (res.data as { reply: string }).reply;
+        // Count sentence-ending punctuation. "Mr. Smith" undercounts as one
+        // sentence — fine for e1 where idioms / honorifics aren't used.
+        const sentenceCount = (reply.match(/[.!?]+(?=\s|$)/g) ?? []).length;
+        expect(sentenceCount).toBeLessThanOrEqual(3);
+      }
+    },
+    5 * 60 * 1000,
+  );
 });
 
 describeLive("D2-T3 — L1 handling (Arabic / Somali / Dari)", () => {
-  const cases: Array<{ l1: string; lang: string; sample: string; expectedScript: RegExp }> = [
-    { l1: "arabic", lang: "ar", sample: "مرحبا، أحتاج مساعدة", expectedScript: /[؀-ۿ]/ },
-    { l1: "somali", lang: "so", sample: "Salaan, waan jiraa caawimaad", expectedScript: /\b(salaan|fadlan|mahadsanid|waan)\b/i },
-    { l1: "dari",   lang: "fa", sample: "سلام، به کمک نیاز دارم", expectedScript: /[؀-ۿ]/ },
+  const cases: Array<{
+    l1: string;
+    lang: string;
+    sample: string;
+    expectedScript: RegExp;
+  }> = [
+    {
+      l1: "arabic",
+      lang: "ar",
+      sample: "مرحبا، أحتاج مساعدة",
+      expectedScript: /[؀-ۿ]/,
+    },
+    {
+      l1: "somali",
+      lang: "so",
+      sample: "Salaan, waan jiraa caawimaad",
+      expectedScript: /\b(salaan|fadlan|mahadsanid|waan)\b/i,
+    },
+    {
+      l1: "dari",
+      lang: "fa",
+      sample: "سلام، به کمک نیاز دارم",
+      expectedScript: /[؀-ۿ]/,
+    },
   ];
 
-  it.each(cases)("$l1 — reply contains the L1 script + an English equivalent", async ({ l1, sample, expectedScript }) => {
-    const org = await createOrg();
-    const learner = await createLearner(org._id, { l1Language: l1, esolLevel: "e1" });
-    const session = await createSession(learner._id, org._id);
-    const res = await processTurnService({
-      sessionId: session._id.toString(),
-      message: sample,
-      learnerId: learner._id.toString(),
-      orgId: org._id.toString(),
-    });
-    const reply = (res.data as { reply: string }).reply;
-    expect(reply).toMatch(expectedScript);          // L1 present
-    expect(reply).toMatch(/[a-zA-Z]/);              // English equivalent present
-  }, 2 * 60 * 1000);
+  it.each(cases)(
+    "$l1 — reply contains the L1 script + an English equivalent",
+    async ({ l1, sample, expectedScript }) => {
+      const org = await createOrg();
+      const learner = await createLearner(org._id, {
+        l1Language: l1,
+        esolLevel: "e1",
+      });
+      const session = await createSession(learner._id, org._id);
+      const res = await processTurnService({
+        sessionId: session._id.toString(),
+        message: sample,
+        learnerId: learner._id.toString(),
+        orgId: org._id.toString(),
+      });
+      const reply = (res.data as { reply: string }).reply;
+      expect(reply).toMatch(expectedScript); // L1 present
+      expect(reply).toMatch(/[a-zA-Z]/); // English equivalent present
+    },
+    2 * 60 * 1000,
+  );
 });
 
 describeLive("D2-T4 — ANCHOR mode trigger (2 consecutive turns < 0.40)", () => {
-  it("session mode flips to ANCHOR after the second low-score turn", async () => {
-    // Live test exercises real Gemini scoring of deliberately
-    // sub-threshold inputs. The current code uses the model's own
-    // turn_score; if Gemini disagrees this test surfaces calibration
-    // drift in the prompt.
-    const org = await createOrg();
-    const learner = await createLearner(org._id, { esolLevel: "e2" });
-    const session = await createSession(learner._id, org._id);
-    const sessionId = session._id.toString();
+  it(
+    "session mode flips to ANCHOR after the second low-score turn",
+    async () => {
+      // Live test exercises real Gemini scoring of deliberately
+      // sub-threshold inputs. The current code uses the model's own
+      // turn_score; if Gemini disagrees this test surfaces calibration
+      // drift in the prompt.
+      const org = await createOrg();
+      const learner = await createLearner(org._id, { esolLevel: "e2" });
+      const session = await createSession(learner._id, org._id);
+      const sessionId = session._id.toString();
 
-    // Two turns of single-word or off-topic input — Gemini should
-    // score these low because the rubric in layer 6 ties low score
-    // to short / off-topic replies.
-    await processTurnService({ sessionId, message: "ok", learnerId: learner._id.toString(), orgId: org._id.toString() });
-    await processTurnService({ sessionId, message: "yes", learnerId: learner._id.toString(), orgId: org._id.toString() });
+      // Two turns of single-word or off-topic input — Gemini should
+      // score these low because the rubric in layer 6 ties low score
+      // to short / off-topic replies.
+      await processTurnService({
+        sessionId,
+        message: "ok",
+        learnerId: learner._id.toString(),
+        orgId: org._id.toString(),
+      });
+      await processTurnService({
+        sessionId,
+        message: "yes",
+        learnerId: learner._id.toString(),
+        orgId: org._id.toString(),
+      });
 
-    const updated = await AISession.findById(sessionId).lean();
-    expect(updated?.sessionMode).toBe("ANCHOR");
-    expect(updated?.teaching_mode_sequence?.at(-1)).toBe("anchor");
-  }, 3 * 60 * 1000);
+      const updated = await AISession.findById(sessionId).lean();
+      expect(updated?.sessionMode).toBe("ANCHOR");
+      expect(updated?.teaching_mode_sequence?.at(-1)).toBe("anchor");
+    },
+    3 * 60 * 1000,
+  );
 });
 
-describeLive("D2-T5 — IMMERSION trigger (3 consecutive turns ≥ 0.80 at e3)", () => {
-  it("session mode flips to IMMERSION after the third high-score turn", async () => {
-    const org = await createOrg();
-    const learner = await createLearner(org._id, { esolLevel: "e3" });
-    const session = await createSession(learner._id, org._id, { esolLevel: "e3" });
-    const sessionId = session._id.toString();
+describeLive(
+  "D2-T5 — IMMERSION trigger (3 consecutive turns ≥ 0.80 at e3)",
+  () => {
+    it(
+      "session mode flips to IMMERSION after the third high-score turn",
+      async () => {
+        const org = await createOrg();
+        const learner = await createLearner(org._id, { esolLevel: "e3" });
+        const session = await createSession(learner._id, org._id, {
+          esolLevel: "e3",
+        });
+        const sessionId = session._id.toString();
 
-    // Three fluent, on-topic, well-formed responses
-    const fluent = [
-      "Good morning! I'd like to book an appointment for next Tuesday, please.",
-      "I prefer the afternoon if possible — anytime after 2pm works well.",
-      "Yes, I've registered with this practice. My name is Aamina Ali, date of birth fifth of June.",
-    ];
-    for (const text of fluent) {
-      await processTurnService({ sessionId, message: text, learnerId: learner._id.toString(), orgId: org._id.toString() });
-    }
+        // Three fluent, on-topic, well-formed responses
+        const fluent = [
+          "Good morning! I'd like to book an appointment for next Tuesday, please.",
+          "I prefer the afternoon if possible — anytime after 2pm works well.",
+          "Yes, I've registered with this practice. My name is Aamina Ali, date of birth fifth of June.",
+        ];
+        for (const text of fluent) {
+          await processTurnService({
+            sessionId,
+            message: text,
+            learnerId: learner._id.toString(),
+            orgId: org._id.toString(),
+          });
+        }
 
-    const updated = await AISession.findById(sessionId).lean();
-    expect(updated?.sessionMode).toBe("IMMERSION");
-    expect(updated?.teaching_mode_sequence?.at(-1)).toBe("immersion");
-  }, 3 * 60 * 1000);
-});
+        const updated = await AISession.findById(sessionId).lean();
+        expect(updated?.sessionMode).toBe("IMMERSION");
+        expect(updated?.teaching_mode_sequence?.at(-1)).toBe("immersion");
+      },
+      3 * 60 * 1000,
+    );
+  },
+);
 
 // ═════════════════════════════════════════════════════════════════════
 // MOCKED tests (T6–T10) — run by default
@@ -380,7 +450,7 @@ describe("D2-T6 — safeguarding category self_harm", () => {
     // SafeguardingAlert created
     const alerts = await SafeguardingAlert.find({ learnerId: learner._id });
     expect(alerts).toHaveLength(1);
-    expect(alerts[0].alertLevel).toBe("critical");      // self_harm → critical
+    expect(alerts[0].alertLevel).toBe("critical"); // self_harm → critical
 
     // Notification queued (DSL email)
     expect(notificationsQueue.add).toHaveBeenCalledTimes(1);
@@ -401,10 +471,10 @@ describe("D2-T6 — safeguarding category self_harm", () => {
 
 describe("D2-T7 — all six safeguarding categories", () => {
   const categories = [
-    { category: "domestic_abuse",       severity: "high" },
-    { category: "radicalisation",       severity: "medium" },
-    { category: "child_protection",     severity: "critical" },
-    { category: "exploitation",         severity: "high" },
+    { category: "domestic_abuse", severity: "high" },
+    { category: "radicalisation", severity: "medium" },
+    { category: "child_protection", severity: "critical" },
+    { category: "exploitation", severity: "high" },
     { category: "mental_health_crisis", severity: "medium" },
   ] as const;
 
@@ -433,7 +503,7 @@ describe("D2-T7 — all six safeguarding categories", () => {
       expect(alerts).toHaveLength(1);
       expect(alerts[0].alertLevel).toBe(severity);
       expect(notificationsQueue.add).toHaveBeenCalledTimes(1);
-    }
+    },
   );
 });
 
@@ -455,9 +525,9 @@ describe("D2-T8 — session logging completeness", () => {
     // Brief: AISession record has all required fields populated
     expect(updated!.turns).toHaveLength(1);
     expect(updated!.turns[0].originalInput).toBe(
-      "Hello, I'd like to book an appointment."
+      "Hello, I'd like to book an appointment.",
     );
-    expect(updated!.turns[0].deepSeekResponse).toMatch(/.+/);       // Amber's reply
+    expect(updated!.turns[0].deepSeekResponse).toMatch(/.+/); // Amber's reply
     expect(updated!.turn_scores).toHaveLength(1);
     expect(updated!.turn_scores![0]).toBeGreaterThan(0);
     expect(updated!.teaching_mode_sequence).toHaveLength(1);
@@ -471,34 +541,31 @@ describe("D2-T8 — session logging completeness", () => {
 });
 
 describe("D2-T9 — vocab ledger updates referencing Stage 3 objectives", () => {
-  it.skip(
-    "VocabLedger entries reference learner's Stage 3 Sc objective after a session — PENDING vocab worker",
-    async () => {
-      // The /turn handler enqueues an `update_vocab` job on the
-      // esol-session BullMQ queue (verified below). The consumer
-      // that actually writes VocabLedger rows is Phase 10 and not
-      // yet implemented; this test waits for that worker.
-      //
-      // When the worker lands, replace the .skip with a proper test
-      // that drives the queue + asserts VocabLedger rows reference
-      // the learner's Stage 3 Sc objective via stage3_objective_id.
-      const org = await createOrg();
-      const learner = await createLearner(org._id);
-      const session = await createSession(learner._id, org._id);
-      await processTurnService({
-        sessionId: session._id.toString(),
-        message: "Hi",
-        learnerId: learner._id.toString(),
-        orgId: org._id.toString(),
-      });
+  it.skip("VocabLedger entries reference learner's Stage 3 Sc objective after a session — PENDING vocab worker", async () => {
+    // The /turn handler enqueues an `update_vocab` job on the
+    // esol-session BullMQ queue (verified below). The consumer
+    // that actually writes VocabLedger rows is Phase 10 and not
+    // yet implemented; this test waits for that worker.
+    //
+    // When the worker lands, replace the .skip with a proper test
+    // that drives the queue + asserts VocabLedger rows reference
+    // the learner's Stage 3 Sc objective via stage3_objective_id.
+    const org = await createOrg();
+    const learner = await createLearner(org._id);
+    const session = await createSession(learner._id, org._id);
+    await processTurnService({
+      sessionId: session._id.toString(),
+      message: "Hi",
+      learnerId: learner._id.toString(),
+      orgId: org._id.toString(),
+    });
 
-      // Today we can only assert the enqueue happened.
-      expect(esolSessionQueue.add).toHaveBeenCalledWith(
-        "update-vocab",
-        expect.objectContaining({ action: "update_vocab" })
-      );
-    }
-  );
+    // Today we can only assert the enqueue happened.
+    expect(esolSessionQueue.add).toHaveBeenCalledWith(
+      "update-vocab",
+      expect.objectContaining({ action: "update_vocab" }),
+    );
+  });
 });
 
 describe("D2-T10 — Gemini timeout", () => {
@@ -506,8 +573,12 @@ describe("D2-T10 — Gemini timeout", () => {
     mockGenerateContent!.mockImplementation(
       () =>
         new Promise((_resolve, reject) => {
-          setTimeout(() => reject(new Error("DEADLINE_EXCEEDED — simulated 10s timeout")), 10);
-        })
+          setTimeout(
+            () =>
+              reject(new Error("DEADLINE_EXCEEDED — simulated 10s timeout")),
+            10,
+          );
+        }),
     );
 
     const org = await createOrg();
@@ -520,7 +591,7 @@ describe("D2-T10 — Gemini timeout", () => {
         message: "hello",
         learnerId: learner._id.toString(),
         orgId: org._id.toString(),
-      })
+      }),
     ).rejects.toMatchObject({ statusCode: 502 });
 
     // Session state preserved — no turn appended, no score added
@@ -540,55 +611,69 @@ describe("D2-T10 — Gemini timeout", () => {
 // ═════════════════════════════════════════════════════════════════════
 
 describeLive("D2-T11 — JSON output validation across 50 turns", () => {
-  it("50 real turns all produce schema-valid output", async () => {
-    const org = await createOrg();
-    const learner = await createLearner(org._id);
-    const session = await createSession(learner._id, org._id);
-
-    const inputs = Array.from({ length: 50 }, (_, i) => `Practice turn number ${i + 1}.`);
-    let validCount = 0;
-    for (const text of inputs) {
-      // generateTurn already runs the Zod validator and throws
-      // GeminiSchemaError on failure. processTurnService surfaces
-      // that as a 502; if all 50 succeed, validation passed.
-      await processTurnService({
-        sessionId: session._id.toString(),
-        message: text,
-        learnerId: learner._id.toString(),
-        orgId: org._id.toString(),
-      });
-      validCount += 1;
-    }
-    expect(validCount).toBe(50);
-  }, 15 * 60 * 1000);
-});
-
-describeLive("D2-T12 — prompt cache hit ratio > 60% across 20 sessions", () => {
-  it("AIUsage rows show > 60% cached-token ratio on average", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const AIUsage = require("../models/AIUsage").default;
-
-    const org = await createOrg();
-    const learner = await createLearner(org._id);
-
-    // 20 distinct sessions × 5 turns each = 100 Gemini calls
-    for (let s = 0; s < 20; s++) {
+  it(
+    "50 real turns all produce schema-valid output",
+    async () => {
+      const org = await createOrg();
+      const learner = await createLearner(org._id);
       const session = await createSession(learner._id, org._id);
-      for (let t = 0; t < 5; t++) {
+
+      const inputs = Array.from(
+        { length: 50 },
+        (_, i) => `Practice turn number ${i + 1}.`,
+      );
+      let validCount = 0;
+      for (const text of inputs) {
+        // generateTurn already runs the Zod validator and throws
+        // GeminiSchemaError on failure. processTurnService surfaces
+        // that as a 502; if all 50 succeed, validation passed.
         await processTurnService({
           sessionId: session._id.toString(),
-          message: `Turn ${t} of session ${s}`,
+          message: text,
           learnerId: learner._id.toString(),
           orgId: org._id.toString(),
         });
+        validCount += 1;
       }
-    }
+      expect(validCount).toBe(50);
+    },
+    15 * 60 * 1000,
+  );
+});
 
-    const rows = await AIUsage.find({ org_id: org._id }).lean();
-    expect(rows.length).toBeGreaterThan(0);
-    const totalIn = rows.reduce((s: number, r: any) => s + r.input_tokens, 0);
-    const totalCached = rows.reduce((s: number, r: any) => s + r.cached_tokens, 0);
-    const ratio = totalIn > 0 ? totalCached / totalIn : 0;
-    expect(ratio).toBeGreaterThan(0.6);
-  }, 30 * 60 * 1000);
+describeLive("D2-T12 — prompt cache hit ratio > 60% across 20 sessions", () => {
+  it(
+    "AIUsage rows show > 60% cached-token ratio on average",
+    async () => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const AIUsage = require("../models/AIUsage").default;
+
+      const org = await createOrg();
+      const learner = await createLearner(org._id);
+
+      // 20 distinct sessions × 5 turns each = 100 Gemini calls
+      for (let s = 0; s < 20; s++) {
+        const session = await createSession(learner._id, org._id);
+        for (let t = 0; t < 5; t++) {
+          await processTurnService({
+            sessionId: session._id.toString(),
+            message: `Turn ${t} of session ${s}`,
+            learnerId: learner._id.toString(),
+            orgId: org._id.toString(),
+          });
+        }
+      }
+
+      const rows = await AIUsage.find({ org_id: org._id }).lean();
+      expect(rows.length).toBeGreaterThan(0);
+      const totalIn = rows.reduce((s: number, r: any) => s + r.input_tokens, 0);
+      const totalCached = rows.reduce(
+        (s: number, r: any) => s + r.cached_tokens,
+        0,
+      );
+      const ratio = totalIn > 0 ? totalCached / totalIn : 0;
+      expect(ratio).toBeGreaterThan(0.6);
+    },
+    30 * 60 * 1000,
+  );
 });

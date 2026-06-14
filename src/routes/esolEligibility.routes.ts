@@ -25,7 +25,7 @@ router.post(
   isAuthenticated,
   requireEsolLearner,
   declareEligibilityValidation(),
-  declareEligibility
+  declareEligibility,
 );
 
 export default router;

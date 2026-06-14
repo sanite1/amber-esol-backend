@@ -17,7 +17,8 @@
  *   O3  Org-admin count rejects callers with no org_id (400)
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 import { Types } from "mongoose";
 import Organisation from "../models/Organisation";
@@ -118,7 +119,7 @@ const createAlert = async (args: CreateAlertArgs) => {
   if (args.createdAt) {
     await SafeguardingAlert.collection.updateOne(
       { _id: alert._id },
-      { $set: { createdAt: args.createdAt } }
+      { $set: { createdAt: args.createdAt } },
     );
   }
   return alert;
@@ -157,7 +158,12 @@ describe("listAdminSafeguardingAlertsService", () => {
         message_content_hash: string;
         triggered_at: string;
       }>;
-      pagination: { page: number; limit: number; total: number; total_pages: number };
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        total_pages: number;
+      };
     };
 
     expect(data.pagination).toEqual({
@@ -192,15 +198,38 @@ describe("listAdminSafeguardingAlertsService", () => {
     const learner = await createLearner(org._id);
     const sess = await createSession(learner._id, org._id);
 
-    await createAlert({ learnerId: learner._id, orgId: org._id, sessionId: sess._id, resolved: false });
-    await createAlert({ learnerId: learner._id, orgId: org._id, sessionId: sess._id, resolved: false });
-    await createAlert({ learnerId: learner._id, orgId: org._id, sessionId: sess._id, resolved: true });
+    await createAlert({
+      learnerId: learner._id,
+      orgId: org._id,
+      sessionId: sess._id,
+      resolved: false,
+    });
+    await createAlert({
+      learnerId: learner._id,
+      orgId: org._id,
+      sessionId: sess._id,
+      resolved: false,
+    });
+    await createAlert({
+      learnerId: learner._id,
+      orgId: org._id,
+      sessionId: sess._id,
+      resolved: true,
+    });
 
-    const open = await listAdminSafeguardingAlertsService({ resolved: "false" });
-    const resolved = await listAdminSafeguardingAlertsService({ resolved: "true" });
+    const open = await listAdminSafeguardingAlertsService({
+      resolved: "false",
+    });
+    const resolved = await listAdminSafeguardingAlertsService({
+      resolved: "true",
+    });
 
-    expect((open.data as { pagination: { total: number } }).pagination.total).toBe(2);
-    expect((resolved.data as { pagination: { total: number } }).pagination.total).toBe(1);
+    expect(
+      (open.data as { pagination: { total: number } }).pagination.total,
+    ).toBe(2);
+    expect(
+      (resolved.data as { pagination: { total: number } }).pagination.total,
+    ).toBe(1);
   });
 
   it("A3 — org_id + category filter the result set", async () => {
@@ -211,21 +240,46 @@ describe("listAdminSafeguardingAlertsService", () => {
     const sA = await createSession(lA._id, orgA._id);
     const sB = await createSession(lB._id, orgB._id);
 
-    await createAlert({ learnerId: lA._id, orgId: orgA._id, sessionId: sA._id, category: "self_harm" });
-    await createAlert({ learnerId: lA._id, orgId: orgA._id, sessionId: sA._id, category: "domestic_abuse" });
-    await createAlert({ learnerId: lB._id, orgId: orgB._id, sessionId: sB._id, category: "self_harm" });
+    await createAlert({
+      learnerId: lA._id,
+      orgId: orgA._id,
+      sessionId: sA._id,
+      category: "self_harm",
+    });
+    await createAlert({
+      learnerId: lA._id,
+      orgId: orgA._id,
+      sessionId: sA._id,
+      category: "domestic_abuse",
+    });
+    await createAlert({
+      learnerId: lB._id,
+      orgId: orgB._id,
+      sessionId: sB._id,
+      category: "self_harm",
+    });
 
-    const byOrg = await listAdminSafeguardingAlertsService({ org_id: orgA._id.toString() });
-    expect((byOrg.data as { pagination: { total: number } }).pagination.total).toBe(2);
+    const byOrg = await listAdminSafeguardingAlertsService({
+      org_id: orgA._id.toString(),
+    });
+    expect(
+      (byOrg.data as { pagination: { total: number } }).pagination.total,
+    ).toBe(2);
 
-    const byCat = await listAdminSafeguardingAlertsService({ category: "self_harm" });
-    expect((byCat.data as { pagination: { total: number } }).pagination.total).toBe(2);
+    const byCat = await listAdminSafeguardingAlertsService({
+      category: "self_harm",
+    });
+    expect(
+      (byCat.data as { pagination: { total: number } }).pagination.total,
+    ).toBe(2);
 
     const both = await listAdminSafeguardingAlertsService({
       org_id: orgA._id.toString(),
       category: "self_harm",
     });
-    expect((both.data as { pagination: { total: number } }).pagination.total).toBe(1);
+    expect(
+      (both.data as { pagination: { total: number } }).pagination.total,
+    ).toBe(1);
   });
 });
 
@@ -255,7 +309,7 @@ describe("getAdminSafeguardingAlertService", () => {
             timestamp: new Date(),
           },
         },
-      }
+      },
     );
 
     const alert = await createAlert({
@@ -289,7 +343,9 @@ describe("getAdminSafeguardingAlertService", () => {
 
     // The critical privacy assertion — the seeded turn canary MUST NOT
     // appear anywhere in the serialised response.
-    expect(JSON.stringify(data)).not.toContain("LEAK-CANARY-LEARNER-DISCLOSURE");
+    expect(JSON.stringify(data)).not.toContain(
+      "LEAK-CANARY-LEARNER-DISCLOSURE",
+    );
     expect(JSON.stringify(data)).not.toMatch(/"turns"\s*:/);
     expect(JSON.stringify(data)).not.toMatch(/"originalInput"\s*:/);
   });
@@ -318,7 +374,7 @@ describe("resolveAdminSafeguardingAlertService", () => {
     const res = await resolveAdminSafeguardingAlertService(
       alert._id.toString(),
       { resolution_notes: "DSL spoke to learner; safety plan in place." },
-      admin._id.toString()
+      admin._id.toString(),
     );
 
     const data = res.data as {
@@ -335,7 +391,7 @@ describe("resolveAdminSafeguardingAlertService", () => {
     expect(data.alert.resolved_by).toBe(admin._id.toString());
     expect(data.alert.resolver_name).toBe("Amber Admin");
     expect(data.alert.resolution_notes).toBe(
-      "DSL spoke to learner; safety plan in place."
+      "DSL spoke to learner; safety plan in place.",
     );
 
     // Mongo-level confirmation
@@ -359,15 +415,15 @@ describe("resolveAdminSafeguardingAlertService", () => {
     await resolveAdminSafeguardingAlertService(
       alert._id.toString(),
       { resolution_notes: "first" },
-      admin._id.toString()
+      admin._id.toString(),
     );
 
     await expect(
       resolveAdminSafeguardingAlertService(
         alert._id.toString(),
         { resolution_notes: "second" },
-        admin._id.toString()
-      )
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 409 });
   });
 
@@ -386,8 +442,8 @@ describe("resolveAdminSafeguardingAlertService", () => {
       resolveAdminSafeguardingAlertService(
         alert._id.toString(),
         { resolution_notes: "   " },
-        admin._id.toString()
-      )
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -398,12 +454,12 @@ describe("resolveAdminSafeguardingAlertService", () => {
       resolveAdminSafeguardingAlertService(
         new Types.ObjectId().toString(),
         { resolution_notes: "n/a" },
-        admin._id.toString()
-      )
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 404 });
 
     await expect(
-      getAdminSafeguardingAlertService("not-an-objectid")
+      getAdminSafeguardingAlertService("not-an-objectid"),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 });
@@ -418,11 +474,27 @@ describe("getOrgAdminSafeguardingCountService", () => {
     const learner = await createLearner(org._id);
     const sess = await createSession(learner._id, org._id);
 
-    await createAlert({ learnerId: learner._id, orgId: org._id, sessionId: sess._id });
-    await createAlert({ learnerId: learner._id, orgId: org._id, sessionId: sess._id });
-    await createAlert({ learnerId: learner._id, orgId: org._id, sessionId: sess._id, resolved: true });
+    await createAlert({
+      learnerId: learner._id,
+      orgId: org._id,
+      sessionId: sess._id,
+    });
+    await createAlert({
+      learnerId: learner._id,
+      orgId: org._id,
+      sessionId: sess._id,
+    });
+    await createAlert({
+      learnerId: learner._id,
+      orgId: org._id,
+      sessionId: sess._id,
+      resolved: true,
+    });
 
-    const res = await getOrgAdminSafeguardingCountService(org._id.toString(), {});
+    const res = await getOrgAdminSafeguardingCountService(
+      org._id.toString(),
+      {},
+    );
     expect(res.data).toEqual({ open: 2, resolved: 1, total: 3 });
 
     // O1.b — projection contains NO alert details
@@ -434,7 +506,11 @@ describe("getOrgAdminSafeguardingCountService", () => {
     const org = await createOrg("Open Org");
     const learner = await createLearner(org._id);
     const sess = await createSession(learner._id, org._id);
-    await createAlert({ learnerId: learner._id, orgId: org._id, sessionId: sess._id });
+    await createAlert({
+      learnerId: learner._id,
+      orgId: org._id,
+      sessionId: sess._id,
+    });
 
     const res = await getOrgAdminSafeguardingCountService(org._id.toString(), {
       resolved: "false",
@@ -450,23 +526,42 @@ describe("getOrgAdminSafeguardingCountService", () => {
     const sMine = await createSession(lMine._id, orgMine._id);
     const sOther = await createSession(lOther._id, orgOther._id);
 
-    await createAlert({ learnerId: lMine._id, orgId: orgMine._id, sessionId: sMine._id });
+    await createAlert({
+      learnerId: lMine._id,
+      orgId: orgMine._id,
+      sessionId: sMine._id,
+    });
     // Three alerts in the other org — must NOT be visible
-    await createAlert({ learnerId: lOther._id, orgId: orgOther._id, sessionId: sOther._id });
-    await createAlert({ learnerId: lOther._id, orgId: orgOther._id, sessionId: sOther._id });
-    await createAlert({ learnerId: lOther._id, orgId: orgOther._id, sessionId: sOther._id });
+    await createAlert({
+      learnerId: lOther._id,
+      orgId: orgOther._id,
+      sessionId: sOther._id,
+    });
+    await createAlert({
+      learnerId: lOther._id,
+      orgId: orgOther._id,
+      sessionId: sOther._id,
+    });
+    await createAlert({
+      learnerId: lOther._id,
+      orgId: orgOther._id,
+      sessionId: sOther._id,
+    });
 
-    const res = await getOrgAdminSafeguardingCountService(orgMine._id.toString(), {});
+    const res = await getOrgAdminSafeguardingCountService(
+      orgMine._id.toString(),
+      {},
+    );
     expect(res.data).toEqual({ open: 1, resolved: 0, total: 1 });
   });
 
   it("O3 — null org_id (Amber admin calling the wrong endpoint) → 400", async () => {
     await expect(
-      getOrgAdminSafeguardingCountService(null, {})
+      getOrgAdminSafeguardingCountService(null, {}),
     ).rejects.toMatchObject({ statusCode: 400 });
 
     await expect(
-      getOrgAdminSafeguardingCountService("not-an-objectid", {})
+      getOrgAdminSafeguardingCountService("not-an-objectid", {}),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 });

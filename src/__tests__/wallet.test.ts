@@ -114,7 +114,7 @@ describe("Wallet & Payments", () => {
         requestPayoutService(tutor._id.toString(), {
           amount: 50,
           method: "bank_transfer",
-        })
+        }),
       ).rejects.toThrow("Insufficient balance");
     });
 
@@ -125,7 +125,7 @@ describe("Wallet & Payments", () => {
         requestPayoutService(tutor._id.toString(), {
           amount: 5,
           method: "bank_transfer",
-        })
+        }),
       ).rejects.toThrow("Minimum payout");
     });
 
@@ -141,7 +141,7 @@ describe("Wallet & Payments", () => {
         requestPayoutService(tutor._id.toString(), {
           amount: 20,
           method: "bank_transfer",
-        })
+        }),
       ).rejects.toThrow("already have a pending payout");
     });
   });
@@ -162,7 +162,7 @@ describe("Wallet & Payments", () => {
         tx._id.toString(),
         student._id.toString(),
         "student",
-        { reason: "Not satisfied" }
+        { reason: "Not satisfied" },
       );
 
       const updatedWallet = await Wallet.findById(wallet._id);

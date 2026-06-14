@@ -120,10 +120,7 @@ const formatIsoDate = (d?: Date | string | null): string => {
   return date.toISOString().split("T")[0];
 };
 
-const computeHours = (
-  startTime: string,
-  endTime: string
-): number => {
+const computeHours = (startTime: string, endTime: string): number => {
   const [sh, sm] = startTime.split(":").map(Number);
   const [eh, em] = endTime.split(":").map(Number);
   const startMin = sh * 60 + sm;
@@ -158,7 +155,7 @@ export const generateIlrCsvService = async (params: {
     role: "student",
     orgId: org._id,
   }).select(
-    "firstname lastname email uln dateOfBirth address esolLevel l1Language fundingStatus esolOnboardedAt ethnicity lldd_health_prob current_level"
+    "firstname lastname email uln dateOfBirth address esolLevel l1Language fundingStatus esolOnboardedAt ethnicity lldd_health_prob current_level",
   );
 
   // Aggregate hours per learner from completed org-invoiced bookings in the period
@@ -169,7 +166,8 @@ export const generateIlrCsvService = async (params: {
     completedAt: { $gte: periodStart, $lte: periodEnd },
   }).select("studentId startTime endTime");
 
-  const hoursByLearner: Record<string, { hours: number; sessions: number }> = {};
+  const hoursByLearner: Record<string, { hours: number; sessions: number }> =
+    {};
   for (const b of bookings) {
     const id = b.studentId.toString();
     if (!hoursByLearner[id]) hoursByLearner[id] = { hours: 0, sessions: 0 };
@@ -180,7 +178,11 @@ export const generateIlrCsvService = async (params: {
   const planEndDate = org.contractEnd
     ? formatIsoDate(org.contractEnd)
     : formatIsoDate(
-        new Date(periodEnd.getFullYear() + 1, periodEnd.getMonth(), periodEnd.getDate())
+        new Date(
+          periodEnd.getFullYear() + 1,
+          periodEnd.getMonth(),
+          periodEnd.getDate(),
+        ),
       );
 
   const rows: IlrRow[] = learners.map((l: any) => {
@@ -212,7 +214,7 @@ export const generateIlrCsvService = async (params: {
   // Build CSV
   const headerLine = ILR_HEADERS.map((h) => csvEscape(h.label)).join(",");
   const rowLines = rows.map((row) =>
-    ILR_HEADERS.map((h) => csvEscape(row[h.key] ?? "")).join(",")
+    ILR_HEADERS.map((h) => csvEscape(row[h.key] ?? "")).join(","),
   );
   const csv = [headerLine, ...rowLines].join("\n");
 
@@ -242,7 +244,7 @@ export const generateIntegrationReadinessPdf = async (params: {
 
   // Cohort
   const learners = await User.find({ role: "student", orgId: org._id }).select(
-    "firstname lastname uln esolOnboardedAt current_level esolLevel last_active_at"
+    "firstname lastname uln esolOnboardedAt current_level esolLevel last_active_at",
   );
 
   const sessionsThisPeriod = await AISession.find({
@@ -252,17 +254,17 @@ export const generateIntegrationReadinessPdf = async (params: {
     // duration_mins + session_source added in brief Function 5 — pre-platform
     // imports store their span as duration_mins because their createdAt and
     // completedAt are the same instant (session_date).
-    "learnerId completedAt turns vocabIntroduced duration_mins session_source"
+    "learnerId completedAt turns vocabIntroduced duration_mins session_source",
   );
 
   const totalHours = sessionsThisPeriod.reduce(
     (sum, s) => sum + sessionHours(s),
-    0
+    0,
   );
   const avgHours = learners.length ? totalHours / learners.length : 0;
 
   const activeLearnerIds = new Set(
-    sessionsThisPeriod.map((s) => s.learnerId.toString())
+    sessionsThisPeriod.map((s) => s.learnerId.toString()),
   );
 
   // Level progression
@@ -276,10 +278,12 @@ export const generateIntegrationReadinessPdf = async (params: {
     const key = `${lc.fromLevel || "(unset)"}→${lc.toLevel}`;
     progressionMap[key] = (progressionMap[key] || 0) + 1;
   }
-  const levelProgression = Object.entries(progressionMap).map(([key, count]) => {
-    const [fromLevel, toLevel] = key.split("→");
-    return { fromLevel, toLevel, count };
-  });
+  const levelProgression = Object.entries(progressionMap).map(
+    ([key, count]) => {
+      const [fromLevel, toLevel] = key.split("→");
+      return { fromLevel, toLevel, count };
+    },
+  );
 
   // Individual learner records
   const learnerStatsMap: Record<
@@ -289,7 +293,11 @@ export const generateIntegrationReadinessPdf = async (params: {
   for (const s of sessionsThisPeriod) {
     const id = s.learnerId.toString();
     if (!learnerStatsMap[id]) {
-      learnerStatsMap[id] = { hours: 0, scenarios: new Set(), vocab: new Set() };
+      learnerStatsMap[id] = {
+        hours: 0,
+        scenarios: new Set(),
+        vocab: new Set(),
+      };
     }
     const dur = sessionHours(s);
     if (dur > 0) {
@@ -323,7 +331,7 @@ export const generateIntegrationReadinessPdf = async (params: {
   const curriculumCoverage = await Promise.all(
     learners.slice(0, 12).map(async (l: any) => {
       const ls = sessionsThisPeriod.filter(
-        (s) => s.learnerId.toString() === l._id.toString()
+        (s) => s.learnerId.toString() === l._id.toString(),
       );
       const codes = new Set<string>();
       for (const s of ls) {
@@ -339,7 +347,7 @@ export const generateIntegrationReadinessPdf = async (params: {
         learnerName: `${l.firstname} ${l.lastname}`,
         skillCodes: Array.from(codes),
       };
-    })
+    }),
   );
 
   // Safeguarding

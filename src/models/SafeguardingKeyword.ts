@@ -31,7 +31,7 @@ export type SafeguardingCategory =
 export type SafeguardingSeverity = "low" | "medium" | "high";
 
 export interface ISafeguardingKeyword extends Document {
-  language: string;           // ISO-ish: "en", "ar", "so", "fa-AF", "ps", "zh-HK"
+  language: string; // ISO-ish: "en", "ar", "so", "fa-AF", "ps", "zh-HK"
   pattern: string;
   category: SafeguardingCategory;
   severity: SafeguardingSeverity;
@@ -41,7 +41,13 @@ export interface ISafeguardingKeyword extends Document {
 
 const safeguardingKeywordSchema = new Schema<ISafeguardingKeyword>(
   {
-    language: { type: String, required: true, index: true, lowercase: true, trim: true },
+    language: {
+      type: String,
+      required: true,
+      index: true,
+      lowercase: true,
+      trim: true,
+    },
     pattern: { type: String, required: true, trim: true },
     category: {
       type: String,
@@ -64,14 +70,14 @@ const safeguardingKeywordSchema = new Schema<ISafeguardingKeyword>(
     active: { type: Boolean, required: true, default: true, index: true },
     notes: { type: String, default: "" },
   },
-  { collection: "safeguarding_keywords", timestamps: true, versionKey: false }
+  { collection: "safeguarding_keywords", timestamps: true, versionKey: false },
 );
 
 safeguardingKeywordSchema.index({ language: 1, active: 1 });
 
 const SafeguardingKeyword = mongoose.model<ISafeguardingKeyword>(
   "SafeguardingKeyword",
-  safeguardingKeywordSchema
+  safeguardingKeywordSchema,
 );
 
 export default SafeguardingKeyword;

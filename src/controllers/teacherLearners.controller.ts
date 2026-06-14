@@ -267,7 +267,11 @@ export const previewTeacherMessageTranslation: ExpressFunction = async (
  * (`auto_re_engagement_enabled`); the response shape is an object
  * so future flags drop in without a breaking change.
  */
-export const getTeacherPreferences: ExpressFunction = async (req, res, next) => {
+export const getTeacherPreferences: ExpressFunction = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const teacherId = readTeacherId(req);
     const user = await User.findById(teacherId)

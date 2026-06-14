@@ -22,7 +22,8 @@ const resolveExecutablePath = async (): Promise<string> => {
   }
 
   // 3. Local dev fallbacks (macOS first, then Linux)
-  const macPath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  const macPath =
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
   const linuxPath = "/usr/bin/google-chrome";
   const platform = process.platform;
   if (platform === "darwin") return macPath;
@@ -38,7 +39,7 @@ const resolveExecutablePath = async (): Promise<string> => {
  */
 export const generatePdfFromHtml = async (
   html: string,
-  options?: { format?: "A4" | "Letter"; landscape?: boolean }
+  options?: { format?: "A4" | "Letter"; landscape?: boolean },
 ): Promise<Buffer> => {
   let browser: Browser | null = null;
 
@@ -70,7 +71,7 @@ export const generatePdfFromHtml = async (
     logger.error({ err }, "PDF generation failed");
     throw new ApiError(
       500,
-      "Could not generate PDF. Please ensure Chrome is installed locally or that the deployment supports Chromium."
+      "Could not generate PDF. Please ensure Chrome is installed locally or that the deployment supports Chromium.",
     );
   } finally {
     if (browser) {

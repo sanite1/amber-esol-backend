@@ -139,7 +139,12 @@ export const triggerIlrExportService = async (
   );
 
   logger.info(
-    { exportId, jobId: job.id, orgId: input.org_id, force_refresh: input.force_refresh },
+    {
+      exportId,
+      jobId: job.id,
+      orgId: input.org_id,
+      force_refresh: input.force_refresh,
+    },
     "triggerIlrExport: enqueued",
   );
 
@@ -172,10 +177,14 @@ export interface ExportJobStatusResult {
 
 const mapBullStateToStatus = (state: string): ExportJobStatus => {
   switch (state) {
-    case "completed": return "completed";
-    case "failed":    return "failed";
-    case "active":    return "active";
-    default:          return "waiting"; // includes "delayed", "waiting-children", "waiting", "prioritized"
+    case "completed":
+      return "completed";
+    case "failed":
+      return "failed";
+    case "active":
+      return "active";
+    default:
+      return "waiting"; // includes "delayed", "waiting-children", "waiting", "prioritized"
   }
 };
 

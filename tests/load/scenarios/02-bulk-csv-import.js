@@ -53,8 +53,8 @@ export const options = {
     },
   },
   thresholds: {
-    "import_duration_ms": ["p(95)<30000"],
-    "http_req_failed":    ["rate<0.01"],
+    import_duration_ms: ["p(95)<30000"],
+    http_req_failed: ["rate<0.01"],
   },
 };
 
@@ -81,19 +81,18 @@ export default function () {
 
   const ok = check(res, {
     "import 200/202": (r) => r.status === 200 || r.status === 202,
-    "no failed rows":
-      (r) => {
-        try {
-          const body = r.json();
-          // The import service surfaces blocked rows under
-          // data.blocked_rows; non-zero is acceptable for a real
-          // import but flags a content issue for the load test —
-          // the synthetic CSV should be 100% clean.
-          return (body?.data?.blocked_rows?.length ?? 0) === 0;
-        } catch {
-          return false;
-        }
-      },
+    "no failed rows": (r) => {
+      try {
+        const body = r.json();
+        // The import service surfaces blocked rows under
+        // data.blocked_rows; non-zero is acceptable for a real
+        // import but flags a content issue for the load test —
+        // the synthetic CSV should be 100% clean.
+        return (body?.data?.blocked_rows?.length ?? 0) === 0;
+      } catch {
+        return false;
+      }
+    },
   });
   if (ok) {
     importDuration.add(duration);

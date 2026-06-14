@@ -1,8 +1,5 @@
 import { Router } from "express";
-import {
-  isAuthenticated,
-  isOrgAdmin,
-} from "../middlewares/authMiddleWare";
+import { isAuthenticated, isOrgAdmin } from "../middlewares/authMiddleWare";
 import {
   createLevelChangeValidation,
   listLevelChangesValidation,

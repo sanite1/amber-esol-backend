@@ -7,7 +7,7 @@ import { Types } from "mongoose";
 
 const objectIdRule = (
   value: string,
-  helpers: { error: (code: string) => unknown }
+  helpers: { error: (code: string) => unknown },
 ) => {
   if (!Types.ObjectId.isValid(value)) return helpers.error("any.invalid");
   return value;

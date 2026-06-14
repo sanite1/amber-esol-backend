@@ -10,6 +10,7 @@ import { sendVerificationMail } from "./nodemailer/mail.service";
 import { validatePassword } from "../utils/validatePassword";
 import { ocrResidencyDocument } from "./ocr.service";
 import { computeFundingStatus } from "./eligibilityEngine.service";
+import { autoAssignTeacherForLearner } from "./teacherMatching.service";
 import {
   scorePlacementAssessment,
   AssessmentResponse,
@@ -88,7 +89,7 @@ interface CompleteOnboardingRequest {
 
 export const completeOnboardingService = async (
   data: CompleteOnboardingRequest,
-  uploadedFileBuffer?: Buffer
+  uploadedFileBuffer?: Buffer,
 ) => {
   // 1. Verify referral token
   const decoded = verifyReferralToken(data.token);
@@ -105,13 +106,16 @@ export const completeOnboardingService = async (
   if (decoded.email && decoded.email !== data.email.toLowerCase()) {
     throw new ApiError(
       400,
-      "This invitation was issued for a different email address"
+      "This invitation was issued for a different email address",
     );
   }
 
   const org = await Organisation.findById(decoded.orgId);
   if (!org || !org.isActive) {
-    throw new ApiError(400, "The organisation associated with this invitation is no longer active");
+    throw new ApiError(
+      400,
+      "The organisation associated with this invitation is no longer active",
+    );
   }
 
   // 2. Check email uniqueness
@@ -123,7 +127,8 @@ export const completeOnboardingService = async (
 
   // 3. OCR (if file provided)
   let ocrResult = null;
-  let fundingStatus: "fundable" | "self_pay" | "manual_review" = "manual_review";
+  let fundingStatus: "fundable" | "self_pay" | "manual_review" =
+    "manual_review";
   if (uploadedFileBuffer) {
     try {
       ocrResult = await ocrResidencyDocument(uploadedFileBuffer);
@@ -132,7 +137,10 @@ export const completeOnboardingService = async (
         ocrConfidence: ocrResult.confidence,
       });
     } catch (err) {
-      logger.warn({ err }, "OCR failed during onboarding — flagging for manual review");
+      logger.warn(
+        { err },
+        "OCR failed during onboarding — flagging for manual review",
+      );
       fundingStatus = "manual_review";
     }
   }
@@ -148,7 +156,7 @@ export const completeOnboardingService = async (
         learnerAnswer: r.answer,
         correctAnswer: q?.correctAnswer,
       };
-    }
+    },
   );
 
   let placement;
@@ -160,7 +168,8 @@ export const completeOnboardingService = async (
       nqfLevel: "Entry 1" as const,
       confidence: 0.5,
       skillWeaknessFlags: [],
-      rationale: "Automated scoring was unavailable; learner placed at Entry 1 pending teacher review.",
+      rationale:
+        "Automated scoring was unavailable; learner placed at Entry 1 pending teacher review.",
     };
   }
 
@@ -191,6 +200,7 @@ export const completeOnboardingService = async (
     current_level: placement.nqfLevel,
     assessment_score: placement.confidence,
     placement_confidence: placement.confidence,
+    placement_rationale: placement.rationale,
     skillWeaknessFlags: placement.skillWeaknessFlags,
     fundingStatus,
     residency_doc_ref: data.residency_doc_ref,
@@ -211,8 +221,24 @@ export const completeOnboardingService = async (
   referralRecord.isActive = false;
   await referralRecord.save();
 
-  // 7. Send verification email
-  await sendVerificationMail(learner).catch(() => {});
+  // 6b. Auto-assign a best-match teacher (teacherMatching.service.ts).
+  // Fire-and-forget — a matching failure must never block
+  // registration. Soft outcomes (no teachers, all at capacity) leave
+  // the learner unassigned, exactly as before this hook existed; the
+  // org admin's cohort table shows the unassigned count either way.
+  autoAssignTeacherForLearner(learner._id as any).catch((err) =>
+    logger.error(
+      { err: (err as Error).message, learnerId: String(learner._id) },
+      "Auto-assign on registration failed — learner left unassigned",
+    ),
+  );
+
+  // 7. Send verification email — include the placement level so the
+  // learner knows their result before they've even logged in.
+  await sendVerificationMail(learner, {
+    placementLevel: placement.nqfLevel,
+    placementRationale: placement.rationale,
+  }).catch(() => {});
 
   return new ApiResponse(
     201,
@@ -225,6 +251,6 @@ export const completeOnboardingService = async (
         rationale: placement.rationale,
       },
       fundingStatus,
-    }
+    },
   );
 };

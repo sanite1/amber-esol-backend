@@ -120,7 +120,8 @@
 
         <p>
           You've been added as the organisation administrator for
-          <strong>{{orgName}}</strong> on the Amber Training ESOL platform.
+          <strong>{{orgName}}</strong>
+          on the Amber Training ESOL platform.
         </p>
 
         <div class="panel">
@@ -138,12 +139,13 @@
         <div class="credentials">
           <p style="margin: 0 0 8px 0;"><strong>Your login</strong></p>
           <p style="margin: 0;">
-            Email: <code>{{email}}</code><br />
+            Email:
+            <code>{{email}}</code><br />
             Password: the temporary password Joey shared with you.
           </p>
           <p style="margin: 8px 0 0 0; font-size: 13px;">
-            We recommend changing your password from your account settings
-            after your first sign-in.
+            We recommend changing your password from your account settings after
+            your first sign-in.
           </p>
         </div>
 
@@ -151,20 +153,19 @@
           <a class="cta" href="{{loginUrl}}">Sign in to your dashboard</a>
         </p>
 
-        {{!--
+        {{!
           Final Addendum §13 — ROI calculator CTA. Hidden when
           roiCalculatorUrl is null/missing so self-serve org
           creations don't render a half-empty pitch.
-        --}}
+        }}
         {{#if roiCalculatorUrl}}
           <div class="roi-block">
             <h2>Before you start: how much funding is on the table?</h2>
             <p>
-              Most ESOL providers we work with discover they're
-              under-claiming ESFA funding by tens of thousands a year. We
-              built a three-minute calculator that tells you the gap on
-              your numbers — we've pre-filled it with your organisation
-              details to save you a click.
+              Most ESOL providers we work with discover they're under-claiming
+              ESFA funding by tens of thousands a year. We built a three-minute
+              calculator that tells you the gap on your numbers — we've
+              pre-filled it with your organisation details to save you a click.
             </p>
             <p style="text-align: center;">
               <a
@@ -176,8 +177,8 @@
               </a>
             </p>
             <p class="roi-meta">
-              No commitment. Your numbers stay in your browser unless you
-              share them.
+              No commitment. Your numbers stay in your browser unless you share
+              them.
             </p>
           </div>
         {{/if}}
@@ -191,7 +192,9 @@
       </div>
       <div class="footer">
         Amber Training Ltd · ambertraining.co.uk<br />
-        &copy; {{currentYear}} Amber Training Ltd. All rights reserved.
+        &copy;
+        {{currentYear}}
+        Amber Training Ltd. All rights reserved.
       </div>
     </div>
   </body>

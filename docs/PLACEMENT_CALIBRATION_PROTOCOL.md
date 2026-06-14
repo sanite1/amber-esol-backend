@@ -53,13 +53,13 @@ Acceptable sources of a known level (in order of preference):
 Distribution across levels — the cohort MUST cover the full range so
 calibration isn't skewed:
 
-| Level         | Minimum learners |
-| ------------- | ---------------- |
-| Entry 1 (e1)  | 3                |
-| Entry 2 (e2)  | 5                |
-| Entry 3 (e3)  | 5                |
-| Level 1 (l1)  | 4                |
-| Level 2 (l2)  | 3                |
+| Level        | Minimum learners |
+| ------------ | ---------------- |
+| Entry 1 (e1) | 3                |
+| Entry 2 (e2) | 5                |
+| Entry 3 (e3) | 5                |
+| Level 1 (l1) | 4                |
+| Level 2 (l2) | 3                |
 
 If a partner provider can't supply that spread, recruit additional
 learners through NATECLA's network. **Do not** under-fill any band — a
@@ -67,6 +67,7 @@ calibration that misses e1 or l2 entirely tells us nothing about how
 the bank performs at the extremes.
 
 Logistics:
+
 - Each learner gives written consent that their placement attempt and
   known level may be used for calibration. Use the standard DPIA-1
   consent form.
@@ -109,7 +110,7 @@ For each of the 20 learners:
    questions (no impact on the calibration result):
    - "Did the level feel right?"
    - "Were any questions confusing or culturally unfamiliar?"
-   Notes feed the qualitative review in §4 if the test fails.
+     Notes feed the qualitative review in §4 if the test fails.
 5. The admin logs the comparison via the calibration tool:
    `POST /api/admin/calibration/log`
    with `{ learner_id, known_level, assigned_level, notes? }`.
@@ -223,17 +224,17 @@ see these — calibration is platform-level, not org-level.
 
 `CalibrationLog` collection:
 
-| Field            | Type                              | Notes                                              |
-| ---------------- | --------------------------------- | -------------------------------------------------- |
-| `learner_id`     | ObjectId → User                   | The calibration-cohort learner                     |
-| `known_level`    | enum e1/e2/e3/l1/l2               | Ground truth                                       |
-| `assigned_level` | enum e1/e2/e3/l1/l2               | What the platform assigned                         |
-| `bank_version`   | number                            | Pinned at log time so re-runs are distinguishable  |
-| `outcome`        | correct/one_below/one_above/over/under | Computed at log time, never recomputed         |
-| `practitioner`   | string                            | The ESOL practitioner's name (for the sign-off PDF)|
-| `notes`          | string?                           | Optional qualitative observation                   |
-| `logged_by`      | ObjectId → User                   | The admin who recorded the row                     |
-| `created_at`     | Date                              | When the row was logged                            |
+| Field            | Type                                   | Notes                                               |
+| ---------------- | -------------------------------------- | --------------------------------------------------- |
+| `learner_id`     | ObjectId → User                        | The calibration-cohort learner                      |
+| `known_level`    | enum e1/e2/e3/l1/l2                    | Ground truth                                        |
+| `assigned_level` | enum e1/e2/e3/l1/l2                    | What the platform assigned                          |
+| `bank_version`   | number                                 | Pinned at log time so re-runs are distinguishable   |
+| `outcome`        | correct/one_below/one_above/over/under | Computed at log time, never recomputed              |
+| `practitioner`   | string                                 | The ESOL practitioner's name (for the sign-off PDF) |
+| `notes`          | string?                                | Optional qualitative observation                    |
+| `logged_by`      | ObjectId → User                        | The admin who recorded the row                      |
+| `created_at`     | Date                                   | When the row was logged                             |
 
 Append-only — same enforcement pattern as `AuditLog`. The DELETE
 endpoint hard-deletes, doesn't soft-delete, and only an Amber admin

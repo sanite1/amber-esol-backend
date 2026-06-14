@@ -18,7 +18,7 @@ export const listLearnersService = async (
     search?: string;
     esolLevel?: string;
     fundingStatus?: string;
-  }
+  },
 ) => {
   const page = parseInt(options.page || "1", 10);
   const limit = parseInt(options.limit || "20", 10);
@@ -51,7 +51,7 @@ export const listLearnersService = async (
   const [learners, total] = await Promise.all([
     User.find(query)
       .select(
-        "firstname lastname email phoneNumber esolLevel l1Language uln ulnStatus fundingStatus esolOnboardedAt verified isActive status createdAt"
+        "firstname lastname email phoneNumber esolLevel l1Language uln ulnStatus fundingStatus esolOnboardedAt verified isActive status createdAt",
       )
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -71,14 +71,14 @@ export const getLearnerService = async (
   orgId: string,
   learnerId: string,
   callerRole: string,
-  callerOrgId?: string | null
+  callerOrgId?: string | null,
 ) => {
   const learner = await User.findOne({
     _id: learnerId,
     role: "student",
     orgId,
   }).select(
-    "-password -verificationToken -resetToken -resetTokenExpires -googleAccessToken -googleRefreshToken -tokenExpiryDate"
+    "-password -verificationToken -resetToken -resetTokenExpires -googleAccessToken -googleRefreshToken -tokenExpiryDate",
   );
 
   if (!learner) {
@@ -89,7 +89,11 @@ export const getLearnerService = async (
     throw new ApiError(403, "Access denied to this organisation's learners");
   }
 
-  return new ApiResponse(200, "Learner retrieved successfully", learner.toJSON());
+  return new ApiResponse(
+    200,
+    "Learner retrieved successfully",
+    learner.toJSON(),
+  );
 };
 
 /* ── Update Learner ESOL Data ── */
@@ -103,14 +107,14 @@ export const updateLearnerService = async (
     uln?: string;
     ulnStatus?: string;
     fundingStatus?: string;
-  }
+  },
 ) => {
   const learner = await User.findOneAndUpdate(
     { _id: learnerId, role: "student", orgId },
     data,
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   ).select(
-    "-password -verificationToken -resetToken -resetTokenExpires -googleAccessToken -googleRefreshToken -tokenExpiryDate"
+    "-password -verificationToken -resetToken -resetTokenExpires -googleAccessToken -googleRefreshToken -tokenExpiryDate",
   );
 
   if (!learner) {
@@ -141,8 +145,11 @@ export const updateLearnerService = async (
 export const assertLearnerAccess = async (
   learnerId: string,
   callerRole: string,
-  callerOrgId: string | null | undefined
-): Promise<{ learnerObjectId: Types.ObjectId; learnerOrgId: Types.ObjectId }> => {
+  callerOrgId: string | null | undefined,
+): Promise<{
+  learnerObjectId: Types.ObjectId;
+  learnerOrgId: Types.ObjectId;
+}> => {
   if (!Types.ObjectId.isValid(learnerId)) {
     throw new ApiError(400, "Invalid learner id");
   }
@@ -162,7 +169,7 @@ export const assertLearnerAccess = async (
       // slipped past the route guard.
       throw new ApiError(
         403,
-        "Access denied — learner belongs to a different organisation"
+        "Access denied — learner belongs to a different organisation",
       );
     }
   }
@@ -200,17 +207,17 @@ export const assertLearnerAccess = async (
 export const getLearnerVocabLedgerService = async (
   learnerId: string,
   callerRole: string,
-  callerOrgId: string | null | undefined
+  callerOrgId: string | null | undefined,
 ) => {
   const { learnerObjectId } = await assertLearnerAccess(
     learnerId,
     callerRole,
-    callerOrgId
+    callerOrgId,
   );
 
   const rows = await VocabLedger.find({ learnerId: learnerObjectId })
     .select(
-      "word definition_en times_encountered retained scenario_first_seen stage3_objective_id last_seen_at introducedAt"
+      "word definition_en times_encountered retained scenario_first_seen stage3_objective_id last_seen_at introducedAt",
     )
     .lean();
 
@@ -219,14 +226,20 @@ export const getLearnerVocabLedgerService = async (
     .sort(
       (a, b) =>
         new Date((a as { introducedAt?: Date }).introducedAt ?? 0).getTime() -
-        new Date((b as { introducedAt?: Date }).introducedAt ?? 0).getTime()
+        new Date((b as { introducedAt?: Date }).introducedAt ?? 0).getTime(),
     );
 
   const inProgress = rows
     .filter((r) => (r as { retained?: boolean }).retained !== true)
     .sort((a, b) => {
-      const ax = a as { last_seen_at?: Date | null; times_encountered?: number };
-      const bx = b as { last_seen_at?: Date | null; times_encountered?: number };
+      const ax = a as {
+        last_seen_at?: Date | null;
+        times_encountered?: number;
+      };
+      const bx = b as {
+        last_seen_at?: Date | null;
+        times_encountered?: number;
+      };
       const at = ax.last_seen_at ? new Date(ax.last_seen_at).getTime() : 0;
       const bt = bx.last_seen_at ? new Date(bx.last_seen_at).getTime() : 0;
       if (at !== bt) return at - bt;
@@ -269,18 +282,21 @@ export const getLearnerSessionsService = async (
   learnerId: string,
   callerRole: string,
   callerOrgId: string | null | undefined,
-  options: LearnerSessionsOptions = {}
+  options: LearnerSessionsOptions = {},
 ) => {
   const { learnerObjectId } = await assertLearnerAccess(
     learnerId,
     callerRole,
-    callerOrgId
+    callerOrgId,
   );
 
   const page = Math.max(1, Math.floor(options.page ?? 1));
   const limit = Math.max(
     1,
-    Math.min(SESSION_LIST_MAX_LIMIT, Math.floor(options.limit ?? SESSION_LIST_DEFAULT_LIMIT))
+    Math.min(
+      SESSION_LIST_MAX_LIMIT,
+      Math.floor(options.limit ?? SESSION_LIST_DEFAULT_LIMIT),
+    ),
   );
   const skip = (page - 1) * limit;
 
@@ -299,7 +315,7 @@ export const getLearnerSessionsService = async (
           "final_score passed esol_aim_type " +
           "skill_codes_covered stage3_objective_ids " +
           "turn_scores teaching_mode_sequence " +
-          "session_source safeguardingFlagged createdAt updatedAt"
+          "session_source safeguardingFlagged createdAt updatedAt",
       )
       .lean(),
     AISession.countDocuments({ learnerId: learnerObjectId }),

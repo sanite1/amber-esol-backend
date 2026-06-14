@@ -29,9 +29,76 @@ import {
   LearnerProfileForPrompt,
   ScenarioForPrompt,
 } from "./promptAssembly.service";
+import { SchemaType } from "@google-cloud/vertexai";
 import { generateTurn, ConversationTurn } from "./gemini.service";
+import { generateSessionSummary } from "./geminiAI.service";
+import { updateLedgerForTurn } from "./vocabLedger.service";
 import { validateGeminiTurnOutput } from "../utils/geminiOutputValidator";
 import { IGeminiTurnOutput } from "../interfaces/geminiTurnOutput.interface";
+
+/**
+ * Gemini structured-output schema for AI tutor turns — sent to Vertex
+ * as `generationConfig.responseSchema` so the model knows the exact
+ * shape to return. Without this, Gemini free-styles JSON and the
+ * downstream Zod validator (`validateGeminiTurnOutput`) rejects almost
+ * every response with "Required" errors.
+ *
+ * Field-for-field mirror of `geminiOutputValidator.ts`:
+ *   - 8 required fields: reply, mode, skill_codes_used, turn_score,
+ *     vocabulary_items_used, safeguarding_flag, session_complete,
+ *     safeguarding_category. (`session_summary` is nullable + only
+ *     required when session_complete=true; enforced by the Zod
+ *     refine() callbacks downstream.)
+ *   - `mode` enum mirrors the validator's lowercased values. The
+ *     existing geminiAI.service.ts used uppercase ANCHOR/BRIDGE/
+ *     IMMERSION; the Zod validator expects lowercase. Aligning here.
+ *   - `grammar_feedback` listed optional so Gemini may include it
+ *     without tripping Zod (validator should also drop .strict()).
+ */
+const TURN_RESPONSE_SCHEMA = {
+  type: SchemaType.OBJECT,
+  properties: {
+    reply: { type: SchemaType.STRING },
+    mode: {
+      type: SchemaType.STRING,
+      enum: ["anchor", "bridge", "immersion"],
+    },
+    skill_codes_used: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+    },
+    turn_score: { type: SchemaType.NUMBER },
+    vocabulary_items_used: {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+    },
+    safeguarding_flag: { type: SchemaType.BOOLEAN },
+    safeguarding_category: {
+      type: SchemaType.STRING,
+      nullable: true,
+    },
+    session_complete: { type: SchemaType.BOOLEAN },
+    session_summary: {
+      type: SchemaType.STRING,
+      nullable: true,
+    },
+    grammar_feedback: {
+      type: SchemaType.STRING,
+      nullable: true,
+    },
+  },
+  required: [
+    "reply",
+    "mode",
+    "skill_codes_used",
+    "turn_score",
+    "vocabulary_items_used",
+    "safeguarding_flag",
+    "safeguarding_category",
+    "session_complete",
+    "session_summary",
+  ],
+} as const;
 import { EsolLevel } from "../interfaces/placementQuestion.interface";
 import { IScenarioFile } from "../interfaces/scenario.interface";
 import ComplianceConfigService from "./ComplianceConfigService";
@@ -82,7 +149,7 @@ const loadScenarioById = (scenarioId: string): IScenarioFile | null => {
   } catch (err) {
     logger.warn(
       { err, scenarioId },
-      "Scenario file not found or unparseable — turn will use general-conversation prompt"
+      "Scenario file not found or unparseable — turn will use general-conversation prompt",
     );
     return null;
   }
@@ -93,13 +160,27 @@ const loadScenarioById = (scenarioId: string): IScenarioFile | null => {
 // ─────────────────────────────────────────────────────────────────────
 
 const NORMALISED_LEVELS: ReadonlySet<EsolLevel> = new Set<EsolLevel>([
-  "e1", "e2", "e3", "l1", "l2",
+  "e1",
+  "e2",
+  "e3",
+  "l1",
+  "l2",
 ]);
 
 const normaliseLevel = (raw: unknown): EsolLevel => {
   if (typeof raw === "string") {
-    const lc = raw.toLowerCase();
+    const lc = raw.trim().toLowerCase();
     if (NORMALISED_LEVELS.has(lc as EsolLevel)) return lc as EsolLevel;
+    // Display form — the User record stores what placement returned
+    // ("Entry 1".."Level 2"), not the code form. Previously these
+    // fell through to the e2 fallback, silently mis-calibrating an
+    // Entry 1 learner's tutor session (and the scenario level gate)
+    // to e2.
+    const m = lc.match(/^(entry|level)\s*(\d)$/);
+    if (m) {
+      const code = `${m[1] === "entry" ? "e" : "l"}${m[2]}`;
+      if (NORMALISED_LEVELS.has(code as EsolLevel)) return code as EsolLevel;
+    }
   }
   // Sensible fallback — placement should have run by now. e2 is the
   // midpoint at which most learners enrol; safer than e1 (which would
@@ -126,7 +207,7 @@ const lowerMode = (m: string): "bridge" | "anchor" | "immersion" => {
  */
 const buildLearnerProfile = async (
   learner: any,
-  session: any
+  session: any,
 ): Promise<LearnerProfileForPrompt> => {
   // Recent session summaries — last 3 completed sessions for this
   // learner, newest first. Excludes the current session.
@@ -166,20 +247,24 @@ const buildLearnerProfile = async (
   // Current mode — last entry in teaching_mode_sequence, else fall back
   // to the uppercase sessionMode. Gemini wants lowercase.
   const seq = (session.teaching_mode_sequence as string[] | undefined) ?? [];
-  const currentMode = seq.length > 0
-    ? lowerMode(seq[seq.length - 1])
-    : lowerMode(session.sessionMode ?? "bridge");
+  const currentMode =
+    seq.length > 0
+      ? lowerMode(seq[seq.length - 1])
+      : lowerMode(session.sessionMode ?? "bridge");
 
   return {
     esolLevel: normaliseLevel(learner.esolLevel),
     l1Language: learner.l1Language ?? "english",
     vocabularyToReinforce,
     recentSessionSummaries,
-    skillWeaknessFlags: (learner.skillWeaknessFlags as string[] | undefined) ?? [],
+    skillWeaknessFlags:
+      (learner.skillWeaknessFlags as string[] | undefined) ?? [],
     currentMode:
-      currentMode === "anchor" ? "ANCHOR"
-      : currentMode === "immersion" ? "IMMERSION"
-      : "BRIDGE",
+      currentMode === "anchor"
+        ? "ANCHOR"
+        : currentMode === "immersion"
+          ? "IMMERSION"
+          : "BRIDGE",
     // advancement ceremony comes from Function 12 (level-change flow);
     // null for now means "no celebration this turn".
     advancementCeremony: null,
@@ -194,7 +279,7 @@ const buildLearnerProfile = async (
  */
 const adaptScenario = (
   scenario: IScenarioFile,
-  l1Code: string | undefined
+  l1Code: string | undefined,
 ): ScenarioForPrompt => ({
   scenarioId: scenario.scenario_id,
   title: scenario.title.en,
@@ -217,8 +302,10 @@ const buildConversationHistory = (session: any): ConversationTurn[] => {
   }>;
   const history: ConversationTurn[] = [];
   for (const t of turns) {
-    if (t.originalInput) history.push({ role: "user", content: t.originalInput });
-    if (t.deepSeekResponse) history.push({ role: "model", content: t.deepSeekResponse });
+    if (t.originalInput)
+      history.push({ role: "user", content: t.originalInput });
+    if (t.deepSeekResponse)
+      history.push({ role: "model", content: t.deepSeekResponse });
   }
   return history;
 };
@@ -251,7 +338,7 @@ interface SafeguardingTriggerArgs {
  * pre-cached reply reaching the learner.
  */
 const recordSafeguardingTrigger = async (
-  args: SafeguardingTriggerArgs
+  args: SafeguardingTriggerArgs,
 ): Promise<void> => {
   const { session, learner, orgId, message, scanCategory, source } = args;
 
@@ -281,7 +368,8 @@ const recordSafeguardingTrigger = async (
   // (keyword-flagged) together. Falls back to the raw value if the
   // mapper doesn't recognise it — defensive against a future Gemini
   // enum change leaking through.
-  const triggerCategory = mapCategoryToBankKey(scanCategory) ?? scanCategory ?? null;
+  const triggerCategory =
+    mapCategoryToBankKey(scanCategory) ?? scanCategory ?? null;
 
   let alertDoc: any = null;
   try {
@@ -298,7 +386,7 @@ const recordSafeguardingTrigger = async (
   } catch (err) {
     logger.error(
       { err, learnerId: learner._id, sessionId: session._id, source },
-      "SafeguardingAlert creation failed — pre-cache reply still served"
+      "SafeguardingAlert creation failed — pre-cache reply still served",
     );
   }
 
@@ -335,7 +423,10 @@ const recordSafeguardingTrigger = async (
         : `Pre-Gemini keyword scan matched ${scanCategory ?? "unknown category"}`,
     compliance_config_version: ilrConfig?.version ?? null,
   }).catch((err) =>
-    logger.error({ err, source }, "AuditLog write failed for safeguarding trigger")
+    logger.error(
+      { err, source },
+      "AuditLog write failed for safeguarding trigger",
+    ),
   );
 
   // 3. Notifications queue — email the DSL (brief Function 10).
@@ -363,13 +454,13 @@ const recordSafeguardingTrigger = async (
         // alongside the queue's default of PRIORITY_HIGH; an explicit
         // value here documents the intent at the call site for the
         // safeguarding flow specifically.
-        { priority: 1 }
+        { priority: 1 },
       )
       .catch((err) =>
         logger.error(
           { err, alert_id: alertDoc._id?.toString() },
-          "Failed to enqueue safeguarding-alert notification"
-        )
+          "Failed to enqueue safeguarding-alert notification",
+        ),
       );
   }
 
@@ -382,9 +473,12 @@ const recordSafeguardingTrigger = async (
           safeguardingFlagged: true,
           safeguardingAlertId: alertDoc._id,
         },
-      }
+      },
     ).catch((err) =>
-      logger.error({ err, sessionId: session._id }, "AISession safeguard flag update failed")
+      logger.error(
+        { err, sessionId: session._id },
+        "AISession safeguard flag update failed",
+      ),
     );
   }
 };
@@ -412,13 +506,16 @@ interface ProcessTurnResponse {
  * POST /api/esol/session/turn — the per-turn AI tutor handler.
  */
 export const processTurnService = async (
-  input: ProcessTurnInput
+  input: ProcessTurnInput,
 ): Promise<ApiResponse> => {
   if (!input.sessionId || !Types.ObjectId.isValid(input.sessionId)) {
     throw new ApiError(400, "Valid session_id is required");
   }
   if (typeof input.message !== "string" || input.message.trim() === "") {
-    throw new ApiError(400, "message is required and must be a non-empty string");
+    throw new ApiError(
+      400,
+      "message is required and must be a non-empty string",
+    );
   }
 
   // ── 1. Load session + ownership check ────────────────────────────
@@ -428,7 +525,10 @@ export const processTurnService = async (
   }
   if (session.learnerId.toString() !== input.learnerId) {
     // Security check — a JWT must not be able to drive someone else's session.
-    throw new ApiError(403, "This session does not belong to the calling learner");
+    throw new ApiError(
+      403,
+      "This session does not belong to the calling learner",
+    );
   }
   if (session.completedAt) {
     throw new ApiError(409, "This session has already been completed");
@@ -436,7 +536,10 @@ export const processTurnService = async (
   if (session.orgId.toString() !== input.orgId) {
     // The orgId came from req.esol_context; if it doesn't match the
     // session's stored orgId, something is wrong upstream.
-    throw new ApiError(403, "Session does not belong to the calling org context");
+    throw new ApiError(
+      403,
+      "Session does not belong to the calling org context",
+    );
   }
 
   const learner = await User.findById(input.learnerId);
@@ -447,7 +550,7 @@ export const processTurnService = async (
   // ── 2. Pre-Gemini safeguarding scan ──────────────────────────────
   const scan = SafeguardingDetector.scan(
     input.message,
-    learner.l1Language ?? "en"
+    learner.l1Language ?? "en",
   );
 
   // Always TurnLog the message — capture the audit trail BEFORE
@@ -468,7 +571,7 @@ export const processTurnService = async (
   }).catch((err) => {
     logger.error(
       { err, sessionId: session._id.toString() },
-      "TurnLog write failed — turn continues but audit row missing"
+      "TurnLog write failed — turn continues but audit row missing",
     );
     return null;
   });
@@ -479,7 +582,7 @@ export const processTurnService = async (
     // safeguarding-messages.json, NOT a single English string.
     const preCachedReply = loadSafeguardingMessage(
       scan.category,
-      learner.l1Language
+      learner.l1Language,
     );
 
     // Record the alert + audit + notify the DSL.
@@ -540,6 +643,14 @@ export const processTurnService = async (
         orgId: input.orgId,
         learnerId: input.learnerId,
       },
+      // Tell Gemini the exact shape to return. Without this, Vertex
+      // free-styles JSON (it follows the prompt's instructions but
+      // omits fields, renames keys, etc.) and the downstream Zod
+      // validator rejects nearly every turn with "Required" errors.
+      responseSchema: TURN_RESPONSE_SCHEMA as unknown as Record<
+        string,
+        unknown
+      >,
       validate: validateGeminiTurnOutput,
     });
     geminiOutput = result.parsed;
@@ -549,7 +660,7 @@ export const processTurnService = async (
     // failed terminally. Surface a 502.
     throw new ApiError(
       502,
-      `Gemini turn failed: ${err instanceof Error ? err.message : "unknown error"}`
+      `Gemini turn failed: ${err instanceof Error ? err.message : "unknown error"}`,
     );
   }
 
@@ -577,12 +688,12 @@ export const processTurnService = async (
               served_path: "ai_only_safeguarding",
               gemini_safeguarding_category: geminiOutput.safeguarding_category,
             },
-          }
+          },
         );
       } catch (err) {
         logger.error(
           { err, turnLogId: turnLog._id.toString() },
-          "TurnLog patch failed for ai_only_safeguarding — append-only enforcement"
+          "TurnLog patch failed for ai_only_safeguarding — append-only enforcement",
         );
       }
     }
@@ -595,7 +706,7 @@ export const processTurnService = async (
     // learner's L1 (Function 10 To-Do 2).
     const preCachedReply = loadSafeguardingMessage(
       geminiOutput.safeguarding_category,
-      learner.l1Language
+      learner.l1Language,
     );
     const response: ProcessTurnResponse = {
       reply: preCachedReply,
@@ -604,7 +715,11 @@ export const processTurnService = async (
       vocab_words_seen: [],
       safeguarding_served: true,
     };
-    return new ApiResponse(200, "Safeguarding response served (AI-only)", response);
+    return new ApiResponse(
+      200,
+      "Safeguarding response served (AI-only)",
+      response,
+    );
   }
 
   // ── 10. Safe path — commit turn + enqueue downstream work ────────
@@ -620,22 +735,38 @@ export const processTurnService = async (
   // src/__tests__/safeguarding.test.ts catches that regression.
 
   // Append the turn to the session document.
-  const newTurnIndex = (session.turns?.length ?? 0);
+  const newTurnIndex = session.turns?.length ?? 0;
   session.turns.push({
     turnIndex: newTurnIndex,
     originalInput: input.message,
     scrubbed: false,
-    deepSeekResponse: geminiOutput.reply,             // legacy field name; stores the AI tutor's reply
-    claudeAssessment: JSON.stringify(geminiOutput),   // full validated output for audit
+    deepSeekResponse: geminiOutput.reply, // legacy field name; stores the AI tutor's reply
+    claudeAssessment: JSON.stringify(geminiOutput), // full validated output for audit
     timestamp: new Date(),
   } as any);
 
   // Push the per-turn rollups (brief Function 7 To-Do 5 spec).
-  session.turn_scores = [...(session.turn_scores ?? []), geminiOutput.turn_score];
+  session.turn_scores = [
+    ...(session.turn_scores ?? []),
+    geminiOutput.turn_score,
+  ];
   session.teaching_mode_sequence = [
     ...(session.teaching_mode_sequence ?? []),
     lowerMode(geminiOutput.mode),
   ];
+  // Roll the turn's vocabulary into the session doc inline. The vocab
+  // LEDGER write stays async (queue below), but session.vocabIntroduced
+  // feeds persistSessionOnEnd's vocabulary_retained_count — the
+  // "Words you have learned" number on the learner's end screen.
+  // Leaving it to the queue meant the end screen showed 0 whenever the
+  // worker lagged or Redis was down.
+  if ((geminiOutput.vocabulary_items_used ?? []).length > 0) {
+    const seenVocab = new Set(session.vocabIntroduced ?? []);
+    for (const w of geminiOutput.vocabulary_items_used) {
+      if (typeof w === "string" && w.trim()) seenVocab.add(w.trim());
+    }
+    session.vocabIntroduced = Array.from(seenVocab);
+  }
   // Update the current session mode for ACL / UI.
   session.sessionMode = upperMode(geminiOutput.mode);
 
@@ -650,6 +781,29 @@ export const processTurnService = async (
 
   // Enqueue the post-turn work — vocab ledger + evidence capture.
   // Fire-and-forget; we don't block the learner's reply on these.
+  //
+  // FALLBACK: if the enqueue itself fails (Redis down, Upstash request
+  // quota exhausted), write the ledger inline instead of dropping the
+  // learner's vocabulary on the floor. Still fire-and-forget — the
+  // upserts are a handful of single-document writes.
+  const vocabLedgerArgs = {
+    vocabulary_items_used: geminiOutput.vocabulary_items_used,
+    turn_score: geminiOutput.turn_score,
+    scenario_id: session.scenario_id ? String(session.scenario_id) : null,
+    // The learner's session has many Stage 3 objective ids matched
+    // to the scenario; we attach the first one to new vocab rows
+    // because Gemini doesn't tell us which objective each word
+    // covers. A future enhancement could route per-word, but the
+    // single-anchor approximation is fine for retention tracking.
+    stage3_objective_id: (session.stage3_objective_ids ?? [])[0] ?? null,
+    // Insert-only enrichment for the learner vocabulary page.
+    context: {
+      orgId: input.orgId,
+      sessionId: session._id.toString(),
+      esolLevel: session.esolLevel ?? null,
+      topic: session.topic ?? null,
+    },
+  };
   esolSessionQueue
     .add("update-vocab", {
       sessionId: session._id.toString(),
@@ -659,20 +813,31 @@ export const processTurnService = async (
       payload: {
         // Brief Function 9 To-Do 1 fields the processor needs to call
         // updateLedgerForTurn(learner_id, vocab, score, scenario, stage3).
-        vocabulary_items_used: geminiOutput.vocabulary_items_used,
-        turn_score: geminiOutput.turn_score,
-        scenario_id: session.scenario_id ? String(session.scenario_id) : null,
-        // The learner's session has many Stage 3 objective ids matched
-        // to the scenario; we attach the first one to new vocab rows
-        // because Gemini doesn't tell us which objective each word
-        // covers. A future enhancement could route per-word, but the
-        // single-anchor approximation is fine for retention tracking.
-        stage3_objective_id:
-          (session.stage3_objective_ids ?? [])[0] ?? null,
+        ...vocabLedgerArgs,
         turnIndex: newTurnIndex,
       },
     })
-    .catch((err) => logger.error({ err }, "Failed to enqueue update_vocab job"));
+    .catch(async (err) => {
+      logger.error(
+        { err },
+        "Failed to enqueue update_vocab job — writing vocab ledger inline",
+      );
+      try {
+        await updateLedgerForTurn(
+          input.learnerId,
+          vocabLedgerArgs.vocabulary_items_used,
+          vocabLedgerArgs.turn_score,
+          vocabLedgerArgs.scenario_id,
+          vocabLedgerArgs.stage3_objective_id,
+          vocabLedgerArgs.context,
+        );
+      } catch (inlineErr) {
+        logger.error(
+          { err: inlineErr },
+          "Inline vocab ledger fallback also failed",
+        );
+      }
+    });
 
   esolSessionQueue
     .add("capture-evidence", {
@@ -688,7 +853,7 @@ export const processTurnService = async (
       },
     })
     .catch((err) =>
-      logger.error({ err }, "Failed to enqueue capture_evidence job")
+      logger.error({ err }, "Failed to enqueue capture_evidence job"),
     );
 
   // If session ended, the session-end workflow (Function 7 To-Do 6)
@@ -698,7 +863,7 @@ export const processTurnService = async (
   if (geminiOutput.session_complete) {
     logger.info(
       { sessionId: session._id.toString(), learnerId: input.learnerId },
-      "session_complete=true — Function 7 To-Do 6 finaliser will pick up"
+      "session_complete=true — Function 7 To-Do 6 finaliser will pick up",
     );
   }
 
@@ -720,7 +885,7 @@ const LEVELS_ASC: EsolLevel[] = ["e1", "e2", "e3", "l1", "l2"];
 const isLevelInRange = (
   learnerLevel: EsolLevel,
   min: EsolLevel,
-  max: EsolLevel
+  max: EsolLevel,
 ): boolean => {
   const learnerIdx = LEVELS_ASC.indexOf(learnerLevel);
   const minIdx = LEVELS_ASC.indexOf(min);
@@ -747,7 +912,7 @@ const isPathwayOverrideExpired = (setAt: Date): boolean => {
 const buildOpeningMessage = (
   firstName: string,
   scenarioTitle: { en: string; ar: string; so: string; fa: string; zh: string },
-  l1Language: string
+  l1Language: string,
 ): string => {
   const lc = (l1Language ?? "english").toLowerCase();
   switch (lc) {
@@ -799,14 +964,12 @@ const buildOpeningMessage = (
  */
 const matchStage3ObjectiveIds = (
   learnerObjectives: Array<{ id: string; skill_domain: string }> | undefined,
-  scenarioAnchors: string[]
+  scenarioAnchors: string[],
 ): string[] => {
   if (!learnerObjectives || learnerObjectives.length === 0) return [];
   const wanted = new Set(scenarioAnchors);
   return learnerObjectives
-    .filter(
-      (o) => o.skill_domain === "general" || wanted.has(o.skill_domain)
-    )
+    .filter((o) => o.skill_domain === "general" || wanted.has(o.skill_domain))
     .map((o) => o.id);
 };
 
@@ -821,7 +984,7 @@ interface StartSessionInput {
 }
 
 export const startSessionService = async (
-  input: StartSessionInput
+  input: StartSessionInput,
 ): Promise<ApiResponse> => {
   if (!input.scenarioId || typeof input.scenarioId !== "string") {
     throw new ApiError(400, "scenario_id is required");
@@ -841,12 +1004,12 @@ export const startSessionService = async (
     !isLevelInRange(
       learnerLevel,
       scenarioFile.nqf_level_range.min,
-      scenarioFile.nqf_level_range.max
+      scenarioFile.nqf_level_range.max,
     )
   ) {
     throw new ApiError(
       403,
-      `Scenario ${input.scenarioId} is for levels ${scenarioFile.nqf_level_range.min}–${scenarioFile.nqf_level_range.max}; learner is ${learnerLevel}`
+      `Scenario ${input.scenarioId} is for levels ${scenarioFile.nqf_level_range.min}–${scenarioFile.nqf_level_range.max}; learner is ${learnerLevel}`,
     );
   }
 
@@ -882,7 +1045,10 @@ export const startSessionService = async (
         reason: `Pathway override exceeded the ${PATHWAY_OVERRIDE_TTL_DAYS}-day TTL`,
         compliance_config_version: ilrConfig?.version ?? null,
       }).catch((err) =>
-        logger.error({ err }, "AuditLog write failed for pathway_override_expired")
+        logger.error(
+          { err },
+          "AuditLog write failed for pathway_override_expired",
+        ),
       );
     }
   }
@@ -903,7 +1069,9 @@ export const startSessionService = async (
   // produces the same key and returns the cached session.
   const startMinute = Math.floor(Date.now() / 60000);
   const idemKey = createHash("sha256")
-    .update(`session-start|${input.learnerId}|${input.scenarioId}|${startMinute}`)
+    .update(
+      `session-start|${input.learnerId}|${input.scenarioId}|${startMinute}`,
+    )
     .digest("hex");
 
   // ── Stage 3 objective linking (brief Function 8 To-Do 3) ────────
@@ -912,13 +1080,14 @@ export const startSessionService = async (
   // domain the learner has no objective for (very narrow weakness
   // profile). The session still starts; Stage 4 evidence for this
   // session simply won't tie to any stored objective.
-  const learnerObjectives = ((learner as any).stage3_objectives ?? []) as Array<{
+  const learnerObjectives = ((learner as any).stage3_objectives ??
+    []) as Array<{
     id: string;
     skill_domain: string;
   }>;
   const stage3Ids = matchStage3ObjectiveIds(
     learnerObjectives,
-    scenarioFile.stage3_objective_domains
+    scenarioFile.stage3_objective_domains,
   );
   if (stage3Ids.length === 0) {
     logger.warn(
@@ -928,7 +1097,7 @@ export const startSessionService = async (
         scenarioDomains: scenarioFile.stage3_objective_domains,
         learnerObjectiveDomains: learnerObjectives.map((o) => o.skill_domain),
       },
-      "Stage 3 link empty — scenario covers a domain the learner has no objective for. Session will proceed; evidence won't tie to an objective."
+      "Stage 3 link empty — scenario covers a domain the learner has no objective for. Session will proceed; evidence won't tie to an objective.",
     );
   }
 
@@ -969,7 +1138,7 @@ export const startSessionService = async (
       });
       return { sessionId: session._id.toString() };
     },
-    { org_id: input.orgId, learner_id: input.learnerId }
+    { org_id: input.orgId, learner_id: input.learnerId },
   );
 
   const sessionId = outcome.result.sessionId;
@@ -978,7 +1147,7 @@ export const startSessionService = async (
   const openingMessage = buildOpeningMessage(
     learner.firstname ?? "",
     scenarioFile.title,
-    learner.l1Language ?? "english"
+    learner.l1Language ?? "english",
   );
 
   // ── 7. AuditLog session_started ────────────────────────────────
@@ -1004,7 +1173,10 @@ export const startSessionService = async (
       reason: "Learner started a new AI tutor session",
       compliance_config_version: ilrConfig?.version ?? null,
     }).catch((err) =>
-      logger.error({ err, sessionId }, "AuditLog write failed for session_started")
+      logger.error(
+        { err, sessionId },
+        "AuditLog write failed for session_started",
+      ),
     );
   }
 
@@ -1023,7 +1195,7 @@ export const startSessionService = async (
         language: m.language,
         created_at: m.createdAt,
       })),
-    }
+    },
   );
 };
 
@@ -1083,7 +1255,7 @@ export interface PersistSessionOnEndResult {
  *   - `completedAt` set if not already set
  */
 export const persistSessionOnEnd = async (
-  sessionId: string
+  sessionId: string,
 ): Promise<PersistSessionOnEndResult> => {
   if (!sessionId || !Types.ObjectId.isValid(sessionId)) {
     throw new ApiError(400, "Valid session_id is required");
@@ -1110,21 +1282,19 @@ export const persistSessionOnEnd = async (
         : new Date((session as unknown as { createdAt: Date }).createdAt);
       const durationMins = Math.max(
         1,
-        Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+        Math.round((endTime.getTime() - startTime.getTime()) / 60000),
       );
 
       // ── 3. Dedupe skill_codes_covered ────────────────────────────
       const dedupedSkills = Array.from(
-        new Set(session.skill_codes_covered ?? [])
+        new Set(session.skill_codes_covered ?? []),
       );
 
       // ── 4. Dedupe vocabulary_items_used ──────────────────────────
       // The existing AISession field is `vocabIntroduced` (legacy
       // name from the v1 AI tutor); semantically the same as the
       // brief's `vocabulary_items_used`. Dedupe it.
-      const dedupedVocab = Array.from(
-        new Set(session.vocabIntroduced ?? [])
-      );
+      const dedupedVocab = Array.from(new Set(session.vocabIntroduced ?? []));
 
       // ── 5. final_score = mean of turn_scores ─────────────────────
       const scores = (session.turn_scores ?? []) as number[];
@@ -1146,7 +1316,7 @@ export const persistSessionOnEnd = async (
 
       // ── 7. esol_aim_type from User, default non_regulated ────────
       const learner = await User.findById(session.learnerId).select(
-        "esol_aim_type"
+        "esol_aim_type",
       );
       const userAim = (learner as unknown as { esol_aim_type?: string })
         ?.esol_aim_type;
@@ -1161,7 +1331,7 @@ export const persistSessionOnEnd = async (
             learnerId: session.learnerId.toString(),
             userAim,
           },
-          "User.esol_aim_type missing or invalid at session-end — defaulting to non_regulated (suppresses AddHours in ILR)"
+          "User.esol_aim_type missing or invalid at session-end — defaulting to non_regulated (suppresses AddHours in ILR)",
         );
       }
 
@@ -1186,7 +1356,7 @@ export const persistSessionOnEnd = async (
         vocabulary_items_used: dedupedVocab,
       };
     },
-    { learner_id: undefined, org_id: undefined }
+    { learner_id: undefined, org_id: undefined },
   );
 
   return {
@@ -1200,7 +1370,7 @@ export const persistSessionOnEnd = async (
 // ─────────────────────────────────────────────────────────────────────
 
 export const endSessionService = async (
-  input: EndSessionInput
+  input: EndSessionInput,
 ): Promise<ApiResponse> => {
   if (!input.sessionId || !Types.ObjectId.isValid(input.sessionId)) {
     throw new ApiError(400, "Valid session_id is required");
@@ -1210,10 +1380,16 @@ export const endSessionService = async (
   const session = await AISession.findById(input.sessionId);
   if (!session) throw new ApiError(404, "AISession not found");
   if (session.learnerId.toString() !== input.learnerId) {
-    throw new ApiError(403, "This session does not belong to the calling learner");
+    throw new ApiError(
+      403,
+      "This session does not belong to the calling learner",
+    );
   }
   if (session.orgId.toString() !== input.orgId) {
-    throw new ApiError(403, "Session does not belong to the calling org context");
+    throw new ApiError(
+      403,
+      "Session does not belong to the calling org context",
+    );
   }
 
   // ── Capture before-state for the AuditLog ──────────────────────
@@ -1241,8 +1417,8 @@ export const endSessionService = async (
       .catch((err) =>
         logger.error(
           { err, sessionId: input.sessionId },
-          "Failed to enqueue level-progression check"
-        )
+          "Failed to enqueue level-progression check",
+        ),
       );
 
     // ── AuditLog session_completed ────────────────────────────────
@@ -1266,7 +1442,7 @@ export const endSessionService = async (
       reason: "Session ended by learner",
       compliance_config_version: ilrConfig?.version ?? null,
     }).catch((err) =>
-      logger.error({ err }, "AuditLog write failed for session_completed")
+      logger.error({ err }, "AuditLog write failed for session_completed"),
     );
   }
 
@@ -1279,19 +1455,58 @@ export const endSessionService = async (
   }).catch((err) => {
     logger.error(
       { err, learnerId: input.learnerId },
-      "VocabLedger retained-count query failed"
+      "VocabLedger retained-count query failed",
     );
     return 0;
   });
+
+  // ── Final session summary ────────────────────────────────────────
+  // The per-turn handler only writes `assessmentSummary` when Gemini
+  // decides mid-conversation that the session reached a natural end.
+  // A manual "End session" click skips that path entirely, so the
+  // learner's end screen permanently showed no summary. Generate it
+  // here from the transcript — same approach as the legacy
+  // esolAISession end flow. Failure is non-fatal: /end still returns,
+  // just without a summary.
+  let sessionSummary: string | null = session.assessmentSummary ?? null;
+  const turnsForSummary = (session.turns ?? []) as Array<{
+    originalInput?: string;
+    deepSeekResponse?: string;
+  }>;
+  if (!sessionSummary && turnsForSummary.length > 0) {
+    try {
+      const transcript = turnsForSummary
+        .map(
+          (t, i) =>
+            `Turn ${i + 1}\nLearner: ${t.originalInput ?? ""}\nTutor: ${t.deepSeekResponse ?? ""}`,
+        )
+        .join("\n\n");
+      sessionSummary = (await generateSessionSummary(transcript)) || null;
+      if (sessionSummary) {
+        // updateOne (not session.save()) — persistSessionOnEnd already
+        // saved this document; writing a single scalar via updateOne
+        // can't clobber the fields it just committed.
+        await AISession.updateOne(
+          { _id: session._id },
+          { $set: { assessmentSummary: sessionSummary } },
+        );
+      }
+    } catch (err) {
+      logger.error(
+        { err, sessionId: input.sessionId },
+        "Final session summary generation failed — returning null summary",
+      );
+    }
+  }
 
   return new ApiResponse(
     200,
     persisted.idempotency_hit ? "Session already ended" : "Session ended",
     {
-      session_summary: session.assessmentSummary ?? null,
+      session_summary: sessionSummary,
       final_score: persisted.final_score,
       passed: persisted.passed,
       vocabulary_retained_count: vocabularyRetainedCount,
-    }
+    },
   );
 };

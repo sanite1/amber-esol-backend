@@ -59,7 +59,7 @@ const main = async () => {
   for (const [field, defaultValue] of Object.entries(NEW_FIELDS)) {
     const result = await User.collection.updateMany(
       { [field]: { $exists: false } },
-      { $set: { [field]: defaultValue } }
+      { $set: { [field]: defaultValue } },
     );
     summary.push({ field, modified: result.modifiedCount });
     totalUpdates += result.modifiedCount;
@@ -67,7 +67,7 @@ const main = async () => {
       { field, modified: result.modifiedCount, defaultValue },
       result.modifiedCount > 0
         ? "Initialised new field on existing docs"
-        : "Field already present on all docs (no-op)"
+        : "Field already present on all docs (no-op)",
     );
   }
 
@@ -78,7 +78,7 @@ const main = async () => {
   // true are untouched.
   const teacherApprovedResult = await User.collection.updateMany(
     { esolTeacherApproved: null },
-    { $set: { esolTeacherApproved: false } }
+    { $set: { esolTeacherApproved: false } },
   );
   summary.push({
     field: "esolTeacherApproved (null → false)",
@@ -87,14 +87,14 @@ const main = async () => {
   totalUpdates += teacherApprovedResult.modifiedCount;
   logger.info(
     { modified: teacherApprovedResult.modifiedCount },
-    "Normalised esolTeacherApproved null → false"
+    "Normalised esolTeacherApproved null → false",
   );
 
   // Also handle docs where esolTeacherApproved is missing entirely (older
   // pre-ESOL records). Set to false to match the new default.
   const teacherApprovedMissing = await User.collection.updateMany(
     { esolTeacherApproved: { $exists: false } },
-    { $set: { esolTeacherApproved: false } }
+    { $set: { esolTeacherApproved: false } },
   );
   summary.push({
     field: "esolTeacherApproved (missing → false)",

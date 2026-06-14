@@ -37,8 +37,7 @@ const schema = {
       .pattern(/^[a-fA-F0-9]{24}$/)
       .required()
       .messages({
-        "string.pattern.base":
-          "stage5_review_id must be a 24-char ObjectId",
+        "string.pattern.base": "stage5_review_id must be a 24-char ObjectId",
       }),
     teacher_assessment: Joi.string()
       .trim()
@@ -47,8 +46,7 @@ const schema = {
       .required()
       .messages({
         "string.empty": "teacher_assessment is required",
-        "string.max":
-          "teacher_assessment must be 240 characters or fewer",
+        "string.max": "teacher_assessment must be 240 characters or fewer",
       }),
     next_steps_recommendation: Joi.string()
       .trim()

@@ -23,7 +23,7 @@ const walletSchema = new Schema<IWallet>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 const Wallet = model<IWallet>("Wallet", walletSchema);

@@ -5,7 +5,11 @@ import {
   getSessionFeedbackService,
 } from "../services/esolSessionFeedback.service";
 
-export const submitLearnerFeedback: ExpressFunction = async (req, res, next) => {
+export const submitLearnerFeedback: ExpressFunction = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const params = req.params as Record<string, string>;
     const data = await submitLearnerFeedbackService(
@@ -15,7 +19,7 @@ export const submitLearnerFeedback: ExpressFunction = async (req, res, next) => 
         callerId: req.user!.id.toString(),
         callerRole: req.user!.role,
         callerOrgId: req.user!.orgId,
-      }
+      },
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -23,7 +27,11 @@ export const submitLearnerFeedback: ExpressFunction = async (req, res, next) => 
   }
 };
 
-export const submitTeacherFeedback: ExpressFunction = async (req, res, next) => {
+export const submitTeacherFeedback: ExpressFunction = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const params = req.params as Record<string, string>;
     const data = await submitTeacherFeedbackService(
@@ -33,7 +41,7 @@ export const submitTeacherFeedback: ExpressFunction = async (req, res, next) => 
         callerId: req.user!.id.toString(),
         callerRole: req.user!.role,
         callerOrgId: req.user!.orgId,
-      }
+      },
     );
     return res.status(200).json(data);
   } catch (error) {

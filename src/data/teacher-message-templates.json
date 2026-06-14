@@ -1,17 +1,51 @@
 {
-  "$schema_version": 1,
+  "$schema_version": 2,
   "$meta": {
-    "description": "System-templated tutor messages — Final Addendum §11. Used by the daily re-engagement cron when auto-sending dormant-learner nudges on a teacher's behalf. Each top-level key is a stable template id; the value is a per-language slot keyed by ISO-ish language code.",
+    "description": "System-templated tutor messages — Final Addendum §11. Used by the daily re-engagement cron AND by teacher action handlers when sending system-driven nudges on a teacher's behalf. Each top-level key is a stable template id; the value is a per-language slot keyed by ISO-ish language code. Phase 5 expansion (BE-F + BE-H) added bn + ur slots across every template and added the previously-missing encouragement + progression triggers.",
     "interpolation": "Templates use {{firstname}} for the learner's first name; the runtime renderer substitutes verbatim with no other interpolations. New variables MUST be added to renderTeacherMessageTemplate and called out in the comment alongside this meta block.",
-    "authoring": "Joey + ESOL practitioner co-author each English template. Translations are deferred to Phase 19 — placeholder strings are intentionally empty so the renderer's fallback rule (empty ⇒ untranslated ⇒ fall back to en) reads unambiguously.",
-    "fallback_rule": "Renderers MUST fall back to `en` when the requested language slot is empty or missing. Never display a partial template."
+    "authoring": "Joey + ESOL practitioner co-author each English template. Translations for non-en slots are deferred to a future Phase 19 — placeholder strings are intentionally empty so the renderer's fallback rule (empty ⇒ untranslated ⇒ fall back to en) reads unambiguously.",
+    "fallback_rule": "Renderers MUST fall back to `en` when the requested language slot is empty or missing. Never display a partial template.",
+    "alias_rule": "The legacy template id `dormant_re_engagement` is preserved as an alias for `re_engagement` so the existing cron call site keeps working without an edit. New code should prefer `re_engagement`.",
+    "languages_supported": ["en", "ar", "so", "fa", "zh", "bn", "ur"]
   },
-  "dormant_re_engagement": {
+  "re_engagement": {
     "$description": "Sent by the daily re-engagement cron to dormant learners (no session in 15+ days, no system re-engagement in 14+ days). Brief, warm, action-oriented — the goal is to nudge a login, not to teach.",
     "en": "Hi {{firstname}}, it's been a couple of weeks since your last session. Just checking in — could we book a short session this week to pick up where we left off?",
     "ar": "",
     "so": "",
     "fa": "",
-    "zh": ""
+    "zh": "",
+    "bn": "",
+    "ur": ""
+  },
+  "dormant_re_engagement": {
+    "$description": "DEPRECATED alias for `re_engagement`. The legacy reEngagementCron.service.ts still references this id; the JSON shape mirrors `re_engagement` exactly so a future call-site rename is a one-line change. Keep in sync if `re_engagement` is edited.",
+    "en": "Hi {{firstname}}, it's been a couple of weeks since your last session. Just checking in — could we book a short session this week to pick up where we left off?",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": "",
+    "bn": "",
+    "ur": ""
+  },
+  "encouragement": {
+    "$description": "Phase 5 (BE-H). Sent by a teacher on the priority dashboard when a learner is showing P2-tier struggle markers (e.g. inactive 7–13 days OR low recent scores AND non-zero engagement). Warm acknowledgement that learning takes effort, plus a tiny achievable next step. Avoid sounding remedial — the learner should feel seen, not pitied.",
+    "en": "Hi {{firstname}}, just a note to say I've seen how much effort you've been putting in. ESOL is hard work and yours is showing. If you can fit one short session this week, I think you'll surprise yourself.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": "",
+    "bn": "",
+    "ur": ""
+  },
+  "progression": {
+    "$description": "Phase 5 (BE-H). Sent when a learner has hit the criteria the AI tutor uses to flag readiness to progress (e.g. consecutive successful sessions at their current Stage 3 objective). Acknowledges the milestone and previews next steps. Does NOT promise a level change — teachers don't confirm levels; the org admin does.",
+    "en": "Hi {{firstname}}, your last few sessions have been really strong. I'm flagging this with your organisation so they can review whether you're ready to move on to the next level. Either way — well done.",
+    "ar": "",
+    "so": "",
+    "fa": "",
+    "zh": "",
+    "bn": "",
+    "ur": ""
   }
 }

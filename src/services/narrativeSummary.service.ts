@@ -64,7 +64,11 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  * without straying.
  */
 const NARRATIVE_TEMPERATURE = 0.4;
-const NARRATIVE_MAX_OUTPUT_TOKENS = 400;
+// gemini-2.5-flash spends "thinking" tokens from this same budget —
+// at 400 the visible narrative was truncated mid-sentence on the
+// org-admin dashboard ("…during this 2"). 1536 = thinking + the
+// 4-6 sentence narrative with comfortable headroom.
+const NARRATIVE_MAX_OUTPUT_TOKENS = 1536;
 const NARRATIVE_TIMEOUT_MS = 15_000;
 
 // ─────────────────────────────────────────────────────────────────────
@@ -115,7 +119,7 @@ const round1 = (n: number): number => Math.round(n * 10) / 10;
  * categorisation lives in one place (esolSkills.ts).
  */
 export const computeCohortMetrics = async (
-  orgId: string
+  orgId: string,
 ): Promise<CohortMetrics> => {
   if (!orgId || !Types.ObjectId.isValid(orgId)) {
     throw new ApiError(400, "orgId must be a valid ObjectId");
@@ -123,9 +127,11 @@ export const computeCohortMetrics = async (
   const orgObjectId = new Types.ObjectId(orgId);
 
   const windowEnd = new Date();
-  const windowStart = new Date(windowEnd.getTime() - REPORTING_WINDOW_DAYS * MS_PER_DAY);
+  const windowStart = new Date(
+    windowEnd.getTime() - REPORTING_WINDOW_DAYS * MS_PER_DAY,
+  );
   const inactiveCutoff = new Date(
-    windowEnd.getTime() - INACTIVE_THRESHOLD_DAYS * MS_PER_DAY
+    windowEnd.getTime() - INACTIVE_THRESHOLD_DAYS * MS_PER_DAY,
   );
 
   // ── 1. Per-cohort User aggregate ─────────────────────────────────
@@ -163,8 +169,18 @@ export const computeCohortMetrics = async (
                         // …or live: had a session within the window
                         {
                           $and: [
-                            { $eq: [{ $ifNull: ["$cohort_status", null] }, null] },
-                            { $gte: [{ $ifNull: ["$last_session_at", null] }, windowStart] },
+                            {
+                              $eq: [
+                                { $ifNull: ["$cohort_status", null] },
+                                null,
+                              ],
+                            },
+                            {
+                              $gte: [
+                                { $ifNull: ["$last_session_at", null] },
+                                windowStart,
+                              ],
+                            },
                           ],
                         },
                       ],
@@ -187,8 +203,18 @@ export const computeCohortMetrics = async (
                         },
                         {
                           $and: [
-                            { $eq: [{ $ifNull: ["$cohort_status", null] }, null] },
-                            { $lt: [{ $ifNull: ["$last_session_at", new Date(0)] }, inactiveCutoff] },
+                            {
+                              $eq: [
+                                { $ifNull: ["$cohort_status", null] },
+                                null,
+                              ],
+                            },
+                            {
+                              $lt: [
+                                { $ifNull: ["$last_session_at", new Date(0)] },
+                                inactiveCutoff,
+                              ],
+                            },
                           ],
                         },
                       ],
@@ -205,7 +231,12 @@ export const computeCohortMetrics = async (
           },
         ],
         weakFlags: [
-          { $unwind: { path: "$skillWeaknessFlags", preserveNullAndEmptyArrays: false } },
+          {
+            $unwind: {
+              path: "$skillWeaknessFlags",
+              preserveNullAndEmptyArrays: false,
+            },
+          },
           {
             $group: {
               _id: "$skillWeaknessFlags",
@@ -244,7 +275,8 @@ export const computeCohortMetrics = async (
   ]);
 
   const periodSessionMins = (sessionAgg?.total_mins as number | undefined) ?? 0;
-  const periodSessionCount = (sessionAgg?.session_count as number | undefined) ?? 0;
+  const periodSessionCount =
+    (sessionAgg?.session_count as number | undefined) ?? 0;
 
   // ── 3. Level changes in the window ───────────────────────────────
   const level_progression_count = await LevelChange.countDocuments({
@@ -258,18 +290,21 @@ export const computeCohortMetrics = async (
   // change when the ILR taxonomy evolves.
   const domainCounts = new Map<ForSkillsDomain, number>();
   for (const row of flagRows) {
-    const domain = ILR_CODE_TO_DOMAIN[row.flag as keyof typeof ILR_CODE_TO_DOMAIN];
+    const domain =
+      ILR_CODE_TO_DOMAIN[row.flag as keyof typeof ILR_CODE_TO_DOMAIN];
     if (!domain) continue;
     domainCounts.set(domain, (domainCounts.get(domain) ?? 0) + row.count);
   }
-  const top_3_weakest_skill_domains_across_cohort = Array.from(domainCounts.entries())
+  const top_3_weakest_skill_domains_across_cohort = Array.from(
+    domainCounts.entries(),
+  )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([domain, learner_count]) => ({ domain, learner_count }));
 
   // ── 5. Compose ───────────────────────────────────────────────────
   const total_glh_this_period = round1(
-    periodSessionMins / 60 + (totals.teacher_oversight_hours ?? 0)
+    periodSessionMins / 60 + (totals.teacher_oversight_hours ?? 0),
   );
   const avg_sessions_per_learner =
     totals.total_learners > 0
@@ -342,7 +377,7 @@ const buildNarrativeUserPrompt = (metrics: CohortMetrics): string => {
       domain: d.domain,
       label: DOMAIN_PROSE[d.domain],
       learner_count: d.learner_count,
-    })
+    }),
   );
 
   // Hand Gemini a clean JSON object with prose-friendly labels.
@@ -374,7 +409,11 @@ const buildNarrativeUserPrompt = (metrics: CohortMetrics): string => {
  * lift this into a shared util — for now it stays inline to keep this
  * service self-contained.
  */
-const withTimeout = async <T>(p: Promise<T>, ms: number, label: string): Promise<T> => {
+const withTimeout = async <T>(
+  p: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> => {
   let timer: NodeJS.Timeout | undefined;
   try {
     return await Promise.race<T>([
@@ -382,7 +421,7 @@ const withTimeout = async <T>(p: Promise<T>, ms: number, label: string): Promise
       new Promise<T>((_, reject) => {
         timer = setTimeout(
           () => reject(new Error(`${label} timed out after ${ms}ms`)),
-          ms
+          ms,
         );
       }),
     ]);
@@ -403,7 +442,7 @@ const withTimeout = async <T>(p: Promise<T>, ms: number, label: string): Promise
  * Returns the narrative text + usage metadata for logging.
  */
 const callGeminiForNarrative = async (
-  metrics: CohortMetrics
+  metrics: CohortMetrics,
 ): Promise<{
   narrative: string;
   input_tokens: number;
@@ -433,7 +472,7 @@ const callGeminiForNarrative = async (
       contents: [{ role: "user", parts: [{ text: userMessage }] }],
     }),
     NARRATIVE_TIMEOUT_MS,
-    "narrative-summary"
+    "narrative-summary",
   );
 
   const narrative =
@@ -464,10 +503,13 @@ export interface NarrativeSummaryResult {
 }
 
 export const getCohortNarrativeService = async (
-  orgId: string
+  orgId: string,
 ): Promise<ApiResponse> => {
   if (!orgId || !Types.ObjectId.isValid(orgId)) {
-    throw new ApiError(400, "Organisation context is required and must be a valid id");
+    throw new ApiError(
+      400,
+      "Organisation context is required and must be a valid id",
+    );
   }
   const orgObjectId = new Types.ObjectId(orgId);
   const now = Date.now();
@@ -492,7 +534,9 @@ export const getCohortNarrativeService = async (
       expires_at:
         cached.expires_at instanceof Date
           ? cached.expires_at.toISOString()
-          : new Date(cached.generated_at.getTime() + CACHE_TTL_MS).toISOString(),
+          : new Date(
+              cached.generated_at.getTime() + CACHE_TTL_MS,
+            ).toISOString(),
       cache_hit: true,
       metrics: (cached.metrics as unknown as CohortMetrics) ?? null,
     });
@@ -503,7 +547,11 @@ export const getCohortNarrativeService = async (
 
   // ── 3. Gemini — with a graceful-degrade fallback to stale cache ──
   let narrative: string;
-  let geminiUsage: { input_tokens: number; output_tokens: number; latency_ms: number } | null = null;
+  let geminiUsage: {
+    input_tokens: number;
+    output_tokens: number;
+    latency_ms: number;
+  } | null = null;
   try {
     const out = await callGeminiForNarrative(metrics);
     narrative = out.narrative;
@@ -519,7 +567,7 @@ export const getCohortNarrativeService = async (
     // ahead of an Ofsted call.
     logger.error(
       { err: (err as Error).message, org_id: orgId },
-      "narrativeSummary: Gemini call failed — falling back to stale cache if present"
+      "narrativeSummary: Gemini call failed — falling back to stale cache if present",
     );
     if (cached?.narrative) {
       return new ApiResponse(200, "Cohort narrative (stale fallback)", {
@@ -528,7 +576,9 @@ export const getCohortNarrativeService = async (
         expires_at:
           cached.expires_at instanceof Date
             ? cached.expires_at.toISOString()
-            : new Date(cached.generated_at.getTime() + CACHE_TTL_MS).toISOString(),
+            : new Date(
+                cached.generated_at.getTime() + CACHE_TTL_MS,
+              ).toISOString(),
         cache_hit: true,
         metrics: (cached.metrics as unknown as CohortMetrics) ?? null,
       });
@@ -555,7 +605,7 @@ export const getCohortNarrativeService = async (
       latency_ms: geminiUsage?.latency_ms,
       total_learners: metrics.total_learners,
     },
-    "narrativeSummary: cohort narrative generated"
+    "narrativeSummary: cohort narrative generated",
   );
 
   return new ApiResponse(200, "Cohort narrative generated", {

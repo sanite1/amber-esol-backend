@@ -21,7 +21,7 @@ export const createLevelChangeService = async (
     sessionId?: string;
     effectiveDate?: string;
   },
-  caller: CallerContext
+  caller: CallerContext,
 ) => {
   const learner = await User.findOne({ _id: data.learnerId, role: "student" });
   if (!learner) {
@@ -42,7 +42,7 @@ export const createLevelChangeService = async (
   if (fromLevel === data.toLevel) {
     throw new ApiError(
       400,
-      "Target level is the same as the learner's current level"
+      "Target level is the same as the learner's current level",
     );
   }
 
@@ -54,9 +54,7 @@ export const createLevelChangeService = async (
     changedBy: new Types.ObjectId(caller.callerId),
     reason: data.reason,
     evidenceSummary: data.evidenceSummary,
-    sessionId: data.sessionId
-      ? new Types.ObjectId(data.sessionId)
-      : null,
+    sessionId: data.sessionId ? new Types.ObjectId(data.sessionId) : null,
     effectiveDate: data.effectiveDate
       ? new Date(data.effectiveDate)
       : new Date(),
@@ -78,7 +76,7 @@ export const listLevelChangesService = async (
     learnerId?: string;
     orgId?: string;
   },
-  caller: CallerContext
+  caller: CallerContext,
 ) => {
   const page = parseInt(options.page || "1", 10);
   const limit = parseInt(options.limit || "20", 10);

@@ -46,14 +46,14 @@ const DOMAIN_NAME = process.env.DOMAIN_NAME ?? "";
  */
 const L1_GREETING: Record<string, { greeting: string; congrats: string }> = {
   english: { greeting: "Hello", congrats: "Congratulations!" },
-  arabic:  { greeting: "مرحبا",    congrats: "مبروك!" },
-  somali:  { greeting: "Salaan",   congrats: "Hambalyo!" },
-  dari:    { greeting: "سلام",    congrats: "تبریک می‌گویم!" },
-  farsi:   { greeting: "سلام",    congrats: "تبریک می‌گویم!" },
-  pashto:  { greeting: "سلام",    congrats: "مبارک شه!" },
-  chinese: { greeting: "你好",     congrats: "恭喜你!" },
-  cantonese: { greeting: "你好",   congrats: "恭喜你!" },
-  mandarin: { greeting: "你好",    congrats: "恭喜你!" },
+  arabic: { greeting: "مرحبا", congrats: "مبروك!" },
+  somali: { greeting: "Salaan", congrats: "Hambalyo!" },
+  dari: { greeting: "سلام", congrats: "تبریک می‌گویم!" },
+  farsi: { greeting: "سلام", congrats: "تبریک می‌گویم!" },
+  pashto: { greeting: "سلام", congrats: "مبارک شه!" },
+  chinese: { greeting: "你好", congrats: "恭喜你!" },
+  cantonese: { greeting: "你好", congrats: "恭喜你!" },
+  mandarin: { greeting: "你好", congrats: "恭喜你!" },
 };
 
 const resolveGreeting = (l1: string | null | undefined) => {
@@ -62,14 +62,14 @@ const resolveGreeting = (l1: string | null | undefined) => {
 };
 
 export const sendProgressionConfirmedEmail = async (
-  job: ProgressionConfirmedEmailJob
+  job: ProgressionConfirmedEmailJob,
 ): Promise<ProgressionConfirmedEmailResult> => {
   const startedAt = Date.now();
 
   if (!job.learner_email) {
     logger.warn(
       { learner_id: job.learner_id },
-      "progression-confirmed-email: no learner email — skipping"
+      "progression-confirmed-email: no learner email — skipping",
     );
     return {
       sent: false,
@@ -109,7 +109,7 @@ export const sendProgressionConfirmedEmail = async (
         recipient: job.learner_email,
         learner_id: job.learner_id,
       },
-      "progression-confirmed-email: SMTP send failed"
+      "progression-confirmed-email: SMTP send failed",
     );
     throw err; // let BullMQ retry
   }
@@ -126,7 +126,7 @@ export const sendProgressionConfirmedEmail = async (
       message_id: messageId,
       dispatch_latency_ms: dispatchLatencyMs,
     },
-    "progression-confirmed-email sent"
+    "progression-confirmed-email sent",
   );
 
   return {

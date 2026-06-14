@@ -171,10 +171,7 @@ export interface BullBoardLinkResponse {
 export const getBullBoardLinkService = async (): Promise<ApiResponse> => {
   const token = process.env.BULL_BOARD_TOKEN;
   if (!token) {
-    throw new ApiError(
-      500,
-      "BULL_BOARD_TOKEN is not configured on the server",
-    );
+    throw new ApiError(500, "BULL_BOARD_TOKEN is not configured on the server");
   }
 
   const payload: BullBoardLinkResponse = {

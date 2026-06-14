@@ -15,7 +15,7 @@ import {
 export const getOrgAdminLearnerDetail: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const { id } = req.params as { id: string };
@@ -23,7 +23,7 @@ export const getOrgAdminLearnerDetail: ExpressFunction = async (
       id,
       req.user!.role,
       req.user!.orgId,
-      req.query as unknown as LearnerDetailQuery
+      req.query as unknown as LearnerDetailQuery,
     );
     return res.status(result.statusCode).json({
       message: result.message,

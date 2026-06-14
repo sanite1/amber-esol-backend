@@ -14,7 +14,7 @@ const createTicketSchema = {
         "lesson_issue",
         "account",
         "report",
-        "other"
+        "other",
       )
       .required()
       .messages({ "any.required": "Category is required" }),
@@ -71,7 +71,7 @@ const getAdminTicketsSchema = {
         "in_progress",
         "awaiting_user",
         "resolved",
-        "closed"
+        "closed",
       )
       .optional(),
     category: Joi.string()
@@ -82,7 +82,7 @@ const getAdminTicketsSchema = {
         "lesson_issue",
         "account",
         "report",
-        "other"
+        "other",
       )
       .optional(),
     priority: Joi.string()
@@ -131,5 +131,5 @@ export const updateTicketPriorityValidation = () =>
   validate(
     updateTicketPrioritySchema,
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

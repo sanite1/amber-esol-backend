@@ -16,7 +16,7 @@ export const downloadIlrCsv: ExpressFunction = async (req, res, next) => {
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${report.filename}"`
+      `attachment; filename="${report.filename}"`,
     );
     return res.status(200).send(report.csv);
   } catch (error) {
@@ -27,7 +27,7 @@ export const downloadIlrCsv: ExpressFunction = async (req, res, next) => {
 export const downloadIntegrationReadinessReport: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const query = req.query as any;
@@ -44,7 +44,7 @@ export const downloadIntegrationReadinessReport: ExpressFunction = async (
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      `inline; filename="${result.filename}"`
+      `inline; filename="${result.filename}"`,
     );
     return res.status(200).send(result.pdf);
   } catch (error) {

@@ -47,8 +47,12 @@ const aiUsageSchema = new Schema<IAIUsage>(
   {
     versionKey: false,
     timestamps: { createdAt: false, updatedAt: false },
-    toJSON: { transform(_doc, ret) { delete ret.__v; } },
-  }
+    toJSON: {
+      transform(_doc, ret) {
+        delete ret.__v;
+      },
+    },
+  },
 );
 
 // Aggregation read shapes
@@ -59,22 +63,24 @@ aiUsageSchema.index({ learner_id: 1, timestamp: -1 });
 const blockMutation = function (next: (err?: Error) => void) {
   next(
     new Error(
-      "AIUsage is append-only — updates and deletes are not permitted."
-    )
+      "AIUsage is append-only — updates and deletes are not permitted.",
+    ),
   );
 };
 aiUsageSchema.pre(
   ["updateOne", "findOneAndUpdate", "updateMany"] as any,
-  blockMutation
+  blockMutation,
 );
 aiUsageSchema.pre(
   ["deleteOne", "findOneAndDelete", "deleteMany"] as any,
-  blockMutation
+  blockMutation,
 );
 aiUsageSchema.pre("save", function (next) {
   if (!this.isNew) {
     return next(
-      new Error("AIUsage is append-only — re-saving an existing document is not permitted.")
+      new Error(
+        "AIUsage is append-only — re-saving an existing document is not permitted.",
+      ),
     );
   }
   next();

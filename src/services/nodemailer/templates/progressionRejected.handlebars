@@ -1,26 +1,86 @@
 <html>
   <head>
     <style>
-      body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
-      .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; }
-      .header { background: #7f1d1d; padding: 28px; text-align: center; }
-      .header h1 { color: #ffffff; margin: 0; font-size: 22px; }
-      .header p { color: #fecaca; margin: 6px 0 0; font-size: 14px; }
-      .body { padding: 30px; }
-      .body p { color: #333; line-height: 1.6; }
-      .panel { background: #fafbfc; border: 1px solid #e5e7eb;
-               border-radius: 8px; padding: 16px 20px; margin: 20px 0; }
-      .panel dt { color: #6b7280; font-size: 12px; text-transform: uppercase;
-                  letter-spacing: 0.4px; margin-top: 8px; }
-      .panel dd { color: #111827; font-size: 15px; margin: 4px 0 0; }
-      .reason-box { background: #fef2f2; border: 1px solid #fecaca;
-                    border-radius: 8px; padding: 12px 16px; color: #7f1d1d;
-                    margin: 16px 0; font-size: 15px; }
-      .button { display: inline-block; background: #0b2343; color: #ffffff !important;
-                padding: 12px 22px; border-radius: 8px; text-decoration: none;
-                font-weight: 600; margin-top: 8px; }
-      .footer { background: #f3f4f6; padding: 18px; text-align: center;
-                color: #6b7280; font-size: 12px; }
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .header {
+        background: #7f1d1d;
+        padding: 28px;
+        text-align: center;
+      }
+      .header h1 {
+        color: #ffffff;
+        margin: 0;
+        font-size: 22px;
+      }
+      .header p {
+        color: #fecaca;
+        margin: 6px 0 0;
+        font-size: 14px;
+      }
+      .body {
+        padding: 30px;
+      }
+      .body p {
+        color: #333;
+        line-height: 1.6;
+      }
+      .panel {
+        background: #fafbfc;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin: 20px 0;
+      }
+      .panel dt {
+        color: #6b7280;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-top: 8px;
+      }
+      .panel dd {
+        color: #111827;
+        font-size: 15px;
+        margin: 4px 0 0;
+      }
+      .reason-box {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: #7f1d1d;
+        margin: 16px 0;
+        font-size: 15px;
+      }
+      .button {
+        display: inline-block;
+        background: #0b2343;
+        color: #ffffff !important;
+        padding: 12px 22px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        margin-top: 8px;
+      }
+      .footer {
+        background: #f3f4f6;
+        padding: 18px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 12px;
+      }
     </style>
   </head>
   <body>
@@ -33,9 +93,13 @@
         <p>Hello,</p>
 
         <p>
-          The level-change request for <strong>{{learnerName}}</strong> at
-          <strong>{{currentLevel}}</strong> has been reviewed by the Amber
-          safeguarding lead and <strong>not approved</strong> at this time.
+          The level-change request for
+          <strong>{{learnerName}}</strong>
+          at
+          <strong>{{currentLevel}}</strong>
+          has been reviewed by the Amber safeguarding lead and
+          <strong>not approved</strong>
+          at this time.
         </p>
 
         <div class="panel">
@@ -63,8 +127,9 @@
         </p>
       </div>
       <div class="footer">
-        © {{currentYear}} Amber Training. Automated message — please do not
-        reply directly.
+        ©
+        {{currentYear}}
+        Amber Training. Automated message — please do not reply directly.
       </div>
     </div>
   </body>

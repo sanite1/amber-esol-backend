@@ -46,6 +46,8 @@ import LevelChange from "../models/LevelChange";
 import Stage5Review from "../models/Stage5Review";
 import TeacherReview from "../models/TeacherReview";
 import SafeguardingAlert from "../models/SafeguardingAlert";
+import AuditLog from "../models/AuditLog";
+import ComplianceConfigService from "./ComplianceConfigService";
 import IdempotencyKey from "../models/IdempotencyKey";
 import { ILR_CODE_TO_DOMAIN, ForSkillsDomain } from "./esolSkills";
 import { generatePdfFromHtml } from "./pdfGenerator.service";
@@ -59,7 +61,10 @@ import logger from "../config/logger";
 export const EVIDENCE_REPORT_DIR =
   process.env.EVIDENCE_REPORT_DIR ?? "/tmp/evidence-reports";
 
-const TEMPLATE_PATH = resolve(__dirname, "../templates/evidenceReport.handlebars");
+const TEMPLATE_PATH = resolve(
+  __dirname,
+  "../templates/evidenceReport.handlebars",
+);
 
 const LEVEL_LABELS: Record<string, string> = {
   e1: "Entry Level 1",
@@ -95,21 +100,35 @@ const SAMPLE_EXCERPTS_PER_LEARNER = 3;
 
 Handlebars.registerHelper("eq", (a: unknown, b: unknown) => a === b);
 Handlebars.registerHelper("gt", (a: number, b: number) => a > b);
-Handlebars.registerHelper("formatDate", (iso: string | Date | null | undefined) => {
-  if (!iso) return "—";
-  const d = iso instanceof Date ? iso : new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-});
-Handlebars.registerHelper("formatDateTime", (iso: string | Date | null | undefined) => {
-  if (!iso) return "—";
-  const d = iso instanceof Date ? iso : new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("en-GB", {
-    day: "numeric", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit", timeZone: "Europe/London",
-  });
-});
+Handlebars.registerHelper(
+  "formatDate",
+  (iso: string | Date | null | undefined) => {
+    if (!iso) return "—";
+    const d = iso instanceof Date ? iso : new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  },
+);
+Handlebars.registerHelper(
+  "formatDateTime",
+  (iso: string | Date | null | undefined) => {
+    if (!iso) return "—";
+    const d = iso instanceof Date ? iso : new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/London",
+    });
+  },
+);
 Handlebars.registerHelper("round1", (n: unknown) => {
   if (typeof n !== "number" || !Number.isFinite(n)) return "0.0";
   return (Math.round(n * 10) / 10).toFixed(1);
@@ -145,7 +164,12 @@ export interface EvidenceReportPayload {
     level_progression_count: number;
     level_progression_breakdown: string;
     scenarios_passed_total: number;
-    by_level: Array<{ level: string; label: string; count: number; percent: string }>;
+    by_level: Array<{
+      level: string;
+      label: string;
+      count: number;
+      percent: string;
+    }>;
   };
   stage1_rows: Array<{
     uln: string | null;
@@ -157,7 +181,12 @@ export interface EvidenceReportPayload {
     uln: string | null;
     source_label: string;
     assessment_date_human: string;
-    scores: { reading: number; writing: number; listening: number; speaking: number } | null;
+    scores: {
+      reading: number;
+      writing: number;
+      listening: number;
+      speaking: number;
+    } | null;
     recommended_level: string;
     weakness_flags_human: string;
     weakness_flags_count: number;
@@ -167,7 +196,11 @@ export interface EvidenceReportPayload {
     grouped_by_level: Array<{
       level: string;
       level_label: string;
-      objectives: Array<{ skill_domain: string; description: string; source_label: string }>;
+      objectives: Array<{
+        skill_domain: string;
+        description: string;
+        source_label: string;
+      }>;
     }>;
   }>;
   stage4_rows: Array<{
@@ -257,6 +290,23 @@ export interface EvidenceReportPayload {
     median_resolution_days: string;
     oldest_unresolved_days: number | "—";
   };
+  /**
+   * Final Addendum §6 — "RARPA evidence pack: each stage includes
+   * audit entries confirming when and how stage evidence was
+   * generated and under which rule set version." One row per
+   * (stage, audit action) seen in the period, plus the active RARPA
+   * rule-set version at generation time.
+   */
+  provenance: {
+    rarpa_config_version: number | null;
+    rarpa_academic_year: string;
+    rows: Array<{
+      stage_label: string;
+      action_label: string;
+      count: number;
+      latest_human: string;
+    }>;
+  };
 }
 
 export interface GenerateEvidenceReportResult {
@@ -271,7 +321,11 @@ export interface GenerateEvidenceReportResult {
 
 const buildCohortSection = (
   learners: Array<{ esolLevel?: string | null }>,
-  sessions: Array<{ session_source?: string; duration_mins?: number | null; passed?: boolean | null }>,
+  sessions: Array<{
+    session_source?: string;
+    duration_mins?: number | null;
+    passed?: boolean | null;
+  }>,
   levelChanges: Array<{ fromLevel: string; toLevel: string }>,
   teacherContactByLearner: Map<string, number>,
 ): EvidenceReportPayload["cohort"] => {
@@ -281,12 +335,14 @@ const buildCohortSection = (
   let imported_mins = 0;
   let scenarios_passed_total = 0;
   for (const s of sessions) {
-    if (s.session_source === "pre_platform") imported_mins += s.duration_mins ?? 0;
+    if (s.session_source === "pre_platform")
+      imported_mins += s.duration_mins ?? 0;
     else ai_mins += s.duration_mins ?? 0;
     if (s.passed) scenarios_passed_total += 1;
   }
-  const teacher_contact_glh =
-    Array.from(teacherContactByLearner.values()).reduce((a, b) => a + b, 0);
+  const teacher_contact_glh = Array.from(
+    teacherContactByLearner.values(),
+  ).reduce((a, b) => a + b, 0);
 
   const ai_glh = ai_mins / 60;
   const imported_glh = imported_mins / 60;
@@ -303,7 +359,8 @@ const buildCohortSection = (
     level,
     label: LEVEL_LABELS[level] ?? level.toUpperCase(),
     count,
-    percent: total_learners > 0 ? ((count / total_learners) * 100).toFixed(1) : "0.0",
+    percent:
+      total_learners > 0 ? ((count / total_learners) * 100).toFixed(1) : "0.0",
   }));
 
   // Level progression breakdown (e1→e2: 5, e2→e3: 4, …)
@@ -312,9 +369,10 @@ const buildCohortSection = (
     const key = `${lc.fromLevel}→${lc.toLevel}`;
     progressionCounts.set(key, (progressionCounts.get(key) ?? 0) + 1);
   }
-  const level_progression_breakdown = Array.from(progressionCounts.entries())
-    .map(([k, v]) => `${k}: ${v}`)
-    .join(", ") || "(none)";
+  const level_progression_breakdown =
+    Array.from(progressionCounts.entries())
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(", ") || "(none)";
 
   return {
     total_learners,
@@ -358,16 +416,18 @@ const buildStage1Rows = (
     assessment_date_human:
       l.esolOnboardedAt instanceof Date
         ? l.esolOnboardedAt.toLocaleDateString("en-GB", {
-            day: "2-digit", month: "2-digit", year: "2-digit",
+            day: "2-digit",
+            month: "2-digit",
+            year: "2-digit",
           })
         : "—",
     source_label:
       l.assessment_score !== null && l.assessment_score !== undefined
         ? "Platform placement"
-        // ForSkills imports may or may not set assessment_score depending
-        // on the importer's logic; the absence-of-score heuristic is the
-        // best we can do without a dedicated `assessment_source` field.
-        : "ForSkills import",
+        : // ForSkills imports may or may not set assessment_score depending
+          // on the importer's logic; the absence-of-score heuristic is the
+          // best we can do without a dedicated `assessment_source` field.
+          "ForSkills import",
     recommended_level: (l.starting_level ?? l.esolLevel ?? "—").toUpperCase(),
   }));
 
@@ -395,7 +455,9 @@ const buildStage2Rows = (
       assessment_date_human:
         l.esolOnboardedAt instanceof Date
           ? l.esolOnboardedAt.toLocaleDateString("en-GB", {
-              day: "2-digit", month: "2-digit", year: "2-digit",
+              day: "2-digit",
+              month: "2-digit",
+              year: "2-digit",
             })
           : "—",
       // Sub-scores are not on the schema today — render null and the
@@ -412,7 +474,10 @@ const buildStage3Rows = (
 ): EvidenceReportPayload["stage3_rows"] =>
   learners.map((l) => {
     const objectives = l.stage3_objectives ?? [];
-    const grouped = new Map<string, EvidenceReportPayload["stage3_rows"][number]["grouped_by_level"][number]>();
+    const grouped = new Map<
+      string,
+      EvidenceReportPayload["stage3_rows"][number]["grouped_by_level"][number]
+    >();
     for (const o of objectives) {
       const level = o.target_level ?? "unspecified";
       if (!grouped.has(level)) {
@@ -421,7 +486,7 @@ const buildStage3Rows = (
           level_label:
             level === "unspecified"
               ? "(no level)"
-              : LEVEL_LABELS[level] ?? level.toUpperCase(),
+              : (LEVEL_LABELS[level] ?? level.toUpperCase()),
           objectives: [],
         });
       }
@@ -435,7 +500,7 @@ const buildStage3Rows = (
               ? "Level change"
               : o.set_from === "teacher_override"
                 ? "Teacher override"
-                : o.set_from ?? "—",
+                : (o.set_from ?? "—"),
       });
     }
     return {
@@ -446,15 +511,18 @@ const buildStage3Rows = (
 
 const buildStage4Rows = async (
   learners: LearnerForReport[],
-  sessionsByLearner: Map<string, Array<{
-    _id: Types.ObjectId;
-    scenario_id?: unknown;
-    passed?: boolean | null;
-    completedAt?: Date | null;
-    createdAt?: Date;
-    safeguardingFlagged?: boolean;
-    turns?: Array<{ originalInput?: string; deepSeekResponse?: string }>;
-  }>>,
+  sessionsByLearner: Map<
+    string,
+    Array<{
+      _id: Types.ObjectId;
+      scenario_id?: unknown;
+      passed?: boolean | null;
+      completedAt?: Date | null;
+      createdAt?: Date;
+      safeguardingFlagged?: boolean;
+      turns?: Array<{ originalInput?: string; deepSeekResponse?: string }>;
+    }>
+  >,
 ): Promise<EvidenceReportPayload["stage4_rows"]> => {
   // Vocab ledger — bulk read once, group by learner
   const vocabRows = await VocabLedger.find({
@@ -479,7 +547,8 @@ const buildStage4Rows = async (
     const vocab = vocabByLearner.get(lk) ?? [];
     const retained = vocab.filter((v) => v.retained === true);
     const total = vocab.length;
-    const retention_pct = total > 0 ? Math.round((retained.length / total) * 100) : 0;
+    const retention_pct =
+      total > 0 ? Math.round((retained.length / total) * 100) : 0;
 
     // Top N retained — sort by times_encountered DESC then last_seen_at DESC
     const top_10_retained = retained
@@ -499,13 +568,11 @@ const buildStage4Rows = async (
     // Excerpt selection — early / mid / late sample of the safe set.
     // Algorithm: sort by completedAt asc, pick indices floor(0/3),
     // floor(N/2), floor(N-1). Falls back gracefully for short sets.
-    const ordered = safeSessions
-      .slice()
-      .sort((a, b) => {
-        const at = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-        const bt = b.completedAt ? new Date(b.completedAt).getTime() : 0;
-        return at - bt;
-      });
+    const ordered = safeSessions.slice().sort((a, b) => {
+      const at = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+      const bt = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+      return at - bt;
+    });
     const pickIndices: number[] = [];
     if (ordered.length === 0) {
       // no excerpts
@@ -520,19 +587,26 @@ const buildStage4Rows = async (
       const s = ordered[i];
       const turns = (s.turns ?? []).slice(0, 3); // first 3 turns of the session
       return {
-        session_date_human:
-          s.completedAt
-            ? new Date(s.completedAt).toLocaleDateString("en-GB", {
-                day: "numeric", month: "short", year: "numeric",
-              })
-            : "—",
-        scenario_id_human: typeof s.scenario_id === "string" ? s.scenario_id : "general",
-        turns: turns.flatMap<{ role: "learner" | "tutor"; text: string }>((t) => {
-          const lines: Array<{ role: "learner" | "tutor"; text: string }> = [];
-          if (t.originalInput) lines.push({ role: "learner", text: t.originalInput });
-          if (t.deepSeekResponse) lines.push({ role: "tutor", text: t.deepSeekResponse });
-          return lines;
-        }),
+        session_date_human: s.completedAt
+          ? new Date(s.completedAt).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })
+          : "—",
+        scenario_id_human:
+          typeof s.scenario_id === "string" ? s.scenario_id : "general",
+        turns: turns.flatMap<{ role: "learner" | "tutor"; text: string }>(
+          (t) => {
+            const lines: Array<{ role: "learner" | "tutor"; text: string }> =
+              [];
+            if (t.originalInput)
+              lines.push({ role: "learner", text: t.originalInput });
+            if (t.deepSeekResponse)
+              lines.push({ role: "tutor", text: t.deepSeekResponse });
+            return lines;
+          },
+        ),
       };
     });
 
@@ -566,7 +640,11 @@ const buildStage5Section = async (
   const confirmerIds = Array.from(
     new Set(
       reviews
-        .filter((r) => (r as { org_admin_confirmed_at?: Date | null }).org_admin_confirmed_at)
+        .filter(
+          (r) =>
+            (r as { org_admin_confirmed_at?: Date | null })
+              .org_admin_confirmed_at,
+        )
         .map((r) => (r as { confirmed_by?: Types.ObjectId }).confirmed_by)
         .filter((id): id is Types.ObjectId => Boolean(id)),
     ),
@@ -588,14 +666,19 @@ const buildStage5Section = async (
   const pending: EvidenceReportPayload["stage5"]["pending"] = [];
 
   for (const r of reviews) {
-    const lk = ((r as { learner_id: Types.ObjectId }).learner_id).toString();
+    const lk = (r as { learner_id: Types.ObjectId }).learner_id.toString();
     const uln = ulnByLearner.get(lk) ?? null;
-    const levelCompleted = ((r as { level_completed?: string }).level_completed ?? "").toLowerCase();
+    const levelCompleted = (
+      (r as { level_completed?: string }).level_completed ?? ""
+    ).toLowerCase();
 
-    if ((r as { org_admin_confirmed_at?: Date | null }).org_admin_confirmed_at) {
+    if (
+      (r as { org_admin_confirmed_at?: Date | null }).org_admin_confirmed_at
+    ) {
       completed.push({
         uln,
-        old_level_label: LEVEL_LABELS[levelCompleted] ?? (levelCompleted.toUpperCase() || "—"),
+        old_level_label:
+          LEVEL_LABELS[levelCompleted] ?? (levelCompleted.toUpperCase() || "—"),
         // We don't store the "to" level directly on Stage5Review; infer
         // from the next level on the ladder. Renders as the next NQF
         // step ("E2 → E3"). Not ideal — a future LevelChange snapshot
@@ -606,16 +689,21 @@ const buildStage5Section = async (
         ),
         confirmed_by_name:
           confirmerNameById.get(
-            ((r as { confirmed_by?: Types.ObjectId }).confirmed_by ?? new Types.ObjectId()).toString(),
+            (
+              (r as { confirmed_by?: Types.ObjectId }).confirmed_by ??
+              new Types.ObjectId()
+            ).toString(),
           ) ?? "Org admin",
-        learner_self_assessment:
-          (r as { learner_self_assessment?: unknown }).learner_self_assessment
-            ? String((r as { learner_self_assessment: unknown }).learner_self_assessment)
-            : "Not yet recorded — Phase 18 enhancement",
-        ai_tutor_summary:
-          (r as { ai_tutor_summary?: unknown }).ai_tutor_summary
-            ? String((r as { ai_tutor_summary: unknown }).ai_tutor_summary)
-            : "Not yet recorded — Phase 18 enhancement",
+        learner_self_assessment: (r as { learner_self_assessment?: unknown })
+          .learner_self_assessment
+          ? String(
+              (r as { learner_self_assessment: unknown })
+                .learner_self_assessment,
+            )
+          : "Not yet recorded — Phase 18 enhancement",
+        ai_tutor_summary: (r as { ai_tutor_summary?: unknown }).ai_tutor_summary
+          ? String((r as { ai_tutor_summary: unknown }).ai_tutor_summary)
+          : "Not yet recorded — Phase 18 enhancement",
         next_steps:
           (r as { next_steps?: string | null }).next_steps ??
           `Continue at ${nextLevelLabel(levelCompleted)} with focus on Stage 3 objectives at the new level.`,
@@ -623,7 +711,9 @@ const buildStage5Section = async (
     } else {
       pending.push({
         uln,
-        created_at_human: formatDateHuman((r as { createdAt?: Date }).createdAt),
+        created_at_human: formatDateHuman(
+          (r as { createdAt?: Date }).createdAt,
+        ),
       });
     }
   }
@@ -677,7 +767,7 @@ const buildTeacherOversightRows = async (
   // Group reviews by learner
   const reviewsByLearner = new Map<string, typeof reviews>();
   for (const r of reviews) {
-    const lk = ((r as { learner_id: Types.ObjectId }).learner_id).toString();
+    const lk = (r as { learner_id: Types.ObjectId }).learner_id.toString();
     if (!reviewsByLearner.has(lk)) reviewsByLearner.set(lk, []);
     reviewsByLearner.get(lk)!.push(r);
   }
@@ -703,7 +793,7 @@ const buildTeacherOversightRows = async (
     return {
       uln: ulnByLearner.get(lk) ?? null,
       teacher_name_or_dash: teacherId
-        ? teacherNameById.get(teacherId) ?? "(unnamed)"
+        ? (teacherNameById.get(teacherId) ?? "(unnamed)")
         : "(none)",
       total_teacher_glh: (l.glh_teacher_contact ?? 0).toFixed(1),
       counts,
@@ -713,7 +803,9 @@ const buildTeacherOversightRows = async (
 
   // Sort: highest total_teacher_glh desc, matches the brief's "the
   // learners with the most teacher contact appear first".
-  rows.sort((a, b) => parseFloat(b.total_teacher_glh) - parseFloat(a.total_teacher_glh));
+  rows.sort(
+    (a, b) => parseFloat(b.total_teacher_glh) - parseFloat(a.total_teacher_glh),
+  );
 
   // ── Cohort aggregates — Final Addendum §12 ────────────────────
   // total_cohort_glh        — sum of every learner's glh_teacher_contact
@@ -745,7 +837,9 @@ const buildTeacherOversightRows = async (
   const glhByTeacher = new Map<string, number>();
   const reviewCountByTeacher = new Map<string, number>();
   for (const r of reviews) {
-    const teacherKey = (r as { teacher_id?: Types.ObjectId }).teacher_id?.toString();
+    const teacherKey = (
+      r as { teacher_id?: Types.ObjectId }
+    ).teacher_id?.toString();
     if (!teacherKey) continue;
     const mins = (r as { duration_mins?: number }).duration_mins ?? 0;
     glhByTeacher.set(
@@ -854,14 +948,19 @@ const buildIlrSection = async (
   return {
     has_linked_export: true,
     export_id: r.export_id ?? null,
-    generated_at_human: formatDateHuman((lock as { created_at?: Date }).created_at),
+    generated_at_human: formatDateHuman(
+      (lock as { created_at?: Date }).created_at,
+    ),
     period_start_human: formatDateHuman(r.period_start),
     period_end_human: formatDateHuman(r.period_end),
     compliance_config_version: r.config_version ?? null,
     rows_exported: (r.valid_rows ?? []).length,
     rows_blocked: (r.blocked_rows ?? []).length,
     warnings_count: (r.warnings ?? []).length,
-    warnings_by_type: Array.from(byType.entries()).map(([type, count]) => ({ type, count })),
+    warnings_by_type: Array.from(byType.entries()).map(([type, count]) => ({
+      type,
+      count,
+    })),
   };
 };
 
@@ -900,7 +999,9 @@ const buildSafeguardingSection = async (
       const ms = resolvedAt.getTime() - createdAt.getTime();
       resolutionDays.push(ms / (24 * 60 * 60 * 1000));
     } else {
-      const days = Math.floor((now - createdAt.getTime()) / (24 * 60 * 60 * 1000));
+      const days = Math.floor(
+        (now - createdAt.getTime()) / (24 * 60 * 60 * 1000),
+      );
       if (oldestUnresolvedDays === null || days > oldestUnresolvedDays) {
         oldestUnresolvedDays = days;
       }
@@ -925,10 +1026,133 @@ const buildSafeguardingSection = async (
     })),
     resolved_count,
     resolution_rate_pct:
-      alerts.length > 0 ? Math.round((resolved_count / alerts.length) * 100) : 0,
+      alerts.length > 0
+        ? Math.round((resolved_count / alerts.length) * 100)
+        : 0,
     avg_resolution_days: avg.toFixed(1),
     median_resolution_days: median.toFixed(1),
     oldest_unresolved_days: oldestUnresolvedDays ?? "—",
+  };
+};
+
+// ─────────────────────────────────────────────────────────────────────
+// Provenance section — Final Addendum §6
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Which audit actions evidence each RARPA stage. The audit log is the
+ * source of truth for "when and how was this evidence generated" —
+ * one row per (stage, action) with a count and the latest timestamp,
+ * so an inspector can trace any stage section of this PDF back to
+ * dated, append-only audit entries.
+ */
+const STAGE_PROVENANCE_MAP: Array<{
+  stage_label: string;
+  action: string;
+  action_label: string;
+}> = [
+  {
+    stage_label: "Stage 1–2 — Assessment",
+    action: "placement_completed",
+    action_label: "Placement assessment scored",
+  },
+  {
+    stage_label: "Stage 1–2 — Assessment",
+    action: "forskills_imported",
+    action_label: "ForSkills assessment imported",
+  },
+  {
+    stage_label: "Stage 3 — Learning plan",
+    action: "learner_registered",
+    action_label: "Learner registered with Stage 3 objectives",
+  },
+  {
+    stage_label: "Stage 3 — Learning plan",
+    action: "pathway_override_set",
+    action_label: "Teacher pathway adjustment",
+  },
+  {
+    stage_label: "Stage 4 — Formative evidence",
+    action: "session_completed",
+    action_label: "AI tutor session completed",
+  },
+  {
+    stage_label: "Stage 4 — Formative evidence",
+    action: "teacher_review_logged",
+    action_label: "Teacher review logged",
+  },
+  {
+    stage_label: "Stage 5 — Summative review",
+    action: "stage5_review_generated",
+    action_label: "Stage 5 review generated",
+  },
+  {
+    stage_label: "Stage 5 — Summative review",
+    action: "stage5_self_assessment_submitted",
+    action_label: "Learner self-assessment submitted",
+  },
+  {
+    stage_label: "Stage 5 — Summative review",
+    action: "rarpa_stage5_teacher_signed_off",
+    action_label: "Teacher sign-off",
+  },
+  {
+    stage_label: "Stage 5 — Summative review",
+    action: "stage5_review_confirmed",
+    action_label: "Org admin confirmation",
+  },
+  {
+    stage_label: "Stage 5 — Summative review",
+    action: "rarpa_stage_advanced",
+    action_label: "RARPA stage advanced",
+  },
+];
+
+const buildProvenanceSection = async (
+  orgId: Types.ObjectId,
+  periodStart: Date,
+  periodEnd: Date,
+): Promise<EvidenceReportPayload["provenance"]> => {
+  const actions = STAGE_PROVENANCE_MAP.map((m) => m.action);
+  const grouped = await AuditLog.aggregate<{
+    _id: string;
+    count: number;
+    latest: Date;
+  }>([
+    {
+      $match: {
+        org_id: orgId,
+        action: { $in: actions },
+        timestamp: { $gte: periodStart, $lte: periodEnd },
+      },
+    },
+    {
+      $group: {
+        _id: "$action",
+        count: { $sum: 1 },
+        latest: { $max: "$timestamp" },
+      },
+    },
+  ]);
+  const byAction = new Map(grouped.map((g) => [g._id, g]));
+
+  const rows = STAGE_PROVENANCE_MAP.map((m) => {
+    const hit = byAction.get(m.action);
+    return {
+      stage_label: m.stage_label,
+      action_label: m.action_label,
+      count: hit?.count ?? 0,
+      latest_human: hit ? formatDateHuman(hit.latest) : "—",
+    };
+  }).filter((r) => r.count > 0);
+
+  const academicYear = ComplianceConfigService.currentAcademicYear();
+  const rarpaConfig = ComplianceConfigService.getConfig("rarpa", academicYear);
+
+  return {
+    rarpa_config_version: rarpaConfig?.version ?? null,
+    rarpa_academic_year: academicYear,
+    rows,
   };
 };
 
@@ -941,7 +1165,9 @@ const formatDateHuman = (v: Date | string | null | undefined): string => {
   const d = v instanceof Date ? v : new Date(v);
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("en-GB", {
-    day: "numeric", month: "long", year: "numeric",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   });
 };
 
@@ -1075,8 +1301,12 @@ export const generateEvidenceReport = async (
     report_id: reportId,
     generated_at: now.toISOString(),
     generated_at_human: now.toLocaleString("en-GB", {
-      day: "numeric", month: "long", year: "numeric",
-      hour: "2-digit", minute: "2-digit", timeZone: "Europe/London",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/London",
     }),
     period_start: periodStart,
     period_end: periodEnd,
@@ -1087,7 +1317,12 @@ export const generateEvidenceReport = async (
       name: org.name ?? "(unnamed organisation)",
       logo_url: (org as { logo_url?: string | null }).logo_url ?? null,
     },
-    cohort: buildCohortSection(learners, sessions, levelChanges, teacherContactByLearner),
+    cohort: buildCohortSection(
+      learners,
+      sessions,
+      levelChanges,
+      teacherContactByLearner,
+    ),
     stage1_rows: buildStage1Rows(learners),
     stage2_rows: buildStage2Rows(learners),
     stage3_rows: buildStage3Rows(learners),
@@ -1110,6 +1345,11 @@ export const generateEvidenceReport = async (
     })()),
     ilr: await buildIlrSection(orgObjectId),
     safeguarding: await buildSafeguardingSection(
+      orgObjectId,
+      periodStartDate,
+      periodEndDate,
+    ),
+    provenance: await buildProvenanceSection(
       orgObjectId,
       periodStartDate,
       periodEndDate,

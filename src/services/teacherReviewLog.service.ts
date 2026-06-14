@@ -59,6 +59,7 @@ import ApiError from "../errors/apiError";
 import ApiResponse from "../errors/apiResponse";
 import User from "../models/User";
 import TeacherReview from "../models/TeacherReview";
+import { glhContributionHours } from "./teacherGlhContribution";
 import { writeAuditLog } from "./auditLog.service";
 import { enqueueLearnerPriorityRecalc } from "./priorityQueueRecalc.service";
 import logger from "../config/logger";
@@ -151,10 +152,7 @@ export const logTeacherReviewService = async (
     learner as { assigned_teacher_id?: Types.ObjectId | null }
   ).assigned_teacher_id;
   if (!assignedTo || assignedTo.toString() !== input.teacher_id) {
-    throw new ApiError(
-      403,
-      "Forbidden — this learner is not assigned to you.",
-    );
+    throw new ApiError(403, "Forbidden — this learner is not assigned to you.");
   }
   // A learner without an org shouldn't reach this gate (every
   // learner is org-scoped) but defend against the edge case so a
@@ -193,7 +191,11 @@ export const logTeacherReviewService = async (
   // $inc composes cleanly with any other concurrent review write
   // — no read-modify-write race even if two teachers log reviews
   // on the same learner in the same millisecond.
-  const hoursToAdd = body.duration_mins / 60;
+  //
+  // GLH credit is per review TYPE (Final Addendum §4.3), not raw
+  // duration: async 0.25h / pathway 0.25h / sign-off 0.5h /
+  // contact duration÷60. See teacherGlhContribution.ts.
+  const hoursToAdd = glhContributionHours(body.review_type, body.duration_mins);
   const updateRes = await User.findByIdAndUpdate(
     learnerObjectId,
     {
@@ -217,10 +219,8 @@ export const logTeacherReviewService = async (
       "logTeacherReview: User vanished between gate read and update — orphan review row created",
     );
   }
-  const after_glh =
-    updateRes?.glh_teacher_contact ?? before_glh + hoursToAdd;
-  const after_last_reviewed =
-    updateRes?.teacher_last_reviewed_at ?? created_at;
+  const after_glh = updateRes?.glh_teacher_contact ?? before_glh + hoursToAdd;
+  const after_last_reviewed = updateRes?.teacher_last_reviewed_at ?? created_at;
 
   // ── 5. AuditLog row ───────────────────────────────────────────
   // Plain-English `reason` so an org admin reading the audit-log
@@ -246,9 +246,10 @@ export const logTeacherReviewService = async (
         duration_mins: body.duration_mins,
         ai_recommendation_acted_on: Boolean(body.ai_recommendation_acted_on),
         glh_teacher_contact: after_glh,
-        teacher_last_reviewed_at: after_last_reviewed instanceof Date
-          ? after_last_reviewed.toISOString()
-          : new Date(after_last_reviewed).toISOString(),
+        teacher_last_reviewed_at:
+          after_last_reviewed instanceof Date
+            ? after_last_reviewed.toISOString()
+            : new Date(after_last_reviewed).toISOString(),
       },
       reason: `Teacher review logged: ${body.review_type} for ${body.duration_mins} mins.`,
     },

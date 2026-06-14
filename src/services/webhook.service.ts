@@ -35,7 +35,7 @@ const getOrCreateWallet = async (tutorId: string) => {
 
 export const handleStripeWebhookService = async (
   rawBody: Buffer,
-  signature: string
+  signature: string,
 ) => {
   const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
   if (!WEBHOOK_SECRET) {
@@ -48,7 +48,7 @@ export const handleStripeWebhookService = async (
   } catch (err: any) {
     throw new ApiError(
       400,
-      `Webhook signature verification failed: ${err.message}`
+      `Webhook signature verification failed: ${err.message}`,
     );
   }
 
@@ -122,7 +122,7 @@ export const handleStripeWebhookService = async (
         if (tutor?.teachingPreferences?.autoAcceptBookings) {
           await Booking.updateMany(
             { _id: { $in: bookingIds }, status: "pending" },
-            { $set: { status: "confirmed" } }
+            { $set: { status: "confirmed" } },
           );
 
           const confirmedBookings = await Booking.find({
@@ -140,7 +140,7 @@ export const handleStripeWebhookService = async (
               `${tutor.firstname} ${tutor.lastname}`.trim(),
               `${student?.firstname || "Student"} ${student?.lastname || ""}`.trim(),
               cb.type,
-              cb.specialty
+              cb.specialty,
             );
             if (zoomUrl) {
               cb.meetingUrl = zoomUrl;
@@ -161,7 +161,7 @@ export const handleStripeWebhookService = async (
               isTrial: updatedBookings[0].type === "trial",
               bookingGroupId: updatedBookings[0].bookingGroupId,
             }).catch((err) =>
-              logger.error({ err }, "Error sending confirmed email")
+              logger.error({ err }, "Error sending confirmed email"),
             );
 
             createNotification({
@@ -176,7 +176,7 @@ export const handleStripeWebhookService = async (
                 startTime: updatedBookings[0].startTime,
               },
             }).catch((err) =>
-              logger.error({ err }, "Error creating confirmed notification")
+              logger.error({ err }, "Error creating confirmed notification"),
             );
           }
         }
@@ -189,7 +189,7 @@ export const handleStripeWebhookService = async (
             bookings,
             totalPrice: bookings.reduce((sum, b) => sum + b.price, 0),
           }).catch((err) =>
-            logger.error({ err }, "Error sending payment success email")
+            logger.error({ err }, "Error sending payment success email"),
           );
 
           const totalPaid = bookings.reduce((sum, b) => sum + b.price, 0);
@@ -205,7 +205,7 @@ export const handleStripeWebhookService = async (
               tutorId: tutor._id.toString(),
             },
           }).catch((err) =>
-            logger.error({ err }, "Error creating payment notification")
+            logger.error({ err }, "Error creating payment notification"),
           );
         }
       }
@@ -239,7 +239,7 @@ export const handleStripeWebhookService = async (
               cancelledBy: "student",
               cancelledAt: new Date(),
             },
-          }
+          },
         );
 
         // Notify student that payment expired
@@ -254,7 +254,10 @@ export const handleStripeWebhookService = async (
               date: bookings[0].date,
             },
           }).catch((err) =>
-            logger.error({ err }, "Error creating payment expired notification")
+            logger.error(
+              { err },
+              "Error creating payment expired notification",
+            ),
           );
         }
       }
@@ -300,7 +303,7 @@ export const handleStripeWebhookService = async (
         // Notify student of successful payment
         const booking = await Booking.findById(transaction.bookingId);
         const tutor = await User.findById(transaction.tutorId).select(
-          "firstname lastname"
+          "firstname lastname",
         );
 
         createNotification({
@@ -315,7 +318,7 @@ export const handleStripeWebhookService = async (
             date: booking?.date || null,
           },
         }).catch((err) =>
-          logger.error({ err }, "Error creating payment success notification")
+          logger.error({ err }, "Error creating payment success notification"),
         );
       }
       break;
@@ -343,7 +346,7 @@ export const handleStripeWebhookService = async (
         // Notify student of failed payment
         const booking = await Booking.findById(transaction.bookingId);
         const tutor = await User.findById(transaction.tutorId).select(
-          "firstname lastname"
+          "firstname lastname",
         );
 
         createNotification({
@@ -358,7 +361,7 @@ export const handleStripeWebhookService = async (
             date: booking?.date || null,
           },
         }).catch((err) =>
-          logger.error({ err }, "Error creating payment failed notification")
+          logger.error({ err }, "Error creating payment failed notification"),
         );
       }
       break;

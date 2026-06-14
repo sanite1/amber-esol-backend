@@ -64,7 +64,7 @@ export const createOrgValidation = () =>
       }).unknown(false),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 /* ── PATCH /api/orgs/:id ────────────────────────────────────────────── */
@@ -92,7 +92,7 @@ export const updateOrgValidation = () =>
         }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 /* ── GET /api/orgs/:id ──────────────────────────────────────────────── */
@@ -101,7 +101,7 @@ export const orgIdParamValidation = () =>
   validate(
     { params: Joi.object({ id: objectId.required() }) },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 /* ── GET /api/orgs ──────────────────────────────────────────────────── */
@@ -117,7 +117,7 @@ export const listOrgsValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 /* ── POST /api/orgs/:id/referral-link ───────────────────────────────── */
@@ -134,7 +134,7 @@ export const createReferralLinkValidation = () =>
       }).optional(),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 /* ── GET /api/orgs/:id/referral-links ───────────────────────────────── */
@@ -149,7 +149,7 @@ export const listReferralLinksValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 /* ── DELETE /api/orgs/:id/referral-links/:tokenId ───────────────────── */
@@ -163,7 +163,7 @@ export const deactivateReferralLinkValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 /* ── POST /api/orgs/:id/admin-user ──────────────────────────────────── */
@@ -191,5 +191,5 @@ export const createOrgAdminUserValidation = () =>
       }).unknown(false),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

@@ -26,7 +26,7 @@ router.get("/:studentId", myStudentDetailValidation, getMyStudentDetail);
 router.patch(
   "/:studentId/notes",
   updateStudentNotesValidation,
-  updateStudentNotes
+  updateStudentNotes,
 );
 
 export default router;

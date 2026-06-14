@@ -30,8 +30,7 @@
  * `/roi-calculator` always yields a clean URL.
  */
 const marketingBaseUrl = (): string => {
-  const raw =
-    process.env.PUBLIC_MARKETING_URL || "https://ambertraining.co.uk";
+  const raw = process.env.PUBLIC_MARKETING_URL || "https://ambertraining.co.uk";
   return raw.replace(/\/+$/, "");
 };
 
@@ -53,10 +52,15 @@ const isPositiveFiniteNumber = (n: unknown): n is number =>
  * `?org_name=` is messy and the frontend's parser would
  * accept it but treat it as no-prefill anyway).
  */
-export const buildRoiCalculatorUrl = (prefill: RoiCalculatorPrefill = {}): string => {
+export const buildRoiCalculatorUrl = (
+  prefill: RoiCalculatorPrefill = {},
+): string => {
   const params = new URLSearchParams();
 
-  if (typeof prefill.org_name === "string" && prefill.org_name.trim().length > 0) {
+  if (
+    typeof prefill.org_name === "string" &&
+    prefill.org_name.trim().length > 0
+  ) {
     // 120-char cap mirrors the frontend's parser + the
     // submission model. Trim first so trailing whitespace
     // doesn't eat into the budget.
@@ -71,7 +75,10 @@ export const buildRoiCalculatorUrl = (prefill: RoiCalculatorPrefill = {}): strin
     params.set("org_type", prefill.org_type);
   }
   if (isPositiveFiniteNumber(prefill.waiting_list_size)) {
-    params.set("waiting_list_size", String(Math.floor(prefill.waiting_list_size)));
+    params.set(
+      "waiting_list_size",
+      String(Math.floor(prefill.waiting_list_size)),
+    );
   }
   if (isPositiveFiniteNumber(prefill.avg_asf_rate)) {
     params.set("avg_asf_rate", String(prefill.avg_asf_rate));

@@ -18,7 +18,8 @@
  *     R4  Empty when learner has no rows
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 import { Types } from "mongoose";
 import VocabLedger from "../models/VocabLedger";
@@ -32,12 +33,12 @@ const learnerId = () => new Types.ObjectId();
 const withSeenAt = async (
   learner: Types.ObjectId,
   word: string,
-  seenAt: Date
+  seenAt: Date,
 ): Promise<void> => {
   // Direct write — for tests that need to backdate last_seen_at.
   await VocabLedger.updateOne(
     { learnerId: learner, word },
-    { $set: { last_seen_at: seenAt } }
+    { $set: { last_seen_at: seenAt } },
   );
 };
 
@@ -48,9 +49,18 @@ const withSeenAt = async (
 describe("updateLedgerForTurn", () => {
   it("U1 — fresh word inserts with times_encountered=1, retained=false", async () => {
     const learner = learnerId();
-    await updateLedgerForTurn(learner, ["appointment"], 0.8, "s1_gp_appointment", "obj-Sc");
+    await updateLedgerForTurn(
+      learner,
+      ["appointment"],
+      0.8,
+      "s1_gp_appointment",
+      "obj-Sc",
+    );
 
-    const row = await VocabLedger.findOne({ learnerId: learner, word: "appointment" }).lean();
+    const row = await VocabLedger.findOne({
+      learnerId: learner,
+      word: "appointment",
+    }).lean();
     expect(row).toBeTruthy();
     expect((row as any).times_encountered).toBe(1);
     expect((row as any).retained).toBe(false);
@@ -61,11 +71,26 @@ describe("updateLedgerForTurn", () => {
 
   it("U2 — existing word increments, scenario_first_seen + stage3_objective_id are immutable", async () => {
     const learner = learnerId();
-    await updateLedgerForTurn(learner, ["payslip"], 0.5, "s1_gp_appointment", "obj-A");
+    await updateLedgerForTurn(
+      learner,
+      ["payslip"],
+      0.5,
+      "s1_gp_appointment",
+      "obj-A",
+    );
     await updateLedgerForTurn(learner, ["payslip"], 0.5, "s2_payslip", "obj-B");
-    await updateLedgerForTurn(learner, ["payslip"], 0.5, "s3_housing_rights", "obj-C");
+    await updateLedgerForTurn(
+      learner,
+      ["payslip"],
+      0.5,
+      "s3_housing_rights",
+      "obj-C",
+    );
 
-    const row = await VocabLedger.findOne({ learnerId: learner, word: "payslip" }).lean();
+    const row = await VocabLedger.findOne({
+      learnerId: learner,
+      word: "payslip",
+    }).lean();
     expect((row as any).times_encountered).toBe(3);
     // First-seen values are pinned from the insert call
     expect((row as any).scenario_first_seen).toBe("s1_gp_appointment");
@@ -76,15 +101,33 @@ describe("updateLedgerForTurn", () => {
     const learner = learnerId();
     // 4 low-score encounters — not retained yet
     for (let i = 0; i < 4; i++) {
-      await updateLedgerForTurn(learner, ["tenancy"], 0.4, "s3_housing_rights", "obj-Rt");
+      await updateLedgerForTurn(
+        learner,
+        ["tenancy"],
+        0.4,
+        "s3_housing_rights",
+        "obj-Rt",
+      );
     }
-    let row = await VocabLedger.findOne({ learnerId: learner, word: "tenancy" }).lean();
+    let row = await VocabLedger.findOne({
+      learnerId: learner,
+      word: "tenancy",
+    }).lean();
     expect((row as any).times_encountered).toBe(4);
     expect((row as any).retained).toBe(false);
 
     // 5th encounter, score ≥ 0.7 — flips to retained
-    await updateLedgerForTurn(learner, ["tenancy"], 0.75, "s3_housing_rights", "obj-Rt");
-    row = await VocabLedger.findOne({ learnerId: learner, word: "tenancy" }).lean();
+    await updateLedgerForTurn(
+      learner,
+      ["tenancy"],
+      0.75,
+      "s3_housing_rights",
+      "obj-Rt",
+    );
+    row = await VocabLedger.findOne({
+      learnerId: learner,
+      word: "tenancy",
+    }).lean();
     expect((row as any).times_encountered).toBe(5);
     expect((row as any).retained).toBe(true);
   });
@@ -92,25 +135,52 @@ describe("updateLedgerForTurn", () => {
   it("U3.b — 5+ encounters but low score → NOT retained yet", async () => {
     const learner = learnerId();
     for (let i = 0; i < 6; i++) {
-      await updateLedgerForTurn(learner, ["deposit"], 0.5, "s3_housing_rights", "obj-Rt");
+      await updateLedgerForTurn(
+        learner,
+        ["deposit"],
+        0.5,
+        "s3_housing_rights",
+        "obj-Rt",
+      );
     }
-    const row = await VocabLedger.findOne({ learnerId: learner, word: "deposit" }).lean();
+    const row = await VocabLedger.findOne({
+      learnerId: learner,
+      word: "deposit",
+    }).lean();
     expect((row as any).times_encountered).toBe(6);
-    expect((row as any).retained).toBe(false);  // never crossed the 0.7 threshold
+    expect((row as any).retained).toBe(false); // never crossed the 0.7 threshold
   });
 
   it("U4 — retention is sticky (a later low-score turn does NOT flip it back)", async () => {
     const learner = learnerId();
     // Get to retained
     for (let i = 0; i < 5; i++) {
-      await updateLedgerForTurn(learner, ["landlord"], 0.8, "s3_housing_rights", "obj-Sc");
+      await updateLedgerForTurn(
+        learner,
+        ["landlord"],
+        0.8,
+        "s3_housing_rights",
+        "obj-Sc",
+      );
     }
-    let row = await VocabLedger.findOne({ learnerId: learner, word: "landlord" }).lean();
+    let row = await VocabLedger.findOne({
+      learnerId: learner,
+      word: "landlord",
+    }).lean();
     expect((row as any).retained).toBe(true);
 
     // Subsequent low-score turn — retained stays true
-    await updateLedgerForTurn(learner, ["landlord"], 0.2, "s3_housing_rights", "obj-Sc");
-    row = await VocabLedger.findOne({ learnerId: learner, word: "landlord" }).lean();
+    await updateLedgerForTurn(
+      learner,
+      ["landlord"],
+      0.2,
+      "s3_housing_rights",
+      "obj-Sc",
+    );
+    row = await VocabLedger.findOne({
+      learnerId: learner,
+      word: "landlord",
+    }).lean();
     expect((row as any).retained).toBe(true);
     expect((row as any).times_encountered).toBe(6);
   });
@@ -122,7 +192,7 @@ describe("updateLedgerForTurn", () => {
       ["GP", "appointment", "prescription"],
       0.8,
       "s1_gp_appointment",
-      "obj-Sc"
+      "obj-Sc",
     );
     const rows = await VocabLedger.find({ learnerId: learner }).lean();
     expect(rows).toHaveLength(3);
@@ -136,9 +206,12 @@ describe("updateLedgerForTurn", () => {
       ["doctor", "doctor", "doctor"],
       0.6,
       "s1_gp_appointment",
-      "obj-Sc"
+      "obj-Sc",
     );
-    const row = await VocabLedger.findOne({ learnerId: learner, word: "doctor" }).lean();
+    const row = await VocabLedger.findOne({
+      learnerId: learner,
+      word: "doctor",
+    }).lean();
     expect((row as any).times_encountered).toBe(1);
   });
 
@@ -152,11 +225,14 @@ describe("updateLedgerForTurn", () => {
           ["arrears"],
           0.5,
           "s3_housing_rights",
-          "obj-Rt"
-        )
-      )
+          "obj-Rt",
+        ),
+      ),
     );
-    const row = await VocabLedger.findOne({ learnerId: learner, word: "arrears" }).lean();
+    const row = await VocabLedger.findOne({
+      learnerId: learner,
+      word: "arrears",
+    }).lean();
     // All 10 increments landed — no lost updates.
     expect((row as any).times_encountered).toBe(10);
   });
@@ -203,7 +279,11 @@ describe("getReinforcementTargets", () => {
 
     const targets = await getReinforcementTargets(learner, 6);
     // First three: the times_encountered=1 group, ordered by last_seen_at ASC.
-    expect(targets.slice(0, 3).map((t) => t.word)).toEqual(["older", "middle", "newer"]);
+    expect(targets.slice(0, 3).map((t) => t.word)).toEqual([
+      "older",
+      "middle",
+      "newer",
+    ]);
     // Last: times_encountered=3 (common).
     expect(targets[targets.length - 1].word).toBe("common");
   });

@@ -33,7 +33,7 @@ const dobAt16Plus = (value: string, helpers: any) => {
   const sixteenthBirthday = new Date(
     dob.getFullYear() + 16,
     dob.getMonth(),
-    dob.getDate()
+    dob.getDate(),
   );
   if (sixteenthBirthday > now) {
     return helpers.error("any.too_young");
@@ -53,6 +53,14 @@ const L1_LANGUAGES = [
   "pashto",
   "cantonese",
   "english",
+  // Phase 5 / Final Addendum §5 (BE-F) — Bengali + Urdu added to
+  // match the frontend's LANGUAGES coverage. Front-of-house chrome
+  // for these langs ships in AiTutorSession.tsx; the placement
+  // assessment still degrades to English until the question bank
+  // JSON gains *_bn / *_ur fields (documented inline at
+  // src/modules/esol/pages/PlacementAssessment.tsx).
+  "bengali",
+  "urdu",
 ];
 
 const EMPLOYMENT_STATUSES = [
@@ -109,15 +117,12 @@ export const esolRegisterValidation = () =>
         // CRITICAL: must be explicitly provided. 1=has LLDD, 2=does not,
         // 9=not provided. The brief calls out by name that defaulting to
         // 2 is a compliance failure.
-        lldd_health_prob: Joi.number()
-          .valid(1, 2, 9)
-          .required()
-          .messages({
-            "any.required":
-              "lldd_health_prob is required — must be explicitly recorded, not defaulted",
-            "any.only":
-              "lldd_health_prob must be 1 (has LLDD), 2 (does not), or 9 (not provided)",
-          }),
+        lldd_health_prob: Joi.number().valid(1, 2, 9).required().messages({
+          "any.required":
+            "lldd_health_prob is required — must be explicitly recorded, not defaulted",
+          "any.only":
+            "lldd_health_prob must be 1 (has LLDD), 2 (does not), or 9 (not provided)",
+        }),
 
         employment_status: Joi.string()
           .valid(...EMPLOYMENT_STATUSES)
@@ -148,5 +153,5 @@ export const esolRegisterValidation = () =>
       }).unknown(false),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

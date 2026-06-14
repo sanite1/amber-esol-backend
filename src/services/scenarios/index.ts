@@ -12,7 +12,13 @@
 export interface VocabularyItem {
   word: string;
   definition: string;
-  translations?: { ar?: string; so?: string; fa?: string; ti?: string; zh?: string };
+  translations?: {
+    ar?: string;
+    so?: string;
+    fa?: string;
+    ti?: string;
+    zh?: string;
+  };
   exampleSentence?: string;
 }
 
@@ -40,33 +46,71 @@ export const S1_GP_APPOINTMENT: ScenarioUnit = {
     {
       word: "appointment",
       definition: "A planned time to meet someone, especially a doctor",
-      translations: { ar: "موعد", so: "ballan", fa: "وقت ملاقات", ti: "ቆጸራ", zh: "預約" },
+      translations: {
+        ar: "موعد",
+        so: "ballan",
+        fa: "وقت ملاقات",
+        ti: "ቆጸራ",
+        zh: "預約",
+      },
       exampleSentence: "I would like to book an appointment with the doctor.",
     },
     {
       word: "receptionist",
-      definition: "The person who answers calls and books appointments at the GP surgery",
-      translations: { ar: "موظف الاستقبال", so: "soo dhoweeyaha", fa: "پذیرش", ti: "ተቐባሊት", zh: "接待員" },
+      definition:
+        "The person who answers calls and books appointments at the GP surgery",
+      translations: {
+        ar: "موظف الاستقبال",
+        so: "soo dhoweeyaha",
+        fa: "پذیرش",
+        ti: "ተቐባሊት",
+        zh: "接待員",
+      },
     },
     {
       word: "symptoms",
-      definition: "How you feel when you are unwell — for example a cough or pain",
-      translations: { ar: "أعراض", so: "calaamadaha", fa: "علائم", ti: "ምልክታት", zh: "症狀" },
+      definition:
+        "How you feel when you are unwell — for example a cough or pain",
+      translations: {
+        ar: "أعراض",
+        so: "calaamadaha",
+        fa: "علائم",
+        ti: "ምልክታት",
+        zh: "症狀",
+      },
     },
     {
       word: "available",
       definition: "Possible to have or use",
-      translations: { ar: "متاح", so: "la heli karo", fa: "موجود", ti: "ዘሎ", zh: "有空" },
+      translations: {
+        ar: "متاح",
+        so: "la heli karo",
+        fa: "موجود",
+        ti: "ዘሎ",
+        zh: "有空",
+      },
     },
     {
       word: "prescription",
       definition: "A note from the doctor to get medicine",
-      translations: { ar: "وصفة طبية", so: "warqad daawo", fa: "نسخه", ti: "ትእዛዝ መድሃኒት", zh: "處方" },
+      translations: {
+        ar: "وصفة طبية",
+        so: "warqad daawo",
+        fa: "نسخه",
+        ti: "ትእዛዝ መድሃኒት",
+        zh: "處方",
+      },
     },
     {
       word: "surgery",
       definition: "The building where GPs see patients",
-      translations: { ar: "العيادة", so: "rugta dhakhtarka", fa: "مطب", ti: "ቤት ሕክምና", zh: "診所" },
+      translations: {
+        ar: "العيادة",
+        so: "rugta dhakhtarka",
+        fa: "مطب",
+        ti: "ቤት ሕክምና",
+        zh: "診所",
+      },
     },
   ],
   grammarTargets: ["modal verbs: would like to, can I", "polite requests"],
@@ -75,9 +119,18 @@ export const S1_GP_APPOINTMENT: ScenarioUnit = {
   roleplayPrompt:
     "You are roleplaying a receptionist at a GP surgery. The learner is calling to book an appointment. Greet warmly, ask what they need, offer two appointment times, ask for their name and date of birth, confirm the booking. Keep your turns short and clear at the learner's level. Praise specific words they use correctly.",
   comprehensionQuestions: [
-    { q: "What do you say to ask for an appointment?", modelAnswer: "I would like to book an appointment, please." },
-    { q: "What does the receptionist ask for to book the appointment?", modelAnswer: "Your name and date of birth." },
-    { q: "What is a symptom?", modelAnswer: "How you feel when you are unwell, like a cough or pain." },
+    {
+      q: "What do you say to ask for an appointment?",
+      modelAnswer: "I would like to book an appointment, please.",
+    },
+    {
+      q: "What does the receptionist ask for to book the appointment?",
+      modelAnswer: "Your name and date of birth.",
+    },
+    {
+      q: "What is a symptom?",
+      modelAnswer: "How you feel when you are unwell, like a cough or pain.",
+    },
   ],
   passThreshold: 0.7,
   culturalNotes:
@@ -94,37 +147,79 @@ export const S2_PAYSLIP: ScenarioUnit = {
     {
       word: "gross pay",
       definition: "The total money you earn before tax is taken away",
-      translations: { ar: "الراتب الإجمالي", so: "mushaharka guud", fa: "حقوق ناخالص", ti: "ድምር ደመወዝ", zh: "稅前工資" },
+      translations: {
+        ar: "الراتب الإجمالي",
+        so: "mushaharka guud",
+        fa: "حقوق ناخالص",
+        ti: "ድምር ደመወዝ",
+        zh: "稅前工資",
+      },
     },
     {
       word: "net pay",
       definition: "The money you receive after tax — what goes into your bank",
-      translations: { ar: "صافي الراتب", so: "mushaharka saafiga ah", fa: "حقوق خالص", ti: "ጽሩይ ደመወዝ", zh: "實領工資" },
+      translations: {
+        ar: "صافي الراتب",
+        so: "mushaharka saafiga ah",
+        fa: "حقوق خالص",
+        ti: "ጽሩይ ደመወዝ",
+        zh: "實領工資",
+      },
     },
     {
       word: "tax",
       definition: "Money the government takes from your pay",
-      translations: { ar: "ضريبة", so: "canshuur", fa: "مالیات", ti: "ግብሪ", zh: "稅" },
+      translations: {
+        ar: "ضريبة",
+        so: "canshuur",
+        fa: "مالیات",
+        ti: "ግብሪ",
+        zh: "稅",
+      },
     },
     {
       word: "National Insurance",
       definition: "Money taken from your pay for the NHS and pension",
-      translations: { ar: "التأمين الوطني", so: "Caymiska Qaranka", fa: "بیمه ملی", ti: "ሃገራዊ ኢንሹራንስ", zh: "國民保險" },
+      translations: {
+        ar: "التأمين الوطني",
+        so: "Caymiska Qaranka",
+        fa: "بیمه ملی",
+        ti: "ሃገራዊ ኢንሹራንስ",
+        zh: "國民保險",
+      },
     },
     {
       word: "deduction",
       definition: "Money taken away from your pay",
-      translations: { ar: "خصم", so: "ka jarid", fa: "کسر", ti: "ምቕናስ", zh: "扣除" },
+      translations: {
+        ar: "خصم",
+        so: "ka jarid",
+        fa: "کسر",
+        ti: "ምቕናስ",
+        zh: "扣除",
+      },
     },
     {
       word: "HMRC",
       definition: "His Majesty's Revenue and Customs — the UK tax office",
-      translations: { ar: "هيئة الإيرادات والجمارك", so: "Xafiiska Canshuuraha UK", fa: "اداره مالیات بریتانیا", ti: "ቤት ጽሕፈት ግብሪ", zh: "英國稅務海關總署" },
+      translations: {
+        ar: "هيئة الإيرادات والجمارك",
+        so: "Xafiiska Canshuuraha UK",
+        fa: "اداره مالیات بریتانیا",
+        ti: "ቤት ጽሕፈት ግብሪ",
+        zh: "英國稅務海關總署",
+      },
     },
     {
       word: "payslip",
       definition: "The paper or digital document that shows your pay",
-      translations: { ar: "قسيمة الراتب", so: "warqada mushaharka", fa: "فیش حقوقی", ti: "ቅብሊት ደመወዝ", zh: "工資單" },
+      translations: {
+        ar: "قسيمة الراتب",
+        so: "warqada mushaharka",
+        fa: "فیش حقوقی",
+        ti: "ቅብሊት ደመወዝ",
+        zh: "工資單",
+      },
     },
   ],
   grammarTargets: ["question forms", "comparative: more than / less than"],
@@ -133,9 +228,19 @@ export const S2_PAYSLIP: ScenarioUnit = {
   roleplayPrompt:
     "Help the learner understand a sample UK payslip with gross pay £1,500, tax £200, NI £100, net pay £1,200. Use the vocabulary naturally. Ask the learner to identify the figures. Recast errors. Praise specifically when they use new words correctly.",
   comprehensionQuestions: [
-    { q: "What is the difference between gross pay and net pay?", modelAnswer: "Gross pay is the total before tax. Net pay is what you receive after tax." },
-    { q: "What is HMRC?", modelAnswer: "His Majesty's Revenue and Customs — the UK tax office." },
-    { q: "Why is National Insurance taken from your pay?", modelAnswer: "It pays for the NHS and the state pension." },
+    {
+      q: "What is the difference between gross pay and net pay?",
+      modelAnswer:
+        "Gross pay is the total before tax. Net pay is what you receive after tax.",
+    },
+    {
+      q: "What is HMRC?",
+      modelAnswer: "His Majesty's Revenue and Customs — the UK tax office.",
+    },
+    {
+      q: "Why is National Insurance taken from your pay?",
+      modelAnswer: "It pays for the NHS and the state pension.",
+    },
   ],
   passThreshold: 0.7,
   culturalNotes:
@@ -149,23 +254,108 @@ export const S3_HOUSING: ScenarioUnit = {
   esolLevelRange: ["Entry 2", "Entry 3", "Level 1"],
   skillCodes: ["Sc", "Sd", "Rt"],
   vocabulary: [
-    { word: "tenancy", definition: "The legal agreement to rent a home", translations: { ar: "إيجار", so: "kirayn", fa: "اجاره", ti: "ክራይ", zh: "租約" } },
-    { word: "deposit", definition: "Money you pay at the start, returned at the end if no damage", translations: { ar: "وديعة", so: "deebaaji", fa: "ودیعه", ti: "ጥረዛ", zh: "押金" } },
-    { word: "landlord", definition: "The person or company who owns the home you rent", translations: { ar: "مالك العقار", so: "mulkiile", fa: "صاحبخانه", ti: "ዋና ቤት", zh: "房東" } },
-    { word: "repairs", definition: "Fixing things that are broken", translations: { ar: "إصلاحات", so: "dayactir", fa: "تعمیرات", ti: "ጽገና", zh: "維修" } },
-    { word: "notice period", definition: "The time you must give before leaving — usually 1 month", translations: { ar: "فترة الإشعار", so: "muddo ogeysiis", fa: "مدت اخطار", ti: "ግዜ ምልክታ", zh: "通知期" } },
-    { word: "council", definition: "The local government office", translations: { ar: "المجلس البلدي", so: "gole degmo", fa: "شورای محلی", ti: "ምምሕዳር", zh: "市議會" } },
-    { word: "housing benefit", definition: "Money the government gives to help pay rent", translations: { ar: "إعانة السكن", so: "kaalmo guriyeyn", fa: "کمک هزینه مسکن", ti: "ሓገዝ ቤት", zh: "住房補貼" } },
+    {
+      word: "tenancy",
+      definition: "The legal agreement to rent a home",
+      translations: {
+        ar: "إيجار",
+        so: "kirayn",
+        fa: "اجاره",
+        ti: "ክራይ",
+        zh: "租約",
+      },
+    },
+    {
+      word: "deposit",
+      definition:
+        "Money you pay at the start, returned at the end if no damage",
+      translations: {
+        ar: "وديعة",
+        so: "deebaaji",
+        fa: "ودیعه",
+        ti: "ጥረዛ",
+        zh: "押金",
+      },
+    },
+    {
+      word: "landlord",
+      definition: "The person or company who owns the home you rent",
+      translations: {
+        ar: "مالك العقار",
+        so: "mulkiile",
+        fa: "صاحبخانه",
+        ti: "ዋና ቤት",
+        zh: "房東",
+      },
+    },
+    {
+      word: "repairs",
+      definition: "Fixing things that are broken",
+      translations: {
+        ar: "إصلاحات",
+        so: "dayactir",
+        fa: "تعمیرات",
+        ti: "ጽገና",
+        zh: "維修",
+      },
+    },
+    {
+      word: "notice period",
+      definition: "The time you must give before leaving — usually 1 month",
+      translations: {
+        ar: "فترة الإشعار",
+        so: "muddo ogeysiis",
+        fa: "مدت اخطار",
+        ti: "ግዜ ምልክታ",
+        zh: "通知期",
+      },
+    },
+    {
+      word: "council",
+      definition: "The local government office",
+      translations: {
+        ar: "المجلس البلدي",
+        so: "gole degmo",
+        fa: "شورای محلی",
+        ti: "ምምሕዳር",
+        zh: "市議會",
+      },
+    },
+    {
+      word: "housing benefit",
+      definition: "Money the government gives to help pay rent",
+      translations: {
+        ar: "إعانة السكن",
+        so: "kaalmo guriyeyn",
+        fa: "کمک هزینه مسکن",
+        ti: "ሓገዝ ቤት",
+        zh: "住房補貼",
+      },
+    },
   ],
-  grammarTargets: ["modal verbs: must, should, have to", "rights and obligations"],
+  grammarTargets: [
+    "modal verbs: must, should, have to",
+    "rights and obligations",
+  ],
   modelDialogue:
     "Learner: I have a problem. The window in my flat is broken.\nTutor: I am sorry to hear that. Who is your landlord?\nLearner: A company. They do not answer.\nTutor: You have rights. The landlord must repair the window. You can call the council if the landlord does not respond.\nLearner: How much time?\nTutor: Usually 14 days for repairs. Keep records of when you contacted them.",
   roleplayPrompt:
     "Help the learner discuss a housing problem (broken window, mould, deposit dispute, or notice period). Explain UK tenant rights using simple language. Use the vocabulary. Reassure them — many UK tenants have similar concerns.",
   comprehensionQuestions: [
-    { q: "Who must repair the home?", modelAnswer: "The landlord — they have a legal duty to keep the home in good repair." },
-    { q: "What is housing benefit?", modelAnswer: "Money from the government to help pay rent if you are on a low income." },
-    { q: "How long is a typical notice period?", modelAnswer: "Usually 1 month for tenants, 2 months for landlords." },
+    {
+      q: "Who must repair the home?",
+      modelAnswer:
+        "The landlord — they have a legal duty to keep the home in good repair.",
+    },
+    {
+      q: "What is housing benefit?",
+      modelAnswer:
+        "Money from the government to help pay rent if you are on a low income.",
+    },
+    {
+      q: "How long is a typical notice period?",
+      modelAnswer: "Usually 1 month for tenants, 2 months for landlords.",
+    },
   ],
   passThreshold: 0.7,
   culturalNotes:
@@ -179,12 +369,72 @@ export const S4_TRANSPORT: ScenarioUnit = {
   esolLevelRange: ["Entry 1", "Entry 2", "Entry 3"],
   skillCodes: ["Lr", "Sc"],
   vocabulary: [
-    { word: "timetable", definition: "A list of times when buses or trains run", translations: { ar: "الجدول الزمني", so: "jadwal", fa: "جدول زمانی", ti: "ጊዜ ሰሌዳ", zh: "時刻表" } },
-    { word: "single", definition: "A one-way ticket", translations: { ar: "ذهاب فقط", so: "hal jiho", fa: "یک طرفه", ti: "ሓደ መንገዲ", zh: "單程" } },
-    { word: "return", definition: "A two-way ticket — go and come back", translations: { ar: "ذهاب وعودة", so: "tagid iyo soo noqod", fa: "رفت و برگشت", ti: "ምምላስ", zh: "往返" } },
-    { word: "platform", definition: "Where you wait for the train", translations: { ar: "الرصيف", so: "barxadda", fa: "سکو", ti: "መቐመጢ", zh: "月台" } },
-    { word: "delay", definition: "When the train or bus is late", translations: { ar: "تأخير", so: "daahid", fa: "تاخیر", ti: "ምድንጓይ", zh: "延誤" } },
-    { word: "Oyster card", definition: "A card you tap to pay for buses and trains in London", translations: { ar: "بطاقة أويستر", so: "kaarka Oyster", fa: "کارت اویستر", ti: "ካርዲ ኦይስተር", zh: "牡蠣卡" } },
+    {
+      word: "timetable",
+      definition: "A list of times when buses or trains run",
+      translations: {
+        ar: "الجدول الزمني",
+        so: "jadwal",
+        fa: "جدول زمانی",
+        ti: "ጊዜ ሰሌዳ",
+        zh: "時刻表",
+      },
+    },
+    {
+      word: "single",
+      definition: "A one-way ticket",
+      translations: {
+        ar: "ذهاب فقط",
+        so: "hal jiho",
+        fa: "یک طرفه",
+        ti: "ሓደ መንገዲ",
+        zh: "單程",
+      },
+    },
+    {
+      word: "return",
+      definition: "A two-way ticket — go and come back",
+      translations: {
+        ar: "ذهاب وعودة",
+        so: "tagid iyo soo noqod",
+        fa: "رفت و برگشت",
+        ti: "ምምላስ",
+        zh: "往返",
+      },
+    },
+    {
+      word: "platform",
+      definition: "Where you wait for the train",
+      translations: {
+        ar: "الرصيف",
+        so: "barxadda",
+        fa: "سکو",
+        ti: "መቐመጢ",
+        zh: "月台",
+      },
+    },
+    {
+      word: "delay",
+      definition: "When the train or bus is late",
+      translations: {
+        ar: "تأخير",
+        so: "daahid",
+        fa: "تاخیر",
+        ti: "ምድንጓይ",
+        zh: "延誤",
+      },
+    },
+    {
+      word: "Oyster card",
+      definition: "A card you tap to pay for buses and trains in London",
+      translations: {
+        ar: "بطاقة أويستر",
+        so: "kaarka Oyster",
+        fa: "کارت اویستر",
+        ti: "ካርዲ ኦይስተር",
+        zh: "牡蠣卡",
+      },
+    },
   ],
   grammarTargets: ["prepositions of place and time", "imperatives"],
   modelDialogue:
@@ -192,7 +442,10 @@ export const S4_TRANSPORT: ScenarioUnit = {
   roleplayPrompt:
     "Roleplay buying a ticket, asking for directions, or understanding a delay announcement. Use UK-specific vocabulary like Oyster, return, platform.",
   comprehensionQuestions: [
-    { q: "What is the difference between a single and a return?", modelAnswer: "Single is one-way. Return is there and back." },
+    {
+      q: "What is the difference between a single and a return?",
+      modelAnswer: "Single is one-way. Return is there and back.",
+    },
     { q: "Where do you wait for a train?", modelAnswer: "On the platform." },
   ],
   passThreshold: 0.7,
@@ -207,22 +460,103 @@ export const S5_WORKPLACE: ScenarioUnit = {
   esolLevelRange: ["Entry 3", "Level 1", "Level 2"],
   skillCodes: ["Sc", "Sd", "Wt"],
   vocabulary: [
-    { word: "shift", definition: "Your working hours — for example morning shift or night shift", translations: { ar: "وردية", so: "shaqo", fa: "شیفت", ti: "ስራሕ ግዜ", zh: "輪班" } },
-    { word: "manager", definition: "The person who is in charge of you at work", translations: { ar: "مدير", so: "maamule", fa: "مدیر", ti: "ኣካያዲ", zh: "經理" } },
-    { word: "colleague", definition: "A person you work with", translations: { ar: "زميل", so: "saaxiib shaqo", fa: "همکار", ti: "ብጻይ ስራሕ", zh: "同事" } },
-    { word: "break", definition: "A short rest from work", translations: { ar: "استراحة", so: "nasasho", fa: "استراحت", ti: "ዕረፍቲ", zh: "休息" } },
-    { word: "overtime", definition: "Extra hours you work, often paid more", translations: { ar: "العمل الإضافي", so: "shaqo dheeraad", fa: "اضافه کاری", ti: "ተወሳኺ ስራሕ", zh: "加班" } },
-    { word: "rota", definition: "The work schedule showing who works when", translations: { ar: "جدول العمل", so: "jadwalka shaqada", fa: "برنامه کاری", ti: "ሰሌዳ ስራሕ", zh: "排班表" } },
-    { word: "sick leave", definition: "Time off work because you are unwell", translations: { ar: "إجازة مرضية", so: "fasax xanuun", fa: "مرخصی استعلاجی", ti: "ዕረፍቲ ሕማም", zh: "病假" } },
+    {
+      word: "shift",
+      definition:
+        "Your working hours — for example morning shift or night shift",
+      translations: {
+        ar: "وردية",
+        so: "shaqo",
+        fa: "شیفت",
+        ti: "ስራሕ ግዜ",
+        zh: "輪班",
+      },
+    },
+    {
+      word: "manager",
+      definition: "The person who is in charge of you at work",
+      translations: {
+        ar: "مدير",
+        so: "maamule",
+        fa: "مدیر",
+        ti: "ኣካያዲ",
+        zh: "經理",
+      },
+    },
+    {
+      word: "colleague",
+      definition: "A person you work with",
+      translations: {
+        ar: "زميل",
+        so: "saaxiib shaqo",
+        fa: "همکار",
+        ti: "ብጻይ ስራሕ",
+        zh: "同事",
+      },
+    },
+    {
+      word: "break",
+      definition: "A short rest from work",
+      translations: {
+        ar: "استراحة",
+        so: "nasasho",
+        fa: "استراحت",
+        ti: "ዕረፍቲ",
+        zh: "休息",
+      },
+    },
+    {
+      word: "overtime",
+      definition: "Extra hours you work, often paid more",
+      translations: {
+        ar: "العمل الإضافي",
+        so: "shaqo dheeraad",
+        fa: "اضافه کاری",
+        ti: "ተወሳኺ ስራሕ",
+        zh: "加班",
+      },
+    },
+    {
+      word: "rota",
+      definition: "The work schedule showing who works when",
+      translations: {
+        ar: "جدول العمل",
+        so: "jadwalka shaqada",
+        fa: "برنامه کاری",
+        ti: "ሰሌዳ ስራሕ",
+        zh: "排班表",
+      },
+    },
+    {
+      word: "sick leave",
+      definition: "Time off work because you are unwell",
+      translations: {
+        ar: "إجازة مرضية",
+        so: "fasax xanuun",
+        fa: "مرخصی استعلاجی",
+        ti: "ዕረፍቲ ሕማም",
+        zh: "病假",
+      },
+    },
   ],
-  grammarTargets: ["polite requests", "conditional: if I... could you...", "reported speech"],
+  grammarTargets: [
+    "polite requests",
+    "conditional: if I... could you...",
+    "reported speech",
+  ],
   modelDialogue:
     "Learner: Excuse me, I am not feeling well today. Could I leave early?\nManager: I am sorry to hear that. Yes, you can. Please send a message to HR. Are you okay?\nLearner: I think I have a cold.\nManager: Take care. Get well soon.",
   roleplayPrompt:
     "Roleplay a workplace scenario: requesting time off, calling in sick, asking about a rota change, or speaking with a colleague. Practise polite UK workplace register.",
   comprehensionQuestions: [
-    { q: "How do you politely ask for time off?", modelAnswer: "Excuse me, could I... or I would like to ask if I can..." },
-    { q: "What is a rota?", modelAnswer: "The schedule showing who works when." },
+    {
+      q: "How do you politely ask for time off?",
+      modelAnswer: "Excuse me, could I... or I would like to ask if I can...",
+    },
+    {
+      q: "What is a rota?",
+      modelAnswer: "The schedule showing who works when.",
+    },
   ],
   passThreshold: 0.75,
   culturalNotes:

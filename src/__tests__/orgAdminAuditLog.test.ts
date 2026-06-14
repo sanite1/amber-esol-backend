@@ -16,7 +16,8 @@
  *  A13   reason field returned verbatim (the inspector-facing copy)
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 import { Types } from "mongoose";
 import Organisation from "../models/Organisation";
@@ -91,8 +92,16 @@ describe("listOrgAdminAuditLogService", () => {
     const orgOther = await createOrg("Other");
     const learner = await createUser(orgMine._id);
 
-    await seedAudit({ orgId: orgMine._id, learnerId: learner._id, reason: "mine 1" });
-    await seedAudit({ orgId: orgMine._id, learnerId: learner._id, reason: "mine 2" });
+    await seedAudit({
+      orgId: orgMine._id,
+      learnerId: learner._id,
+      reason: "mine 1",
+    });
+    await seedAudit({
+      orgId: orgMine._id,
+      learnerId: learner._id,
+      reason: "mine 2",
+    });
     await seedAudit({ orgId: orgOther._id, reason: "other 1" });
     await seedAudit({ orgId: orgOther._id, reason: "other 2" });
     await seedAudit({ orgId: orgOther._id, reason: "other 3" });
@@ -116,7 +125,9 @@ describe("listOrgAdminAuditLogService", () => {
     await seedAudit({ orgId: org._id, reason: "third", timestamp: t2 });
 
     const res = await listOrgAdminAuditLogService(org._id.toString(), {});
-    const rows = (res.data as { rows: Array<{ reason: string; timestamp: string }> }).rows;
+    const rows = (
+      res.data as { rows: Array<{ reason: string; timestamp: string }> }
+    ).rows;
     expect(rows.map((r) => r.reason)).toEqual(["third", "second", "first"]);
   });
 
@@ -135,10 +146,20 @@ describe("listOrgAdminAuditLogService", () => {
     });
     const data = res.data as {
       rows: Array<unknown>;
-      pagination: { page: number; limit: number; total: number; total_pages: number };
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        total_pages: number;
+      };
     };
     expect(data.rows).toHaveLength(10);
-    expect(data.pagination).toEqual({ page: 2, limit: 10, total: 25, total_pages: 3 });
+    expect(data.pagination).toEqual({
+      page: 2,
+      limit: 10,
+      total: 25,
+      total_pages: 3,
+    });
   });
 
   it("A4 — learner_id filter narrows the result set", async () => {
@@ -152,16 +173,31 @@ describe("listOrgAdminAuditLogService", () => {
     const res = await listOrgAdminAuditLogService(org._id.toString(), {
       learner_id: learnerA._id.toString(),
     });
-    const data = res.data as { rows: Array<{ reason: string }>; pagination: { total: number } };
+    const data = res.data as {
+      rows: Array<{ reason: string }>;
+      pagination: { total: number };
+    };
     expect(data.pagination.total).toBe(2);
     expect(data.rows.map((r) => r.reason).sort()).toEqual(["A1", "A2"]);
   });
 
   it("A5 — action filter narrows the result set", async () => {
     const org = await createOrg();
-    await seedAudit({ orgId: org._id, action: "level_change_confirmed", reason: "promotion" });
-    await seedAudit({ orgId: org._id, action: "session_completed", reason: "session" });
-    await seedAudit({ orgId: org._id, action: "session_completed", reason: "session 2" });
+    await seedAudit({
+      orgId: org._id,
+      action: "level_change_confirmed",
+      reason: "promotion",
+    });
+    await seedAudit({
+      orgId: org._id,
+      action: "session_completed",
+      reason: "session",
+    });
+    await seedAudit({
+      orgId: org._id,
+      action: "session_completed",
+      reason: "session 2",
+    });
 
     const res = await listOrgAdminAuditLogService(org._id.toString(), {
       action: "session_completed",
@@ -192,7 +228,10 @@ describe("listOrgAdminAuditLogService", () => {
       from: "2026-02-01",
       to: "2026-02-28",
     });
-    const data = res.data as { rows: Array<{ reason: string }>; pagination: { total: number } };
+    const data = res.data as {
+      rows: Array<{ reason: string }>;
+      pagination: { total: number };
+    };
     expect(data.pagination.total).toBe(1);
     expect(data.rows[0].reason).toBe("in window");
   });
@@ -212,7 +251,11 @@ describe("listOrgAdminAuditLogService", () => {
     });
 
     const res = await listOrgAdminAuditLogService(org._id.toString(), {});
-    const row = (res.data as { rows: Array<{ actor_name: string | null; actor_id: string | null }> }).rows[0];
+    const row = (
+      res.data as {
+        rows: Array<{ actor_name: string | null; actor_id: string | null }>;
+      }
+    ).rows[0];
     expect(row.actor_name).toBe("Ada Admin");
     expect(row.actor_id).toBe(actor._id.toString());
   });
@@ -230,7 +273,8 @@ describe("listOrgAdminAuditLogService", () => {
     });
 
     const res = await listOrgAdminAuditLogService(org._id.toString(), {});
-    const row = (res.data as { rows: Array<{ learner_name: string | null }> }).rows[0];
+    const row = (res.data as { rows: Array<{ learner_name: string | null }> })
+      .rows[0];
     expect(row.learner_name).toBe("Liam Learner");
   });
 
@@ -247,7 +291,11 @@ describe("listOrgAdminAuditLogService", () => {
     });
 
     const res = await listOrgAdminAuditLogService(org._id.toString(), {});
-    const row = (res.data as { rows: Array<{ actor_name: string | null; actor_type: string }> }).rows[0];
+    const row = (
+      res.data as {
+        rows: Array<{ actor_name: string | null; actor_type: string }>;
+      }
+    ).rows[0];
     expect(row.actor_name).toBeNull();
     expect(row.actor_type).toBe("system");
   });

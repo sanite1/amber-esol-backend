@@ -21,7 +21,7 @@ router.get("/ilr", isAdmin, ilrReportValidation(), downloadIlrCsv);
 router.get(
   "/integration-readiness",
   isOrgAdmin,
-  downloadIntegrationReadinessReport
+  downloadIntegrationReadinessReport,
 );
 
 export default router;

@@ -42,50 +42,121 @@ type Row = Record<RowKey, string>;
 
 // 50 British name pairs — keeps the CSV reading like a real cohort.
 const NAMES: [string, string][] = [
-  ["Oliver", "Smith"], ["Amelia", "Jones"], ["George", "Williams"],
-  ["Isla", "Taylor"], ["Noah", "Davies"], ["Mia", "Brown"],
-  ["Leo", "Wilson"], ["Ava", "Thomas"], ["Arthur", "Roberts"],
-  ["Lily", "Johnson"], ["Charlie", "Lewis"], ["Sophia", "Wright"],
-  ["Henry", "Robinson"], ["Grace", "Walker"], ["Jack", "Hall"],
-  ["Freya", "Young"], ["Theo", "King"], ["Daisy", "Allen"],
-  ["Oscar", "Scott"], ["Evie", "Green"], ["Lucas", "Adams"],
-  ["Poppy", "Baker"], ["Harry", "Carter"], ["Ruby", "Mitchell"],
-  ["Edward", "Bell"], ["Florence", "Cooper"], ["Alfie", "Reed"],
-  ["Ivy", "Stewart"], ["Joshua", "Murphy"], ["Alice", "Howard"],
-  ["Sebastian", "Ward"], ["Phoebe", "Cox"], ["Ethan", "Bennett"],
-  ["Eliza", "Russell"], ["Albert", "Watson"], ["Matilda", "Sanders"],
-  ["Reuben", "Foster"], ["Sienna", "Hughes"], ["Roman", "Powell"],
-  ["Esme", "Butler"], ["Casper", "Reid"], ["Aria", "Hayes"],
-  ["Jude", "Gibson"], ["Eleanor", "Knight"], ["Caleb", "Webb"],
-  ["Iris", "Hunter"], ["Aaron", "Murray"], ["Hazel", "Black"],
-  ["Levi", "Hudson"], ["Margot", "Owen"],
+  ["Oliver", "Smith"],
+  ["Amelia", "Jones"],
+  ["George", "Williams"],
+  ["Isla", "Taylor"],
+  ["Noah", "Davies"],
+  ["Mia", "Brown"],
+  ["Leo", "Wilson"],
+  ["Ava", "Thomas"],
+  ["Arthur", "Roberts"],
+  ["Lily", "Johnson"],
+  ["Charlie", "Lewis"],
+  ["Sophia", "Wright"],
+  ["Henry", "Robinson"],
+  ["Grace", "Walker"],
+  ["Jack", "Hall"],
+  ["Freya", "Young"],
+  ["Theo", "King"],
+  ["Daisy", "Allen"],
+  ["Oscar", "Scott"],
+  ["Evie", "Green"],
+  ["Lucas", "Adams"],
+  ["Poppy", "Baker"],
+  ["Harry", "Carter"],
+  ["Ruby", "Mitchell"],
+  ["Edward", "Bell"],
+  ["Florence", "Cooper"],
+  ["Alfie", "Reed"],
+  ["Ivy", "Stewart"],
+  ["Joshua", "Murphy"],
+  ["Alice", "Howard"],
+  ["Sebastian", "Ward"],
+  ["Phoebe", "Cox"],
+  ["Ethan", "Bennett"],
+  ["Eliza", "Russell"],
+  ["Albert", "Watson"],
+  ["Matilda", "Sanders"],
+  ["Reuben", "Foster"],
+  ["Sienna", "Hughes"],
+  ["Roman", "Powell"],
+  ["Esme", "Butler"],
+  ["Casper", "Reid"],
+  ["Aria", "Hayes"],
+  ["Jude", "Gibson"],
+  ["Eleanor", "Knight"],
+  ["Caleb", "Webb"],
+  ["Iris", "Hunter"],
+  ["Aaron", "Murray"],
+  ["Hazel", "Black"],
+  ["Levi", "Hudson"],
+  ["Margot", "Owen"],
 ];
 
 // 30 real UK postcodes across major MCAs — cycle to fill 50 rows.
 const POSTCODES = [
-  "SW1A 1AA", "E1 6AN", "NW1 2DB", "SE1 7PB", "W1A 1AA",
-  "EC1A 1BB", "WC1E 6BT", "N1 9GU", "E14 5AB", "SW7 2AZ",
-  "B1 1AA", "B2 4QA", "B15 2TT", "B4 7DA",
-  "S1 2HE", "S10 2JA", "S3 8RD", "S11 8NA",
-  "M1 1AE", "M14 5BD", "M3 4JE",
-  "LS1 4DT", "LS2 9JT", "LS6 4QB",
-  "BS1 4DJ", "BS8 1TH",
-  "NE1 4ST", "NE2 4HH",
-  "L1 8JQ", "L3 5UX",
+  "SW1A 1AA",
+  "E1 6AN",
+  "NW1 2DB",
+  "SE1 7PB",
+  "W1A 1AA",
+  "EC1A 1BB",
+  "WC1E 6BT",
+  "N1 9GU",
+  "E14 5AB",
+  "SW7 2AZ",
+  "B1 1AA",
+  "B2 4QA",
+  "B15 2TT",
+  "B4 7DA",
+  "S1 2HE",
+  "S10 2JA",
+  "S3 8RD",
+  "S11 8NA",
+  "M1 1AE",
+  "M14 5BD",
+  "M3 4JE",
+  "LS1 4DT",
+  "LS2 9JT",
+  "LS6 4QB",
+  "BS1 4DJ",
+  "BS8 1TH",
+  "NE1 4ST",
+  "NE2 4HH",
+  "L1 8JQ",
+  "L3 5UX",
 ];
 
 const L1S = [
-  "arabic", "somali", "dari", "pashto", "cantonese", "english", "other",
+  "arabic",
+  "somali",
+  "dari",
+  "pashto",
+  "cantonese",
+  "english",
+  "other",
 ];
 const LEVELS = ["e1", "e2", "e3", "l1", "l2"];
 const EMPS = [
-  "unemployed", "employed", "self_employed", "not_in_labour_market",
+  "unemployed",
+  "employed",
+  "self_employed",
+  "not_in_labour_market",
 ];
 const LLDD = [1, 2, 9];
 const AIMS = ["regulated", "non_regulated"];
 const NATIONALITIES = [
-  "Somali", "Afghan", "Syrian", "Eritrean", "Sudanese", "Iranian",
-  "Iraqi", "Hong Konger", "Ukrainian", "Albanian",
+  "Somali",
+  "Afghan",
+  "Syrian",
+  "Eritrean",
+  "Sudanese",
+  "Iranian",
+  "Iraqi",
+  "Hong Konger",
+  "Ukrainian",
+  "Albanian",
 ];
 
 // ── Problem row positions (1-indexed data rows) ──────────────────────
@@ -113,9 +184,9 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
  * Always ≥ 16 years old on the 2026-01-15 enrolment date used below.
  */
 const dobForRow = (idx: number): string => {
-  const year = 1970 + (idx % 35);            // 1970–2004
-  const month = ((idx * 5) % 12) + 1;        // 1–12
-  const day = ((idx * 11) % 28) + 1;         // 1–28 (safe across months)
+  const year = 1970 + (idx % 35); // 1970–2004
+  const month = ((idx * 5) % 12) + 1; // 1–12
+  const day = ((idx * 11) % 28) + 1; // 1–28 (safe across months)
   return `${year}-${pad2(month)}-${pad2(day)}`;
 };
 
@@ -123,8 +194,7 @@ const dobForRow = (idx: number): string => {
 const ulnForRow = (idx: number): string =>
   idx % 2 === 0 ? "" : String(1000000000 + idx * 7919).slice(0, 10);
 
-const emailForRow = (idx: number): string =>
-  `learner-${idx}@test-import.local`;
+const emailForRow = (idx: number): string => `learner-${idx}@test-import.local`;
 
 /**
  * Build the canonical (valid) version of row `idx`. Problem rows are
@@ -230,6 +300,6 @@ if (require.main === module) {
   // eslint-disable-next-line no-console
   console.log(
     `Wrote /tmp/test-bulk-import.csv (${original.length} bytes, 50 rows) ` +
-      `and /tmp/test-bulk-import-corrected.csv (${corrected.length} bytes, 5 rows)`
+      `and /tmp/test-bulk-import-corrected.csv (${corrected.length} bytes, 5 rows)`,
   );
 }

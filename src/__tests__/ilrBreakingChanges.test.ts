@@ -15,7 +15,8 @@
  * end-to-end.
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 // FALACache stub — irrelevant to these handler tests but the row
 // builder integration calls it. Always-valid keeps the tests focused.
@@ -168,7 +169,12 @@ describe("§3 applyFieldNameOverrides — SOC2000 → SOC field rename (Function
   });
 
   it("works for a full row's worth of headers", () => {
-    const canonicalHeaders = ["ULN", "SOC2000", "LearnAimRef", "LLDDHealthProb"];
+    const canonicalHeaders = [
+      "ULN",
+      "SOC2000",
+      "LearnAimRef",
+      "LLDDHealthProb",
+    ];
     const emitted = canonicalHeaders.map((h) =>
       applyFieldNameOverrides(h, overrides),
     );
@@ -246,7 +252,10 @@ describe("§4 handleExpiredLlddt — LLDDT code 15 expired (Function 13 To-Do 2.
 describe("§I — handlers wired through buildIlrRows", () => {
   // Bare-minimum config covering all four breaking-change rules.
   const seedConfig = async (overrides: Record<string, unknown> = {}) => {
-    await ComplianceConfig.deleteMany({ domain: "ilr", academic_year: ACADEMIC_YEAR });
+    await ComplianceConfig.deleteMany({
+      domain: "ilr",
+      academic_year: ACADEMIC_YEAR,
+    });
     const rules = {
       field_name_overrides: { SOC2000: "SOC" },
       valid_sof_codes: ["105", "107"],
@@ -297,11 +306,16 @@ describe("§I — handlers wired through buildIlrRows", () => {
     }> = {},
   ) => {
     const learner = await User.create({
-      firstname: "BC", lastname: "Learner",
+      firstname: "BC",
+      lastname: "Learner",
       email: `bc-${Date.now()}-${Math.random().toString(16).slice(2)}@bc.local`,
-      password: "x", phoneNumber: "07000000000",
-      role: "student", orgId,
-      isActive: true, status: "active", verified: true,
+      password: "x",
+      phoneNumber: "07000000000",
+      role: "student",
+      orgId,
+      isActive: true,
+      status: "active",
+      verified: true,
       dateOfBirth: new Date("1990-01-01"),
       sex: 1,
       esolOnboardedAt: new Date("2025-09-01"),
@@ -310,7 +324,9 @@ describe("§I — handlers wired through buildIlrRows", () => {
       esolLevel: "e2",
       sof_code: extras.sof_code === undefined ? "105" : extras.sof_code,
       english_prog_type:
-        extras.english_prog_type === undefined ? null : extras.english_prog_type,
+        extras.english_prog_type === undefined
+          ? null
+          : extras.english_prog_type,
     });
     // Bypass schema enum for expired LLDDT codes — the whole point
     // of §4 is handling legacy codes the live enum no longer accepts.
@@ -325,11 +341,17 @@ describe("§I — handlers wired through buildIlrRows", () => {
 
   const seedSession = (learnerId: unknown, orgId: unknown) =>
     AISession.create({
-      learnerId, orgId,
-      sessionMode: "BRIDGE", esolLevel: "e2",
-      turns: [], safeguardingFlagged: false, vocabIntroduced: [],
-      session_source: "ai_tutor", duration_mins: 60,
-      turn_scores: [], teaching_mode_sequence: [],
+      learnerId,
+      orgId,
+      sessionMode: "BRIDGE",
+      esolLevel: "e2",
+      turns: [],
+      safeguardingFlagged: false,
+      vocabIntroduced: [],
+      session_source: "ai_tutor",
+      duration_mins: 60,
+      turn_scores: [],
+      teaching_mode_sequence: [],
       start_time: new Date("2025-11-01T10:00:00Z"),
     });
 
@@ -411,8 +433,8 @@ describe("§I — handlers wired through buildIlrRows", () => {
     const out = await buildIlrRows(org._id.toString(), ACADEMIC_YEAR);
     const keys = Object.keys(out.rows[0]);
     expect(keys).toContain("LearnAimRef");
-    expect(keys).not.toContain("SOC2000");  // not on the row at all
-    expect(keys).not.toContain("SOC");      // also not — applied at writer
+    expect(keys).not.toContain("SOC2000"); // not on the row at all
+    expect(keys).not.toContain("SOC"); // also not — applied at writer
   });
 
   it("§I4 — §4 LLDDT 15 with remap → row carries llddt_remapped, value remapped", async () => {

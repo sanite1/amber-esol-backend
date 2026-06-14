@@ -11,7 +11,7 @@ import {
 export const listNotifications = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -27,7 +27,7 @@ export const listNotifications = async (
 export const getUnreadCount = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -43,7 +43,7 @@ export const getUnreadCount = async (
 export const markRead = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -59,7 +59,7 @@ export const markRead = async (
 export const markAllRead = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -75,7 +75,7 @@ export const markAllRead = async (
 export const deleteNotification = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();

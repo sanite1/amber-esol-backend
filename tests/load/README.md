@@ -70,15 +70,15 @@ done
 
 ## The seven scenarios
 
-| #  | File                            | Brief gate                                        |
-|----|---------------------------------|---------------------------------------------------|
-| 1  | `01-ai-sessions.js`             | p95 turn latency < 5 s under 50 concurrent VUs    |
-| 2  | `02-bulk-csv-import.js`         | p95 import < 30 s with 5 concurrent uploads       |
-| 3  | `03-dashboard-load.js`          | p95 cohort table < 2 s with 20 concurrent admins  |
-| 4  | `04-ilr-export.js`              | 202 accept < 500 ms, job complete < 60 s, CSV valid |
-| 5  | `05-queue-resilience.js`        | 500 jobs survive a worker kill+restart            |
-| 6  | `06-idempotency-retry.js`       | 10 concurrent triggers → 1 real export            |
-| 7  | `07-precache-perf.js`           | postcode p95 < 10 ms, safeguarding scan p95 < 5 ms |
+| #   | File                      | Brief gate                                          |
+| --- | ------------------------- | --------------------------------------------------- |
+| 1   | `01-ai-sessions.js`       | p95 turn latency < 5 s under 50 concurrent VUs      |
+| 2   | `02-bulk-csv-import.js`   | p95 import < 30 s with 5 concurrent uploads         |
+| 3   | `03-dashboard-load.js`    | p95 cohort table < 2 s with 20 concurrent admins    |
+| 4   | `04-ilr-export.js`        | 202 accept < 500 ms, job complete < 60 s, CSV valid |
+| 5   | `05-queue-resilience.js`  | 500 jobs survive a worker kill+restart              |
+| 6   | `06-idempotency-retry.js` | 10 concurrent triggers → 1 real export              |
+| 7   | `07-precache-perf.js`     | postcode p95 < 10 ms, safeguarding scan p95 < 5 ms  |
 
 Each scenario carries its own runnable invocation in the header
 comment of the `.js` file — those are the source of truth for
@@ -88,23 +88,23 @@ required env vars per scenario.
 
 ## Expected baselines
 
-These are the numbers a *clean* staging run should produce. A
+These are the numbers a _clean_ staging run should produce. A
 result outside the baseline band (above or below) is worth
 investigating even if the threshold passes.
 
-| Scenario | Metric                       | Baseline | Gate    |
-|----------|------------------------------|----------|---------|
-| 1        | `turn_latency_ms` p50        | 1.0 – 2.0 s | —      |
-| 1        | `turn_latency_ms` p95        | 2.5 – 4.5 s | < 5 s  |
-| 1        | `turn_latency_ms` p99        | 5 – 9 s    | < 10 s |
-| 2        | `import_duration_ms` p95     | 10 – 20 s  | < 30 s |
-| 3        | `dashboard_load_ms` p95      | 600 – 1200 ms | < 2 s |
-| 4        | `ilr_acceptance_ms` p95      | 150 – 350 ms | < 500 ms |
-| 4        | `ilr_completion_ms` p95      | 15 – 45 s    | < 60 s   |
-| 5        | drain time post worker-kill  | 1.5 – 4 min  | drained inside `DRAIN_TIMEOUT_S` |
-| 6        | unique `export_id` count     | 1          | exactly 1 |
-| 7        | `postcode_lookup_ms` p95     | 2 – 6 ms   | < 10 ms |
-| 7        | `safeguarding_scan_ms` p95   | 1 – 3 ms   | < 5 ms  |
+| Scenario | Metric                      | Baseline      | Gate                             |
+| -------- | --------------------------- | ------------- | -------------------------------- |
+| 1        | `turn_latency_ms` p50       | 1.0 – 2.0 s   | —                                |
+| 1        | `turn_latency_ms` p95       | 2.5 – 4.5 s   | < 5 s                            |
+| 1        | `turn_latency_ms` p99       | 5 – 9 s       | < 10 s                           |
+| 2        | `import_duration_ms` p95    | 10 – 20 s     | < 30 s                           |
+| 3        | `dashboard_load_ms` p95     | 600 – 1200 ms | < 2 s                            |
+| 4        | `ilr_acceptance_ms` p95     | 150 – 350 ms  | < 500 ms                         |
+| 4        | `ilr_completion_ms` p95     | 15 – 45 s     | < 60 s                           |
+| 5        | drain time post worker-kill | 1.5 – 4 min   | drained inside `DRAIN_TIMEOUT_S` |
+| 6        | unique `export_id` count    | 1             | exactly 1                        |
+| 7        | `postcode_lookup_ms` p95    | 2 – 6 ms      | < 10 ms                          |
+| 7        | `safeguarding_scan_ms` p95  | 1 – 3 ms      | < 5 ms                           |
 
 Baselines are guidelines. A consistent move outside the band over
 two consecutive runs is the signal to investigate.
@@ -139,6 +139,7 @@ k6 writes a final summary to stdout and (when `handleSummary` is
 defined, scenario 6) a `summary.json` file alongside the script.
 
 For the brief's gate criteria:
+
 - **PASS** when every threshold in `options.thresholds` is green.
 - **FAIL** when k6 exits non-zero. The first failing threshold is
   reported at the top of the output.
@@ -174,7 +175,7 @@ db.audit_logs.countDocuments({
   action: "ilr_export_completed",
   org_id: ObjectId("<org-id>"),
   "after_state.period_start": "<period-start>",
-  "after_state.period_end":   "<period-end>",
+  "after_state.period_end": "<period-end>",
 });
 // Expected: 1. Anything else means the cache short-circuit failed
 // and a duplicate AuditLog row was written.
@@ -188,7 +189,7 @@ header comment.
 ## Result archive
 
 When a staging run completes, capture the output in a dated
-RESULTS_<date>.md alongside `RESULTS_TEMPLATE.md`. The CI runner
+RESULTS\_<date>.md alongside `RESULTS_TEMPLATE.md`. The CI runner
 auto-archives; manual runs should follow the same pattern so the
 launch gate has a reviewable trail.
 

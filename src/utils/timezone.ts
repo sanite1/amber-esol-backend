@@ -8,7 +8,7 @@ import moment from "moment-timezone";
 export const toDateInTz = (
   date: string,
   time: string,
-  tz: string = "Europe/London"
+  tz: string = "Europe/London",
 ): Date => {
   return moment.tz(`${date} ${time}`, "YYYY-MM-DD HH:mm", tz).toDate();
 };
@@ -18,7 +18,7 @@ export const toDateInTz = (
  * YYYY-MM-DD date string and HH:mm time string for that timezone.
  */
 export const nowInTz = (
-  tz: string = "Europe/London"
+  tz: string = "Europe/London",
 ): { dateStr: string; timeStr: string; momentObj: moment.Moment } => {
   const m = moment.tz(tz);
   return {
@@ -47,7 +47,7 @@ export const currentTimeInTz = (tz: string = "Europe/London"): string => {
  */
 export const isTodayInTz = (
   dateStr: string,
-  tz: string = "Europe/London"
+  tz: string = "Europe/London",
 ): boolean => {
   return dateStr === todayInTz(tz);
 };
@@ -58,7 +58,7 @@ export const isTodayInTz = (
 export const hasLessonStarted = (
   date: string,
   startTime: string,
-  tz: string = "Europe/London"
+  tz: string = "Europe/London",
 ): boolean => {
   const lessonStart = toDateInTz(date, startTime, tz);
   return new Date() > lessonStart;
@@ -71,7 +71,7 @@ export const hasLessonEnded = (
   date: string,
   endTime: string,
   tz: string = "Europe/London",
-  graceMinutes: number = 0
+  graceMinutes: number = 0,
 ): boolean => {
   const lessonEnd = toDateInTz(date, endTime, tz);
   return Date.now() - lessonEnd.getTime() > graceMinutes * 60 * 1000;

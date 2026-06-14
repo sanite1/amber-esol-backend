@@ -57,7 +57,10 @@ const AUDIT_MAX_LIMIT = 200;
  * service. The two files have to agree on the encoding, and the test
  * suite asserts they do.
  */
-const COHORT_TO_TABLE_STATUS: Record<string, "active" | "inactive" | "dormant"> = {
+const COHORT_TO_TABLE_STATUS: Record<
+  string,
+  "active" | "inactive" | "dormant"
+> = {
   active: "active",
   new: "active",
   inactive_mild: "inactive",
@@ -93,7 +96,7 @@ export interface LearnerDetailQuery {
  * its $lookup sub-pipeline. One Mongo round-trip via aggregate().
  */
 const computeSessionAggregates = async (
-  learnerId: Types.ObjectId
+  learnerId: Types.ObjectId,
 ): Promise<{
   total_ai_mins: number;
   imported_mins: number;
@@ -108,7 +111,9 @@ const computeSessionAggregates = async (
         total_ai_mins: {
           $sum: {
             $cond: [
-              { $in: ["$session_source", ["ai_tutor", "teacher_consolidation"]] },
+              {
+                $in: ["$session_source", ["ai_tutor", "teacher_consolidation"]],
+              },
               { $ifNull: ["$duration_mins", 0] },
               0,
             ],
@@ -140,7 +145,7 @@ const computeSessionAggregates = async (
 };
 
 const decideLiveStatus = (
-  lastActive: Date | null
+  lastActive: Date | null,
 ): "active" | "inactive" | "dormant" | "unknown" => {
   if (!lastActive) return "unknown";
   const days = (Date.now() - lastActive.getTime()) / MS_PER_DAY;
@@ -159,38 +164,44 @@ export const getLearnerDetailService = async (
   learnerId: string,
   callerRole: string,
   callerOrgId: string | null | undefined,
-  query: LearnerDetailQuery = {}
+  query: LearnerDetailQuery = {},
 ): Promise<ApiResponse> => {
   // ── 1. THE access control gate. Nothing else runs until this
   //       succeeds. 404 vs 403 disambiguation handled by helper.
   const { learnerObjectId } = await assertLearnerAccess(
     learnerId,
     callerRole,
-    callerOrgId
+    callerOrgId,
   );
 
   // ── 2. Pagination inputs ──────────────────────────────────────────
   const sessionsPage = Math.max(
     1,
-    Math.floor(parseInt(query.sessions_page ?? "1", 10) || 1)
+    Math.floor(parseInt(query.sessions_page ?? "1", 10) || 1),
   );
   const sessionsLimit = Math.max(
     1,
     Math.min(
       SESSION_MAX_LIMIT,
-      Math.floor(parseInt(query.sessions_limit ?? String(SESSION_DEFAULT_LIMIT), 10) || SESSION_DEFAULT_LIMIT)
-    )
+      Math.floor(
+        parseInt(query.sessions_limit ?? String(SESSION_DEFAULT_LIMIT), 10) ||
+          SESSION_DEFAULT_LIMIT,
+      ),
+    ),
   );
   const auditPage = Math.max(
     1,
-    Math.floor(parseInt(query.audit_page ?? "1", 10) || 1)
+    Math.floor(parseInt(query.audit_page ?? "1", 10) || 1),
   );
   const auditLimit = Math.max(
     1,
     Math.min(
       AUDIT_MAX_LIMIT,
-      Math.floor(parseInt(query.audit_limit ?? String(AUDIT_DEFAULT_LIMIT), 10) || AUDIT_DEFAULT_LIMIT)
-    )
+      Math.floor(
+        parseInt(query.audit_limit ?? String(AUDIT_DEFAULT_LIMIT), 10) ||
+          AUDIT_DEFAULT_LIMIT,
+      ),
+    ),
   );
 
   // ── 3. Fan-out — all reads in parallel ────────────────────────────
@@ -218,7 +229,7 @@ export const getLearnerDetailService = async (
         "_id firstname lastname email l1Language esolLevel starting_level " +
           "esol_aim_type uln cohort_status stage3_objectives glh_teacher_contact " +
           "assigned_teacher_id last_session_at progression_notification_sent_at " +
-          "progression_notification_level skillWeaknessFlags createdAt"
+          "progression_notification_level skillWeaknessFlags createdAt",
       )
       .lean(),
     computeSessionAggregates(learnerObjectId),
@@ -234,7 +245,7 @@ export const getLearnerDetailService = async (
     VocabLedger.find({ learnerId: learnerObjectId })
       .select(
         "word definition_en times_encountered retained scenario_first_seen " +
-          "stage3_objective_id last_seen_at introducedAt"
+          "stage3_objective_id last_seen_at introducedAt",
       )
       .lean(),
     AISession.find({ learnerId: learnerObjectId })
@@ -243,26 +254,30 @@ export const getLearnerDetailService = async (
       .limit(sessionsLimit)
       .select(
         "_id sessionMode esolLevel scenario_id session_source duration_mins " +
-          "final_score passed completedAt createdAt start_time end_time"
+          "final_score passed completedAt createdAt start_time end_time",
       )
       .lean(),
     AISession.countDocuments({ learnerId: learnerObjectId }),
     LevelChange.find({ learnerId: learnerObjectId })
       .sort({ effectiveDate: 1, createdAt: 1 })
       .select(
-        "_id fromLevel toLevel reason triggerEvent effectiveDate createdAt changedBy"
+        "_id fromLevel toLevel reason triggerEvent effectiveDate createdAt changedBy",
       )
       .lean(),
     SafeguardingAlert.countDocuments({ learnerId: learnerObjectId }),
     TeacherReview.find({ learner_id: learnerObjectId })
       .sort({ created_at: 1 })
-      .select("_id teacher_id review_type duration_mins notes ai_recommendation_acted_on created_at")
+      .select(
+        "_id teacher_id review_type duration_mins notes ai_recommendation_acted_on created_at",
+      )
       .lean(),
     AuditLog.find({ learner_id: learnerObjectId })
       .sort({ timestamp: -1 })
       .skip((auditPage - 1) * auditLimit)
       .limit(auditLimit)
-      .select("_id timestamp actor_type actor_id action before_state after_state reason")
+      .select(
+        "_id timestamp actor_type actor_id action before_state after_state reason",
+      )
       .lean(),
     AuditLog.countDocuments({ learner_id: learnerObjectId }),
   ]);
@@ -283,7 +298,8 @@ export const getLearnerDetailService = async (
       .select("firstname lastname")
       .lean();
     if (teacherDoc) {
-      const name = `${teacherDoc.firstname ?? ""} ${teacherDoc.lastname ?? ""}`.trim();
+      const name =
+        `${teacherDoc.firstname ?? ""} ${teacherDoc.lastname ?? ""}`.trim();
       assignedTeacherName = name.length > 0 ? name : null;
     }
   }
@@ -295,13 +311,14 @@ export const getLearnerDetailService = async (
   const total_ai_hours = roundHour(sessionAgg.total_ai_mins);
   const imported_hours = roundHour(sessionAgg.imported_mins);
   const teacher_contact_hours = learner.glh_teacher_contact ?? 0;
-  const total_glh = Math.round(
-    (total_ai_hours + imported_hours + teacher_contact_hours) * 10
-  ) / 10;
+  const total_glh =
+    Math.round((total_ai_hours + imported_hours + teacher_contact_hours) * 10) /
+    10;
 
   const cohortBand = learner.cohort_status as string | null | undefined;
   const status: "active" | "inactive" | "dormant" | "unknown" = cohortBand
-    ? COHORT_TO_TABLE_STATUS[cohortBand] ?? decideLiveStatus(sessionAgg.last_active)
+    ? (COHORT_TO_TABLE_STATUS[cohortBand] ??
+      decideLiveStatus(sessionAgg.last_active))
     : decideLiveStatus(sessionAgg.last_active);
 
   const starting_level =
@@ -320,13 +337,19 @@ export const getLearnerDetailService = async (
     .sort(
       (a, b) =>
         new Date((a as { introducedAt?: Date }).introducedAt ?? 0).getTime() -
-        new Date((b as { introducedAt?: Date }).introducedAt ?? 0).getTime()
+        new Date((b as { introducedAt?: Date }).introducedAt ?? 0).getTime(),
     );
   const in_progress = vocabRows
     .filter((r) => (r as { retained?: boolean }).retained !== true)
     .sort((a, b) => {
-      const ax = a as { last_seen_at?: Date | null; times_encountered?: number };
-      const bx = b as { last_seen_at?: Date | null; times_encountered?: number };
+      const ax = a as {
+        last_seen_at?: Date | null;
+        times_encountered?: number;
+      };
+      const bx = b as {
+        last_seen_at?: Date | null;
+        times_encountered?: number;
+      };
       const at = ax.last_seen_at ? new Date(ax.last_seen_at).getTime() : 0;
       const bt = bx.last_seen_at ? new Date(bx.last_seen_at).getTime() : 0;
       if (at !== bt) return at - bt;
@@ -367,7 +390,8 @@ export const getLearnerDetailService = async (
         learner.progression_notification_sent_at instanceof Date
           ? learner.progression_notification_sent_at.toISOString()
           : null,
-      progression_notification_level: learner.progression_notification_level ?? null,
+      progression_notification_level:
+        learner.progression_notification_level ?? null,
     },
     stage3_objectives: learner.stage3_objectives ?? [],
     vocab_ledger: {

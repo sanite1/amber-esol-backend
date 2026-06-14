@@ -16,20 +16,22 @@ import logger from "../config/logger";
 export const checkGeminiHealth = async (
   _req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { latencyMs } = await pingGemini();
     return res
       .status(200)
-      .json(new ApiResponse(200, "Gemini OK", { ok: true, latency_ms: latencyMs }));
+      .json(
+        new ApiResponse(200, "Gemini OK", { ok: true, latency_ms: latencyMs }),
+      );
   } catch (err) {
     logger.error({ err }, "Gemini health probe failed");
     return next(
       new ApiError(
         503,
-        `Gemini health probe failed: ${(err as Error).message}`
-      )
+        `Gemini health probe failed: ${(err as Error).message}`,
+      ),
     );
   }
 };
@@ -44,25 +46,20 @@ export const checkGeminiHealth = async (
 export const checkRedisHealth = async (
   _req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { latencyMs } = await pingRedis();
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(200, "Redis OK", {
-          connected: true,
-          latency_ms: latencyMs,
-        })
-      );
+    return res.status(200).json(
+      new ApiResponse(200, "Redis OK", {
+        connected: true,
+        latency_ms: latencyMs,
+      }),
+    );
   } catch (err) {
     logger.error({ err }, "Redis health probe failed");
     return next(
-      new ApiError(
-        503,
-        `Redis health probe failed: ${(err as Error).message}`
-      )
+      new ApiError(503, `Redis health probe failed: ${(err as Error).message}`),
     );
   }
 };

@@ -139,7 +139,7 @@ const listBookingsSchema = {
         "cancelled_student",
         "cancelled_tutor",
         "cancelled_admin",
-        "no_show"
+        "no_show",
       )
       .optional()
       .messages({

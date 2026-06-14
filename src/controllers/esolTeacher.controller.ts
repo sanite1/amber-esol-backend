@@ -31,7 +31,7 @@ export const approveTeacher: ExpressFunction = async (req, res, next) => {
 export const updateTeacherQualifications: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const params = req.params as Record<string, string>;
@@ -39,7 +39,7 @@ export const updateTeacherQualifications: ExpressFunction = async (
       params.tutorId,
       req.user!.id.toString(),
       req.user!.role,
-      req.body as any
+      req.body as any,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -50,7 +50,7 @@ export const updateTeacherQualifications: ExpressFunction = async (
 export const revokeTeacherApproval: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const params = req.params as Record<string, string>;
@@ -71,7 +71,7 @@ export const applyEsolTeacher: ExpressFunction = async (req, res, next) => {
     }
     if (req.user?.role !== "tutor") {
       return next(
-        new ApiError(403, "Only tutors can apply for ESOL teacher status")
+        new ApiError(403, "Only tutors can apply for ESOL teacher status"),
       );
     }
     const data = await applyEsolTeacherService(callerId, req.body as any);
@@ -86,7 +86,7 @@ export const applyEsolTeacher: ExpressFunction = async (req, res, next) => {
 export const adminApproveEsolTeacher: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const params = req.params as Record<string, string>;
@@ -105,7 +105,7 @@ export const adminApproveEsolTeacher: ExpressFunction = async (
 export const adminRejectEsolTeacher: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const params = req.params as Record<string, string>;

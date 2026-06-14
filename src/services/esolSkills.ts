@@ -40,10 +40,15 @@ import type { IUser } from "../interfaces/user.interface";
 export type ForSkillsDomain = "reading" | "writing" | "listening" | "speaking";
 
 export type IlrSkillCode =
-  | "Rt" | "Rs" | "Rw"
-  | "Wt" | "Ws" | "Ww"
+  | "Rt"
+  | "Rs"
+  | "Rw"
+  | "Wt"
+  | "Ws"
+  | "Ww"
   | "Lr"
-  | "Sc" | "Sd";
+  | "Sc"
+  | "Sd";
 
 export type EsolLevel = "e1" | "e2" | "e3" | "l1" | "l2";
 
@@ -70,16 +75,17 @@ export const ALL_ILR_CODES: IlrSkillCode[] = (
 ).flat();
 
 /** Reverse lookup — useful when reasoning about a single ILR code. */
-export const ILR_CODE_TO_DOMAIN: Record<IlrSkillCode, ForSkillsDomain> = (() => {
-  const out = {} as Record<IlrSkillCode, ForSkillsDomain>;
-  for (const [dom, codes] of Object.entries(DOMAIN_TO_ILR_CODES) as [
-    ForSkillsDomain,
-    IlrSkillCode[],
-  ][]) {
-    for (const c of codes) out[c] = dom;
-  }
-  return out;
-})();
+export const ILR_CODE_TO_DOMAIN: Record<IlrSkillCode, ForSkillsDomain> =
+  (() => {
+    const out = {} as Record<IlrSkillCode, ForSkillsDomain>;
+    for (const [dom, codes] of Object.entries(DOMAIN_TO_ILR_CODES) as [
+      ForSkillsDomain,
+      IlrSkillCode[],
+    ][]) {
+      for (const c of codes) out[c] = dom;
+    }
+    return out;
+  })();
 
 // ─────────────────────────────────────────────────────────────────────
 // Pass thresholds — PLACEHOLDER pending NCFE / DfE confirmation
@@ -141,7 +147,7 @@ export const ilrCodeToDomain = (code: IlrSkillCode): ForSkillsDomain => {
  */
 export const flagWeakSkills = (
   scores: DomainScores,
-  level: EsolLevel
+  level: EsolLevel,
 ): IlrSkillCode[] => {
   const threshold = LEVEL_PASS_THRESHOLD[level];
   const flags: IlrSkillCode[] = [];
@@ -149,8 +155,7 @@ export const flagWeakSkills = (
   if (scores.writing < threshold) flags.push(...DOMAIN_TO_ILR_CODES.writing);
   if (scores.listening < threshold)
     flags.push(...DOMAIN_TO_ILR_CODES.listening);
-  if (scores.speaking < threshold)
-    flags.push(...DOMAIN_TO_ILR_CODES.speaking);
+  if (scores.speaking < threshold) flags.push(...DOMAIN_TO_ILR_CODES.speaking);
   return flags;
 };
 
@@ -166,7 +171,7 @@ export const flagWeakSkills = (
  */
 export const mergeWeaknessFlags = (
   existing: IUser["skillWeaknessFlags"] = [],
-  incoming: IlrSkillCode[]
+  incoming: IlrSkillCode[],
 ): IlrSkillCode[] => {
   const set = new Set<string>([...(existing ?? []), ...incoming]);
   return ALL_ILR_CODES.filter((c) => set.has(c));

@@ -40,7 +40,7 @@ const getZoomAccessToken = async (): Promise<string> => {
   }
 
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
-    "base64"
+    "base64",
   );
 
   const response = await fetch(
@@ -51,14 +51,14 @@ const getZoomAccessToken = async (): Promise<string> => {
         "Content-Type": "application/x-www-form-urlencoded",
         Authorization: `Basic ${credentials}`,
       },
-    }
+    },
   );
 
   if (!response.ok) {
     const errorBody = await response.text();
     logger.error(
       { status: response.status, body: errorBody },
-      "Zoom token request failed"
+      "Zoom token request failed",
     );
     throw new Error(`Zoom token request failed: ${response.status}`);
   }
@@ -86,7 +86,7 @@ export const createZoomMeeting = async (
   tutorName: string,
   studentName: string,
   lessonType: string,
-  specialty?: string
+  specialty?: string,
 ): Promise<string | null> => {
   // Guard: skip if Zoom is not configured
   if (
@@ -141,7 +141,7 @@ export const createZoomMeeting = async (
       const errorBody = await response.text();
       logger.error(
         { status: response.status, body: errorBody },
-        "Zoom meeting creation failed"
+        "Zoom meeting creation failed",
       );
       return null;
     }

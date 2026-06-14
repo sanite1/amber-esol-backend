@@ -25,7 +25,10 @@ const generateSlug = (name: string): string =>
 export const provisionOrgService = async (data: IProvisionOrgRequest) => {
   const existingUser = await User.findOne({ email: data.adminEmail });
   if (existingUser) {
-    throw new ApiError(400, `A user with email ${data.adminEmail} already exists`);
+    throw new ApiError(
+      400,
+      `A user with email ${data.adminEmail} already exists`,
+    );
   }
 
   validatePassword(data.adminPassword);
@@ -61,7 +64,9 @@ export const provisionOrgService = async (data: IProvisionOrgRequest) => {
     contactName: data.contactName,
     phoneNumber: data.phoneNumber,
     address: data.address,
-    contractStart: data.contractStart ? new Date(data.contractStart) : undefined,
+    contractStart: data.contractStart
+      ? new Date(data.contractStart)
+      : undefined,
     contractEnd: data.contractEnd ? new Date(data.contractEnd) : undefined,
     paymentModel: data.paymentModel,
     invoiceCycle: data.invoiceCycle,
@@ -125,11 +130,11 @@ export const getOrgService = async (
   orgId: string,
   callerId: string,
   callerRole: string,
-  callerOrgId?: string | null
+  callerOrgId?: string | null,
 ) => {
   const org = await Organisation.findById(orgId).populate(
     "adminUserId",
-    "firstname lastname email"
+    "firstname lastname email",
   );
   if (!org) {
     throw new ApiError(404, "Organisation not found");
@@ -139,17 +144,22 @@ export const getOrgService = async (
     throw new ApiError(403, "Access denied to this organisation");
   }
 
-  return new ApiResponse(200, "Organisation retrieved successfully", org.toJSON());
+  return new ApiResponse(
+    200,
+    "Organisation retrieved successfully",
+    org.toJSON(),
+  );
 };
 
 /* ── Update Organisation ── */
 
 export const updateOrgService = async (
   orgId: string,
-  data: IUpdateOrganisationRequest
+  data: IUpdateOrganisationRequest,
 ) => {
   const updateData: any = { ...data };
-  if (data.contractStart) updateData.contractStart = new Date(data.contractStart);
+  if (data.contractStart)
+    updateData.contractStart = new Date(data.contractStart);
   if (data.contractEnd) updateData.contractEnd = new Date(data.contractEnd);
 
   const org = await Organisation.findByIdAndUpdate(orgId, updateData, {
@@ -160,24 +170,32 @@ export const updateOrgService = async (
     throw new ApiError(404, "Organisation not found");
   }
 
-  return new ApiResponse(200, "Organisation updated successfully", org.toJSON());
+  return new ApiResponse(
+    200,
+    "Organisation updated successfully",
+    org.toJSON(),
+  );
 };
 
 /* ── Update Organisation Status ── */
 
 export const updateOrgStatusService = async (
   orgId: string,
-  isActive: boolean
+  isActive: boolean,
 ) => {
   const org = await Organisation.findByIdAndUpdate(
     orgId,
     { isActive },
-    { new: true }
+    { new: true },
   );
   if (!org) {
     throw new ApiError(404, "Organisation not found");
   }
 
   const statusLabel = isActive ? "activated" : "deactivated";
-  return new ApiResponse(200, `Organisation ${statusLabel} successfully`, org.toJSON());
+  return new ApiResponse(
+    200,
+    `Organisation ${statusLabel} successfully`,
+    org.toJSON(),
+  );
 };

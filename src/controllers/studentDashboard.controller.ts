@@ -6,7 +6,7 @@ import { getStudentDashboardService } from "../services/studentDashboard.service
 export const getStudentDashboard = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id;
@@ -16,7 +16,7 @@ export const getStudentDashboard = async (
 
     const result = await getStudentDashboardService(
       userId.toString(),
-      req.query as any
+      req.query as any,
     );
 
     return res.status(result.statusCode).json({

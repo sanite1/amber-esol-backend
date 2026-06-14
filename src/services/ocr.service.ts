@@ -44,7 +44,7 @@ const extractResidencyDate = (text: string): Date | null => {
 
   // Written month: 25 March 2024
   const written = text.match(
-    /(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})/i
+    /(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})/i,
   );
   if (written) {
     return new Date(`${written[1]} ${written[2]} ${written[3]}`);
@@ -54,7 +54,7 @@ const extractResidencyDate = (text: string): Date | null => {
 };
 
 export const ocrResidencyDocument = async (
-  imageBuffer: Buffer
+  imageBuffer: Buffer,
 ): Promise<OcrResult> => {
   // Mock mode — skip the actual GCP call
   if (process.env.MOCK_OCR === "true") {
@@ -70,7 +70,7 @@ export const ocrResidencyDocument = async (
   if (!process.env.GCP_PROJECT_ID) {
     throw new ApiError(
       500,
-      "OCR is not configured (GCP_PROJECT_ID missing). Set MOCK_OCR=true for local dev."
+      "OCR is not configured (GCP_PROJECT_ID missing). Set MOCK_OCR=true for local dev.",
     );
   }
 

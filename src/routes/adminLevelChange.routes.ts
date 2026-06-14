@@ -30,7 +30,7 @@ router.post(
   "/confirm",
   isAdmin,
   confirmLevelChangeValidation(),
-  confirmLevelChange
+  confirmLevelChange,
 );
 
 /* ── POST /api/admin/level-change/reject ─────────────────────────── */
@@ -38,7 +38,7 @@ router.post(
   "/reject",
   isAdmin,
   rejectLevelChangeValidation(),
-  rejectLevelChange
+  rejectLevelChange,
 );
 
 export default router;

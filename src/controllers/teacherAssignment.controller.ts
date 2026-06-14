@@ -17,9 +17,7 @@ import {
   AssignTeacherToLearnerBody,
 } from "../services/teacherAssignment.service";
 
-const resolveOrgId = (
-  req: Parameters<ExpressFunction>[0],
-): string =>
+const resolveOrgId = (req: Parameters<ExpressFunction>[0]): string =>
   (req as typeof req & { esol_context?: { org_id?: string } }).esol_context
     ?.org_id ??
   (req.user?.orgId as string | null | undefined) ??
@@ -70,7 +68,11 @@ export const removeTeacherFromOrg: ExpressFunction = async (req, res, next) => {
     const orgId = resolveOrgId(req);
     const { teacherId } = req.params as { teacherId: string };
     const callerId = req.user!.id.toString();
-    const result = await removeTeacherFromOrgService(orgId, teacherId, callerId);
+    const result = await removeTeacherFromOrgService(
+      orgId,
+      teacherId,
+      callerId,
+    );
     return res.status(result.statusCode).json({
       message: result.message,
       data: result.data,
@@ -84,7 +86,11 @@ export const removeTeacherFromOrg: ExpressFunction = async (req, res, next) => {
 // PATCH /api/org-admin/learners/:learnerId/teacher
 // ─────────────────────────────────────────────────────────────────────
 
-export const assignTeacherToLearner: ExpressFunction = async (req, res, next) => {
+export const assignTeacherToLearner: ExpressFunction = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const orgId = resolveOrgId(req);
     const { learnerId } = req.params as { learnerId: string };

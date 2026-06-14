@@ -16,7 +16,11 @@ import { IStage5Review } from "../interfaces/stage5Review.interface";
 const stage5ReviewSchema = new Schema<IStage5Review>(
   {
     learner_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    org_id: { type: Schema.Types.ObjectId, ref: "Organisation", required: true },
+    org_id: {
+      type: Schema.Types.ObjectId,
+      ref: "Organisation",
+      required: true,
+    },
     level_completed: { type: String, required: true }, // e1/e2/e3/l1/l2
     stage3_objectives: { type: Schema.Types.Mixed, default: [] },
     learner_self_assessment: { type: Schema.Types.Mixed, default: null },
@@ -59,7 +63,7 @@ const stage5ReviewSchema = new Schema<IStage5Review>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 stage5ReviewSchema.index({ learner_id: 1, createdAt: -1 });

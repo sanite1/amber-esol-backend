@@ -57,7 +57,7 @@ const timeToMinutes = (time: string): number => {
 
 export const createBookingService = async (
   studentId: string,
-  data: ICreateBookingRequest
+  data: ICreateBookingRequest,
 ) => {
   // ── ESOL consolidation branch (brief §2 Change 1) ──────────────────
   // org-invoiced, no Stripe. Routed to a dedicated function so the
@@ -99,7 +99,7 @@ export const createBookingService = async (
     if (existingTrial) {
       throw new ApiError(
         400,
-        "You have already booked a trial lesson with this tutor"
+        "You have already booked a trial lesson with this tutor",
       );
     }
   }
@@ -125,7 +125,7 @@ export const createBookingService = async (
     if (reqDate > maxDate) {
       throw new ApiError(
         400,
-        `Date ${slotDate} is beyond the maximum booking advance of ${availability.maxBookingAdvance} days`
+        `Date ${slotDate} is beyond the maximum booking advance of ${availability.maxBookingAdvance} days`,
       );
     }
 
@@ -138,7 +138,7 @@ export const createBookingService = async (
     if (conflict) {
       throw new ApiError(
         400,
-        `Slot ${slot.startTime} on ${slotDate} is already booked`
+        `Slot ${slot.startTime} on ${slotDate} is already booked`,
       );
     }
 
@@ -150,7 +150,7 @@ export const createBookingService = async (
     if (override) {
       throw new ApiError(
         400,
-        `Tutor is unavailable on ${slotDate}${override.reason ? `: ${override.reason}` : ""}`
+        `Tutor is unavailable on ${slotDate}${override.reason ? `: ${override.reason}` : ""}`,
       );
     }
   }
@@ -232,7 +232,7 @@ export const createBookingService = async (
 
     await Booking.updateMany(
       { _id: { $in: bookings.map((b) => b._id) } },
-      { $set: { stripeCheckoutSessionId: session.id } }
+      { $set: { stripeCheckoutSessionId: session.id } },
     );
 
     checkoutUrl = session.url;
@@ -261,7 +261,7 @@ export const createBookingService = async (
       totalSlots: data.slots.length,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating booking notification")
+    logger.error({ err }, "Error creating booking notification"),
   );
 
   if (isFree && autoConfirm) {
@@ -278,7 +278,7 @@ export const createBookingService = async (
         startTime: firstSlot.startTime,
       },
     }).catch((err) =>
-      logger.error({ err }, "Error creating confirmed notification")
+      logger.error({ err }, "Error creating confirmed notification"),
     );
   }
 
@@ -315,7 +315,7 @@ export const createBookingService = async (
  */
 const createEsolConsolidationBooking = async (
   studentId: string,
-  data: ICreateBookingRequest
+  data: ICreateBookingRequest,
 ) => {
   // 1. Learner validation — must be a student with an assigned org
   const learner = await User.findById(studentId);
@@ -325,7 +325,7 @@ const createEsolConsolidationBooking = async (
   if (!learner.orgId) {
     throw new ApiError(
       400,
-      "Learner is not assigned to an organisation — esol_consolidation requires an org context"
+      "Learner is not assigned to an organisation — esol_consolidation requires an org context",
     );
   }
 
@@ -340,7 +340,7 @@ const createEsolConsolidationBooking = async (
   if (teacher.esolTeacherApproved !== true) {
     throw new ApiError(
       400,
-      "Tutor is not approved for ESOL sessions. Amber admin must set esol_teacher_approved before this booking can be made."
+      "Tutor is not approved for ESOL sessions. Amber admin must set esol_teacher_approved before this booking can be made.",
     );
   }
 
@@ -352,13 +352,13 @@ const createEsolConsolidationBooking = async (
   if (org.billing_active === false) {
     throw new ApiError(
       400,
-      "Organisation billing is not active — cannot create invoiced bookings"
+      "Organisation billing is not active — cannot create invoiced bookings",
     );
   }
   if (!org.esol_session_rate || org.esol_session_rate <= 0) {
     throw new ApiError(
       400,
-      "Organisation has no esol_session_rate configured. Amber admin must set this before booking ESOL sessions for this org."
+      "Organisation has no esol_session_rate configured. Amber admin must set this before booking ESOL sessions for this org.",
     );
   }
   const pricePerSlot = org.esol_session_rate;
@@ -382,7 +382,7 @@ const createEsolConsolidationBooking = async (
     if (reqDate > maxDate) {
       throw new ApiError(
         400,
-        `Date ${slot.date} is beyond the maximum booking advance of ${availability.maxBookingAdvance} days`
+        `Date ${slot.date} is beyond the maximum booking advance of ${availability.maxBookingAdvance} days`,
       );
     }
 
@@ -395,7 +395,7 @@ const createEsolConsolidationBooking = async (
     if (conflict) {
       throw new ApiError(
         400,
-        `Slot ${slot.startTime} on ${slot.date} is already booked`
+        `Slot ${slot.startTime} on ${slot.date} is already booked`,
       );
     }
 
@@ -407,7 +407,7 @@ const createEsolConsolidationBooking = async (
     if (override) {
       throw new ApiError(
         400,
-        `Tutor is unavailable on ${slot.date}${override.reason ? `: ${override.reason}` : ""}`
+        `Tutor is unavailable on ${slot.date}${override.reason ? `: ${override.reason}` : ""}`,
       );
     }
   }
@@ -450,7 +450,7 @@ const createEsolConsolidationBooking = async (
           `${teacher.firstname} ${teacher.lastname}`,
           `${learner.firstname} ${learner.lastname}`,
           "esol_consolidation",
-          data.specialty
+          data.specialty,
         );
         if (zoomUrl) {
           await Booking.findByIdAndUpdate(booking._id, { meetingUrl: zoomUrl });
@@ -458,10 +458,10 @@ const createEsolConsolidationBooking = async (
       } catch (err) {
         logger.error(
           { err, bookingId: booking._id },
-          "Zoom meeting creation failed for esol_consolidation booking"
+          "Zoom meeting creation failed for esol_consolidation booking",
         );
       }
-    })
+    }),
   );
 
   // 7. Wallet credit + Transaction record.
@@ -500,11 +500,11 @@ const createEsolConsolidationBooking = async (
   await appendBookingsToMonthlyDraftInvoice(
     learner.orgId.toString(),
     bookings as unknown as Array<{
-      _id: typeof bookings[number]["_id"];
+      _id: (typeof bookings)[number]["_id"];
       date: string;
       price: number;
     }>,
-    pricePerSlot
+    pricePerSlot,
   );
 
   // 9. Emails + notifications. Auto-confirmed → send the "confirmed"
@@ -521,7 +521,7 @@ const createEsolConsolidationBooking = async (
     bookings: bookings as any,
     totalPrice: totalAmount,
   }).catch((err) =>
-    logger.error({ err }, "ESOL consolidation confirmation email failed")
+    logger.error({ err }, "ESOL consolidation confirmation email failed"),
   );
 
   createNotification({
@@ -537,7 +537,7 @@ const createEsolConsolidationBooking = async (
       totalSlots: data.slots.length,
     },
   }).catch((err) =>
-    logger.error({ err }, "ESOL consolidation tutor notification failed")
+    logger.error({ err }, "ESOL consolidation tutor notification failed"),
   );
 
   createNotification({
@@ -552,15 +552,15 @@ const createEsolConsolidationBooking = async (
       type: "esol_consolidation",
     },
   }).catch((err) =>
-    logger.error({ err }, "ESOL consolidation learner notification failed")
+    logger.error({ err }, "ESOL consolidation learner notification failed"),
   );
 
   return new ApiResponse(201, "ESOL consolidation booking created", {
     bookings: bookings.map((b) => b.toJSON()),
     bookingGroupId: bookingGroupId || null,
-    checkoutUrl: null,           // explicitly null — no Stripe flow
+    checkoutUrl: null, // explicitly null — no Stripe flow
     totalPrice: totalAmount,
-    paymentRequired: false,      // organisation will be invoiced
+    paymentRequired: false, // organisation will be invoiced
     invoicedToOrg: true,
   });
 };
@@ -583,7 +583,7 @@ const appendBookingsToMonthlyDraftInvoice = async (
     date: string;
     price: number;
   }>,
-  unitPrice: number
+  unitPrice: number,
 ): Promise<void> => {
   const now = new Date();
   const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -593,12 +593,12 @@ const appendBookingsToMonthlyDraftInvoice = async (
     0,
     23,
     59,
-    59
+    59,
   );
 
   const lineAmount = unitPrice * bookings.length;
   const bookingIds = bookings.map((b) =>
-    typeof b._id === "string" ? b._id : b._id.toString()
+    typeof b._id === "string" ? b._id : b._id.toString(),
   );
   const dateSpan =
     bookings.length === 1
@@ -629,7 +629,7 @@ const appendBookingsToMonthlyDraftInvoice = async (
   }
 
   const yyyymm = `${periodStart.getFullYear()}${String(
-    periodStart.getMonth() + 1
+    periodStart.getMonth() + 1,
   ).padStart(2, "0")}`;
   const orgSuffix = orgId.slice(-6);
   const random = randomUUID().slice(0, 8);
@@ -660,7 +660,7 @@ const appendBookingsToMonthlyDraftInvoice = async (
 export const listBookingsService = async (
   userId: string,
   role: string,
-  query: IBookingQuery
+  query: IBookingQuery,
 ) => {
   const page = parseInt(query.page || "1", 10);
   const limit = parseInt(query.limit || "10", 10);
@@ -729,11 +729,11 @@ export const listBookingsService = async (
     Booking.find(filter)
       .populate(
         "studentId",
-        "firstname lastname profilePicture learningPreferences address"
+        "firstname lastname profilePicture learningPreferences address",
       )
       .populate(
         "tutorId",
-        "firstname lastname profilePicture specializations hourlyRate"
+        "firstname lastname profilePicture specializations hourlyRate",
       )
       .sort(sortOption)
       .skip(skip)
@@ -784,16 +784,16 @@ export const listBookingsService = async (
 export const getBookingByIdService = async (
   bookingId: string,
   userId: string,
-  role: string
+  role: string,
 ) => {
   const booking = await Booking.findById(bookingId)
     .populate(
       "studentId",
-      "firstname lastname profilePicture email learningPreferences address"
+      "firstname lastname profilePicture email learningPreferences address",
     )
     .populate(
       "tutorId",
-      "firstname lastname profilePicture email specializations hourlyRate"
+      "firstname lastname profilePicture email specializations hourlyRate",
     );
 
   if (!booking) {
@@ -811,7 +811,7 @@ export const getBookingByIdService = async (
   return new ApiResponse(
     200,
     "Booking retrieved successfully",
-    booking.toJSON()
+    booking.toJSON(),
   );
 };
 
@@ -819,7 +819,7 @@ export const getBookingByIdService = async (
 
 export const confirmBookingService = async (
   bookingId: string,
-  tutorId: string
+  tutorId: string,
 ) => {
   const booking = await Booking.findById(bookingId);
   if (!booking) {
@@ -833,14 +833,14 @@ export const confirmBookingService = async (
   if (booking.status !== "pending") {
     throw new ApiError(
       400,
-      `Cannot confirm a booking with status "${booking.status}"`
+      `Cannot confirm a booking with status "${booking.status}"`,
     );
   }
 
   if (booking.paymentStatus !== "paid" && booking.paymentStatus !== "free") {
     throw new ApiError(
       400,
-      "Cannot confirm booking — payment has not been received"
+      "Cannot confirm booking — payment has not been received",
     );
   }
 
@@ -849,11 +849,11 @@ export const confirmBookingService = async (
   // ── Auto-generate a Zoom meeting link if no URL exists yet ──
   if (!booking.meetingUrl) {
     const student = await User.findById(booking.studentId).select(
-      "firstname lastname email"
+      "firstname lastname email",
     );
 
     const tutor = await User.findById(booking.tutorId).select(
-      "firstname lastname"
+      "firstname lastname",
     );
 
     const zoomUrl = await createZoomMeeting(
@@ -864,7 +864,7 @@ export const confirmBookingService = async (
       `${tutor?.firstname || "Tutor"} ${tutor?.lastname || ""}`.trim(),
       `${student?.firstname || "Student"} ${student?.lastname || ""}`.trim(),
       booking.type,
-      booking.specialty
+      booking.specialty,
     );
 
     if (zoomUrl) {
@@ -918,13 +918,13 @@ export const confirmBookingService = async (
       meetingUrl: booking.meetingUrl || null,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating confirmed notification")
+    logger.error({ err }, "Error creating confirmed notification"),
   );
 
   return new ApiResponse(
     200,
     "Booking confirmed successfully",
-    booking.toJSON()
+    booking.toJSON(),
   );
 };
 
@@ -933,7 +933,7 @@ export const confirmBookingService = async (
 export const declineBookingService = async (
   bookingId: string,
   tutorId: string,
-  data: IDeclineBookingRequest
+  data: IDeclineBookingRequest,
 ) => {
   const booking = await Booking.findById(bookingId);
   if (!booking) {
@@ -947,7 +947,7 @@ export const declineBookingService = async (
   if (booking.status !== "pending") {
     throw new ApiError(
       400,
-      `Cannot decline a booking with status "${booking.status}"`
+      `Cannot decline a booking with status "${booking.status}"`,
     );
   }
 
@@ -995,7 +995,7 @@ export const declineBookingService = async (
       refunded: booking.paymentStatus === "refunded",
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating declined notification")
+    logger.error({ err }, "Error creating declined notification"),
   );
 
   if (booking.paymentStatus === "refunded") {
@@ -1010,14 +1010,14 @@ export const declineBookingService = async (
         date: booking.date,
       },
     }).catch((err) =>
-      logger.error({ err }, "Error creating refund notification")
+      logger.error({ err }, "Error creating refund notification"),
     );
   }
 
   return new ApiResponse(
     200,
     "Booking declined successfully",
-    booking.toJSON()
+    booking.toJSON(),
   );
 };
 
@@ -1027,7 +1027,7 @@ export const cancelBookingService = async (
   bookingId: string,
   userId: string,
   role: string,
-  data: ICancelBookingRequest
+  data: ICancelBookingRequest,
 ) => {
   const booking = await Booking.findById(bookingId);
   if (!booking) {
@@ -1049,7 +1049,7 @@ export const cancelBookingService = async (
   ) {
     throw new ApiError(
       400,
-      `Cannot cancel a booking with status "${booking.status}"`
+      `Cannot cancel a booking with status "${booking.status}"`,
     );
   }
 
@@ -1107,7 +1107,7 @@ export const cancelBookingService = async (
         booking,
         reason: data.reason,
       }).catch((err) =>
-        logger.error({ err }, "Error sending cancellation email to tutor")
+        logger.error({ err }, "Error sending cancellation email to tutor"),
       );
     } else {
       sendBookingCancelledByTutorMail({
@@ -1117,7 +1117,7 @@ export const cancelBookingService = async (
         reason: data.reason,
         refunded: booking.paymentStatus === "refunded",
       }).catch((err) =>
-        logger.error({ err }, "Error sending cancellation email to student")
+        logger.error({ err }, "Error sending cancellation email to student"),
       );
     }
   }
@@ -1146,7 +1146,7 @@ export const cancelBookingService = async (
       refunded: booking.paymentStatus === "refunded",
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating cancellation notification")
+    logger.error({ err }, "Error creating cancellation notification"),
   );
 
   if (booking.paymentStatus === "refunded" && cancelledBy !== "student") {
@@ -1161,14 +1161,14 @@ export const cancelBookingService = async (
         date: booking.date,
       },
     }).catch((err) =>
-      logger.error({ err }, "Error creating refund notification")
+      logger.error({ err }, "Error creating refund notification"),
     );
   }
 
   return new ApiResponse(
     200,
     "Booking cancelled successfully",
-    booking.toJSON()
+    booking.toJSON(),
   );
 };
 
@@ -1177,7 +1177,7 @@ export const cancelBookingService = async (
 export const completeBookingService = async (
   bookingId: string,
   userId: string,
-  role: string
+  role: string,
 ) => {
   const booking = await Booking.findById(bookingId);
   if (!booking) {
@@ -1194,7 +1194,7 @@ export const completeBookingService = async (
   if (booking.status !== "confirmed") {
     throw new ApiError(
       400,
-      `Cannot complete a booking with status "${booking.status}"`
+      `Cannot complete a booking with status "${booking.status}"`,
     );
   }
 
@@ -1212,16 +1212,16 @@ export const completeBookingService = async (
       totalLessonsTaken: 1,
       totalHoursLearned: lessonDurationHours(
         booking.startTime,
-        booking.endTime
+        booking.endTime,
       ),
     },
   });
 
   const student = await User.findById(booking.studentId).select(
-    "firstname lastname"
+    "firstname lastname",
   );
   const tutor = await User.findById(booking.tutorId).select(
-    "firstname lastname"
+    "firstname lastname",
   );
 
   createNotification({
@@ -1236,7 +1236,7 @@ export const completeBookingService = async (
       startTime: booking.startTime,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating student completion notification")
+    logger.error({ err }, "Error creating student completion notification"),
   );
 
   createNotification({
@@ -1251,14 +1251,14 @@ export const completeBookingService = async (
       startTime: booking.startTime,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating tutor completion notification")
+    logger.error({ err }, "Error creating tutor completion notification"),
   );
 
   // ── Send "Lesson Completed + Review Prompt" email to student ──
   if (student) {
     const DOMAIN_NAME = process.env.DOMAIN_NAME || "http://localhost:3000";
     const formattedDate = new Date(
-      `${booking.date}T00:00:00`
+      `${booking.date}T00:00:00`,
     ).toLocaleDateString("en-GB", {
       weekday: "long",
       day: "numeric",
@@ -1277,7 +1277,7 @@ export const completeBookingService = async (
       lessonType: booking.type,
       reviewUrl: `${DOMAIN_NAME}/lessons`,
     }).catch((err) =>
-      logger.error({ err }, "Error sending lesson completed email")
+      logger.error({ err }, "Error sending lesson completed email"),
     );
   }
 
@@ -1293,7 +1293,7 @@ export const completeBookingService = async (
       date: booking.date,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error sending review prompt notification")
+    logger.error({ err }, "Error sending review prompt notification"),
   );
 
   return new ApiResponse(200, "Booking marked as completed", booking.toJSON());
@@ -1304,7 +1304,7 @@ export const completeBookingService = async (
 export const noShowBookingService = async (
   bookingId: string,
   userId: string,
-  role: string
+  role: string,
 ) => {
   const booking = await Booking.findById(bookingId);
   if (!booking) {
@@ -1317,14 +1317,14 @@ export const noShowBookingService = async (
   if (!isBookingTutor && !isAdmin) {
     throw new ApiError(
       403,
-      "You are not authorized to mark this booking as no-show"
+      "You are not authorized to mark this booking as no-show",
     );
   }
 
   if (booking.status !== "confirmed") {
     throw new ApiError(
       400,
-      `Cannot mark no-show for a booking with status "${booking.status}"`
+      `Cannot mark no-show for a booking with status "${booking.status}"`,
     );
   }
 
@@ -1343,7 +1343,7 @@ export const noShowBookingService = async (
 export const upcomingBookingsService = async (
   userId: string,
   role: string,
-  query: IUpcomingQuery
+  query: IUpcomingQuery,
 ) => {
   const limit = parseInt(query.limit || "5", 10);
   const today = new Date().toISOString().split("T")[0];
@@ -1362,11 +1362,11 @@ export const upcomingBookingsService = async (
   const bookings = await Booking.find(filter)
     .populate(
       "studentId",
-      "firstname lastname profilePicture learningPreferences address"
+      "firstname lastname profilePicture learningPreferences address",
     )
     .populate(
       "tutorId",
-      "firstname lastname profilePicture specializations hourlyRate"
+      "firstname lastname profilePicture specializations hourlyRate",
     )
     .sort({ date: 1, startTime: 1 })
     .limit(limit);
@@ -1474,7 +1474,7 @@ export const bookingStatsService = async (userId: string, role: string) => {
 
 export const flagBookingService = async (
   bookingId: string,
-  data: { flagged: boolean; flagReason?: string }
+  data: { flagged: boolean; flagReason?: string },
 ) => {
   const booking = await Booking.findById(bookingId);
   if (!booking) {
@@ -1489,7 +1489,7 @@ export const flagBookingService = async (
   return new ApiResponse(
     200,
     `Booking ${action} successfully`,
-    booking.toJSON()
+    booking.toJSON(),
   );
 };
 
@@ -1580,7 +1580,7 @@ export const adminLessonStatsService = async () => {
 export const updateMeetingUrlService = async (
   bookingId: string,
   tutorId: string,
-  meetingUrl: string
+  meetingUrl: string,
 ) => {
   const booking = await Booking.findById(bookingId);
   if (!booking) {
@@ -1590,7 +1590,7 @@ export const updateMeetingUrlService = async (
   if (booking.tutorId.toString() !== tutorId) {
     throw new ApiError(
       403,
-      "You are not authorized to update this booking's meeting link"
+      "You are not authorized to update this booking's meeting link",
     );
   }
 
@@ -1601,7 +1601,7 @@ export const updateMeetingUrlService = async (
   ) {
     throw new ApiError(
       400,
-      `Cannot update meeting link for a booking with status "${booking.status}"`
+      `Cannot update meeting link for a booking with status "${booking.status}"`,
     );
   }
 
@@ -1623,12 +1623,12 @@ export const updateMeetingUrlService = async (
       meetingUrl,
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating meeting URL update notification")
+    logger.error({ err }, "Error creating meeting URL update notification"),
   );
 
   return new ApiResponse(
     200,
     "Meeting link updated successfully",
-    booking.toJSON()
+    booking.toJSON(),
   );
 };

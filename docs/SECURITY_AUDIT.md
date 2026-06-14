@@ -14,20 +14,20 @@
 
 ## Verdict summary
 
-| #  | Check                                          | Status | Blocker for pilot? |
-|----|------------------------------------------------|--------|--------------------|
-| 1  | CORS locked down                               | ✅ PASS | — |
-| 2  | `requireOrgContext` on ESOL routes             | ✅ PASS (with notes) | — |
-| 3  | Org-scoping on Mongo queries                   | ✅ PASS (with notes) | — |
-| 4  | JWT secret strength + rotation policy          | ⚠️ PARTIAL | Rotation doc missing — see remediation |
-| 5  | Rate limiters on auth + AI endpoints           | ✅ PASS | — |
-| 6  | Mongoose schema validation on writes           | ✅ PASS | — |
-| 7  | No sensitive data in logs                      | ✅ PASS | — |
-| 8  | MIS credentials encrypted at rest              | ✅ PASS | — |
-| 9  | Bull Board admin + token-protected             | ✅ PASS | — |
-| 10 | Vercel security headers (CSP, HSTS, XFO)       | ❌ **FAIL** | **YES** |
-| 11 | `npm audit` clean (no high/critical)           | ❌ **FAIL** | **YES** |
-| 12 | Cross-org isolation pen test                   | 🟡 PENDING | Run before launch |
+| #   | Check                                    | Status               | Blocker for pilot?                     |
+| --- | ---------------------------------------- | -------------------- | -------------------------------------- |
+| 1   | CORS locked down                         | ✅ PASS              | —                                      |
+| 2   | `requireOrgContext` on ESOL routes       | ✅ PASS (with notes) | —                                      |
+| 3   | Org-scoping on Mongo queries             | ✅ PASS (with notes) | —                                      |
+| 4   | JWT secret strength + rotation policy    | ⚠️ PARTIAL           | Rotation doc missing — see remediation |
+| 5   | Rate limiters on auth + AI endpoints     | ✅ PASS              | —                                      |
+| 6   | Mongoose schema validation on writes     | ✅ PASS              | —                                      |
+| 7   | No sensitive data in logs                | ✅ PASS              | —                                      |
+| 8   | MIS credentials encrypted at rest        | ✅ PASS              | —                                      |
+| 9   | Bull Board admin + token-protected       | ✅ PASS              | —                                      |
+| 10  | Vercel security headers (CSP, HSTS, XFO) | ❌ **FAIL**          | **YES**                                |
+| 11  | `npm audit` clean (no high/critical)     | ❌ **FAIL**          | **YES**                                |
+| 12  | Cross-org isolation pen test             | 🟡 PENDING           | Run before launch                      |
 
 ---
 
@@ -44,7 +44,11 @@ const ALLOWED_ORIGINS = [
   "https://ambertraining.co.uk",
   "https://www.ambertraining.co.uk",
   ...(process.env.NODE_ENV !== "production"
-    ? ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"]
+    ? [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+      ]
     : []),
 ];
 ```
@@ -77,15 +81,15 @@ identical contract to `requireOrgContext`.
 
 ### Sample verification (5 of 17 ESOL routes, ≈ 29 %)
 
-| Route file                          | Middleware in use     | Verdict |
-|-------------------------------------|-----------------------|---------|
-| `esolAISession.routes.ts`           | `requireEsolLearner` on mutating ops; `isAuthenticated` global | ✅ |
-| `esolVocab.routes.ts`               | `requireEsolLearner`  | ✅ |
-| `esolLevelChange.routes.ts`         | `requireEsolTeacher`  | ✅ |
-| `esolReport.routes.ts`              | `requireOrgAdmin`     | ✅ |
-| `esolSafeguarding.routes.ts`        | `requireOrgAdmin`     | ✅ |
-| `stage5.routes.ts` (Function 17)    | `requireOrgContext` literal | ✅ |
-| `orgAdminStage5.routes.ts` (Function 17) | `isOrgAdmin + requireOrgContext` literal | ✅ |
+| Route file                               | Middleware in use                                              | Verdict |
+| ---------------------------------------- | -------------------------------------------------------------- | ------- |
+| `esolAISession.routes.ts`                | `requireEsolLearner` on mutating ops; `isAuthenticated` global | ✅      |
+| `esolVocab.routes.ts`                    | `requireEsolLearner`                                           | ✅      |
+| `esolLevelChange.routes.ts`              | `requireEsolTeacher`                                           | ✅      |
+| `esolReport.routes.ts`                   | `requireOrgAdmin`                                              | ✅      |
+| `esolSafeguarding.routes.ts`             | `requireOrgAdmin`                                              | ✅      |
+| `stage5.routes.ts` (Function 17)         | `requireOrgContext` literal                                    | ✅      |
+| `orgAdminStage5.routes.ts` (Function 17) | `isOrgAdmin + requireOrgContext` literal                       | ✅      |
 
 ### Finding
 
@@ -127,15 +131,15 @@ from `/api/admin/...` routes).
 
 ### Spot-checks of the 5 most-touched models
 
-| Service file                        | Query                          | Carries org scope? |
-|-------------------------------------|--------------------------------|--------------------|
-| `cohortTable.service.ts`            | `User.find({orgId, …})`        | ✅ |
-| `learnerDetail.service.ts`          | `User.findById` then `org_id !== caller_org_id ? 403` | ✅ |
-| `evidenceReport.service.ts:909`     | `User.find({ orgId: orgObjectId, role: "student" })` | ✅ |
-| `stage5Read.service.ts:111`         | `Stage5Review.find({ learner_id: ObjectId(callerId), … })` | ✅ |
-| `esolReport.service.ts:248`         | `AISession.find({ orgId, … })` | ✅ |
-| `evidenceReport.service.ts:925`     | `AISession.find({ learnerId: { $in: learnerIds }, orgId: orgObjectId, … })` | ✅ |
-| `evidenceReport.service.ts:435`     | `VocabLedger.find({ learnerId: { $in: learnerIds }})` | ⚠️ See note |
+| Service file                    | Query                                                                       | Carries org scope? |
+| ------------------------------- | --------------------------------------------------------------------------- | ------------------ |
+| `cohortTable.service.ts`        | `User.find({orgId, …})`                                                     | ✅                 |
+| `learnerDetail.service.ts`      | `User.findById` then `org_id !== caller_org_id ? 403`                       | ✅                 |
+| `evidenceReport.service.ts:909` | `User.find({ orgId: orgObjectId, role: "student" })`                        | ✅                 |
+| `stage5Read.service.ts:111`     | `Stage5Review.find({ learner_id: ObjectId(callerId), … })`                  | ✅                 |
+| `esolReport.service.ts:248`     | `AISession.find({ orgId, … })`                                              | ✅                 |
+| `evidenceReport.service.ts:925` | `AISession.find({ learnerId: { $in: learnerIds }, orgId: orgObjectId, … })` | ✅                 |
+| `evidenceReport.service.ts:435` | `VocabLedger.find({ learnerId: { $in: learnerIds }})`                       | ⚠️ See note        |
 
 ### Note on `VocabLedger.find({ learnerId: { $in: [...] } })`
 
@@ -178,6 +182,7 @@ same expression, with an allowlist of admin-scope service files.
 
 `src/middlewares/authMiddleWare.ts` and `src/services/user.service.ts`
 both:
+
 - Read `JWT_SECRET` from env; throw at module load if missing
   (`"JWT secret is not configured"`).
 - Set `expiresIn: "5h"` on access tokens, `expiresIn: "7d"` on
@@ -190,6 +195,7 @@ call returned zero hits.
 ### What fails
 
 There is **no documented rotation policy**. Specifically missing:
+
 - Rotation cadence (recommend annual + on any suspected leak).
 - Runbook for "what happens to in-flight sessions when we rotate?"
   (forces all users to re-login, which is fine for a planned
@@ -220,16 +226,16 @@ There is **no documented rotation policy**. Specifically missing:
 backed by Redis (`rate-limit-redis`) so the bucket survives the
 serverless cold-start churn:
 
-| Limiter | Window | Limit | Applied at |
-|---|---|---|---|
-| `generalLimiter` | (configured) | broad | `app.use("/api", generalLimiter)` |
-| `authLimiter` | 15 min | tight | `user.routes.ts` login/register; `esolReferral.routes.ts` |
-| `passwordResetLimiter` | 15 min | very tight | `user.routes.ts` reset paths |
-| `bookingLimiter` | (per booking flow) | — | booking routes |
-| `webhookLimiter` | (per Stripe) | — | Stripe webhook |
-| `referralTokenLimiter` | (per token) | — | `esolReferral` validate path |
-| `aiTurnLimiter` | 60 s | 30 turns / IP | `aiSession.routes.ts` per-turn POST |
-| `sessionStartLimiter` | (per flow) | — | `aiSession.routes.ts` session-start |
+| Limiter                | Window             | Limit         | Applied at                                                |
+| ---------------------- | ------------------ | ------------- | --------------------------------------------------------- |
+| `generalLimiter`       | (configured)       | broad         | `app.use("/api", generalLimiter)`                         |
+| `authLimiter`          | 15 min             | tight         | `user.routes.ts` login/register; `esolReferral.routes.ts` |
+| `passwordResetLimiter` | 15 min             | very tight    | `user.routes.ts` reset paths                              |
+| `bookingLimiter`       | (per booking flow) | —             | booking routes                                            |
+| `webhookLimiter`       | (per Stripe)       | —             | Stripe webhook                                            |
+| `referralTokenLimiter` | (per token)        | —             | `esolReferral` validate path                              |
+| `aiTurnLimiter`        | 60 s               | 30 turns / IP | `aiSession.routes.ts` per-turn POST                       |
+| `sessionStartLimiter`  | (per flow)         | —             | `aiSession.routes.ts` session-start                       |
 
 Wiring confirmed via grep for each export across `src/routes/`. All
 named limiters are actually attached to at least one route.
@@ -275,6 +281,7 @@ grep -rn "logger\." src --include="*.ts" \
 Result: **zero hits**.
 
 Spot-checks of the highest-risk paths:
+
 - Safeguarding detector logs the alert category and orgId but never
   the raw turn text (Function 10 deliberately stores only
   `messageContentHash` on `SafeguardingAlert`).
@@ -327,10 +334,10 @@ Confirmed safe.
 ```ts
 app.use(
   "/admin/queues",
-  isAuthenticated,               // 1. JWT + active account
-  isAdmin,                        // 2. role === "admin"
-  requireBullBoardToken,          // 3. shared secret (X-Bull-Board-Token)
-  bullBoardAdapter.getRouter()
+  isAuthenticated, // 1. JWT + active account
+  isAdmin, // 2. role === "admin"
+  requireBullBoardToken, // 3. shared secret (X-Bull-Board-Token)
+  bullBoardAdapter.getRouter(),
 );
 ```
 
@@ -377,24 +384,37 @@ Add a `headers` block to `vercel.json` covering every response:
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
-        { "key": "X-Frame-Options",           "value": "DENY" },
-        { "key": "X-Content-Type-Options",    "value": "nosniff" },
-        { "key": "Referrer-Policy",           "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy",        "value": "camera=(), microphone=(), geolocation=()" },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload",
+        },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin",
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()",
+        },
         // CSP: the dashboard fetches from the same origin plus
         // optional Stripe (payments) and Vercel insights. Keep
         // 'unsafe-inline' off; CRA-built scripts are nonce-free
         // but served from same-origin which the default-src already
         // covers.
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' https://js.stripe.com; connect-src 'self' https://api.stripe.com https://api-staging.ambertraining.co.uk; frame-src https://js.stripe.com; img-src 'self' data: https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'" }
-      ]
-    }
-  ]
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' https://js.stripe.com; connect-src 'self' https://api.stripe.com https://api-staging.ambertraining.co.uk; frame-src https://js.stripe.com; img-src 'self' data: https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'",
+        },
+      ],
+    },
+  ],
 }
 ```
 
 **Verification after the change**:
+
 1. Deploy to staging.
 2. Run `curl -I https://api-staging.ambertraining.co.uk/api/health`
    and confirm every header above is present.
@@ -483,34 +503,35 @@ runtime test is the verification.
 ### Test plan
 
 Stand up two staging orgs with isolated cohorts:
+
 - Org A: Hillview (the demo seed).
 - Org B: a second seeded org with its own learners + admins.
 
 As **Org A admin**, attempt to call each of these routes with an
 Org B resource id and assert **403 Forbidden** every time:
 
-| Route                                           | Resource id from Org B    | Expected |
-|-------------------------------------------------|---------------------------|----------|
-| `GET    /api/org-admin/learners/:id`            | A learner in Org B        | 403      |
-| `GET    /api/org-admin/learners`                | (no id; cohort scope)      | empty cohort or only own org's |
-| `POST   /api/org-admin/learners/:id/nudge`      | A learner in Org B        | 403      |
-| `GET    /api/org-admin/audit-log`               | (no id; org-scoped)        | only Org A's rows |
-| `GET    /api/org-admin/evidence-report/:id/download` | Org B's reportId      | 403      |
-| `POST   /api/org-admin/evidence-report/:id/status` | Org B's jobId           | 403      |
-| `GET    /api/org-admin/export/ilr/:id/download` | Org B's exportId          | 403      |
-| `GET    /api/org-admin/export/ilr/:id/status`   | Org B's jobId             | 403      |
-| `POST   /api/org-admin/teachers`                | (no id; org-scoped POST)   | creates only in Org A |
-| `DELETE /api/org-admin/teachers/:id`            | A teacher in Org B        | 403      |
-| `PATCH  /api/org-admin/learners/:id/teacher`    | Cross-org learner+teacher | 403      |
-| `GET    /api/org-admin/safeguarding/count`      | (no id; org-scoped)        | only Org A's count |
-| `GET    /api/esol/stage5/:reviewId`             | Org B's reviewId          | 403      |
-| `POST   /api/esol/stage5/:reviewId/self-assessment` | Org B's reviewId        | 403      |
-| `GET    /api/org-admin/stage5/:reviewId`        | Org B's reviewId          | 403      |
-| `POST   /api/org-admin/stage5/:reviewId/confirm`| Org B's reviewId          | 403      |
-| `GET    /api/org-admin/teachers/:id`            | Org B teacher             | 403      |
-| `GET    /api/esol/learner/:id`                  | Org B learner             | 403      |
-| `GET    /api/esol/session/:id`                  | Org B session             | 403      |
-| `POST   /api/esol/session/:id/turn`             | Org B session             | 403      |
+| Route                                                | Resource id from Org B    | Expected                       |
+| ---------------------------------------------------- | ------------------------- | ------------------------------ |
+| `GET    /api/org-admin/learners/:id`                 | A learner in Org B        | 403                            |
+| `GET    /api/org-admin/learners`                     | (no id; cohort scope)     | empty cohort or only own org's |
+| `POST   /api/org-admin/learners/:id/nudge`           | A learner in Org B        | 403                            |
+| `GET    /api/org-admin/audit-log`                    | (no id; org-scoped)       | only Org A's rows              |
+| `GET    /api/org-admin/evidence-report/:id/download` | Org B's reportId          | 403                            |
+| `POST   /api/org-admin/evidence-report/:id/status`   | Org B's jobId             | 403                            |
+| `GET    /api/org-admin/export/ilr/:id/download`      | Org B's exportId          | 403                            |
+| `GET    /api/org-admin/export/ilr/:id/status`        | Org B's jobId             | 403                            |
+| `POST   /api/org-admin/teachers`                     | (no id; org-scoped POST)  | creates only in Org A          |
+| `DELETE /api/org-admin/teachers/:id`                 | A teacher in Org B        | 403                            |
+| `PATCH  /api/org-admin/learners/:id/teacher`         | Cross-org learner+teacher | 403                            |
+| `GET    /api/org-admin/safeguarding/count`           | (no id; org-scoped)       | only Org A's count             |
+| `GET    /api/esol/stage5/:reviewId`                  | Org B's reviewId          | 403                            |
+| `POST   /api/esol/stage5/:reviewId/self-assessment`  | Org B's reviewId          | 403                            |
+| `GET    /api/org-admin/stage5/:reviewId`             | Org B's reviewId          | 403                            |
+| `POST   /api/org-admin/stage5/:reviewId/confirm`     | Org B's reviewId          | 403                            |
+| `GET    /api/org-admin/teachers/:id`                 | Org B teacher             | 403                            |
+| `GET    /api/esol/learner/:id`                       | Org B learner             | 403                            |
+| `GET    /api/esol/session/:id`                       | Org B session             | 403                            |
+| `POST   /api/esol/session/:id/turn`                  | Org B session             | 403                            |
 
 Twenty routes — the brief's "20+ routes tested" gate.
 
@@ -520,9 +541,9 @@ Record the result of each call in
 `tests/security/cross-org-isolation.md`:
 
 ```markdown
-| Route                                           | HTTP | Body                          | Verdict |
-|-------------------------------------------------|------|-------------------------------|---------|
-| GET /api/org-admin/learners/<orgB-learner>      | 403  | "Access denied to this learner" | ✅ |
+| Route                                      | HTTP | Body                            | Verdict |
+| ------------------------------------------ | ---- | ------------------------------- | ------- |
+| GET /api/org-admin/learners/<orgB-learner> | 403  | "Access denied to this learner" | ✅      |
 ```
 
 Any non-403 → BLOCKER, escalate to engineering immediately.
@@ -535,14 +556,14 @@ Owner: Engineering. ETA: 0.5 day. Run before pilot launch.
 
 ## Summary of remediation work
 
-| Item | Action | ETA | Owner | Blocker? |
-|------|--------|-----|-------|----------|
-| 4    | `docs/SECRET_ROTATION.md` + `JWT_SECRET` length check in code | 1 day | Eng | No (post-pilot OK) |
-| 10   | Add `headers` block to `vercel.json` + Mozilla Observatory grade A | 1 day | Eng | **YES** |
-| 11   | `npm audit fix`, upgrade cloudinary, confirm handlebars exemption, add CI gate | 1–2 days | Eng | **YES** |
-| 12   | Run the 20-route cross-org pen test, record verdicts | 0.5 day | Eng | **YES** |
-| 2    | `docs/CODE_PATTERNS.md` + pre-commit grep for ESOL route protection | 0.5 day | Eng | No (post-pilot OK) |
-| 3    | VocabLedger query: add explicit `orgId` filter as defence-in-depth | 1 hr | Eng | No (post-pilot OK) |
+| Item | Action                                                                         | ETA      | Owner | Blocker?           |
+| ---- | ------------------------------------------------------------------------------ | -------- | ----- | ------------------ |
+| 4    | `docs/SECRET_ROTATION.md` + `JWT_SECRET` length check in code                  | 1 day    | Eng   | No (post-pilot OK) |
+| 10   | Add `headers` block to `vercel.json` + Mozilla Observatory grade A             | 1 day    | Eng   | **YES**            |
+| 11   | `npm audit fix`, upgrade cloudinary, confirm handlebars exemption, add CI gate | 1–2 days | Eng   | **YES**            |
+| 12   | Run the 20-route cross-org pen test, record verdicts                           | 0.5 day  | Eng   | **YES**            |
+| 2    | `docs/CODE_PATTERNS.md` + pre-commit grep for ESOL route protection            | 0.5 day  | Eng   | No (post-pilot OK) |
+| 3    | VocabLedger query: add explicit `orgId` filter as defence-in-depth             | 1 hr     | Eng   | No (post-pilot OK) |
 
 **Pilot launch unblocks when items 10, 11, 12 are complete and
 signed off below.**
@@ -558,14 +579,14 @@ signed off below.**
 ### Developer (engineering lead)
 
 | Date | Name | Items reviewed | Remediation commits | Signature |
-|------|------|----------------|----------------------|-----------|
-|      |      | All 12          | (commit hashes)      |           |
+| ---- | ---- | -------------- | ------------------- | --------- |
+|      |      | All 12         | (commit hashes)     |           |
 
 ### Joey (Amber Training Ltd — engagement lead)
 
 | Date | Items reviewed | Signature |
-|------|----------------|-----------|
-|      | All 12          |           |
+| ---- | -------------- | --------- |
+|      | All 12         |           |
 
 ---
 

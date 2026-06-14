@@ -27,7 +27,8 @@
  *   P2   Invalid org_id → 400
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 // ── Mock the Gemini client BEFORE the SUT is imported ───────────────
 const generateContentMock = jest.fn();
@@ -100,21 +101,26 @@ const createLearner = async (opts: LearnerOpts) =>
 const seedSession = async (
   learnerId: unknown,
   orgId: unknown,
-  args: { durationMins?: number; createdAt?: Date } = {}
+  args: { durationMins?: number; createdAt?: Date } = {},
 ) => {
   const s = await AISession.create({
-    learnerId, orgId,
-    sessionMode: "BRIDGE", esolLevel: "e2",
-    turns: [], safeguardingFlagged: false, vocabIntroduced: [],
+    learnerId,
+    orgId,
+    sessionMode: "BRIDGE",
+    esolLevel: "e2",
+    turns: [],
+    safeguardingFlagged: false,
+    vocabIntroduced: [],
     session_source: "ai_tutor",
     duration_mins: args.durationMins ?? 30,
-    turn_scores: [], teaching_mode_sequence: [],
+    turn_scores: [],
+    teaching_mode_sequence: [],
     start_time: new Date(),
   });
   if (args.createdAt) {
     await AISession.collection.updateOne(
       { _id: s._id as unknown as never },
-      { $set: { createdAt: args.createdAt } }
+      { $set: { createdAt: args.createdAt } },
     );
   }
   return s;
@@ -136,8 +142,8 @@ beforeEach(() => {
   getGenerativeModelMock.mockClear();
   generateContentMock.mockResolvedValue(
     fakeGeminiResponse(
-      "87% of your cohort completed at least one scenario this month. 13 learners moved from Entry Level 1 to Entry Level 2."
-    )
+      "87% of your cohort completed at least one scenario this month. 13 learners moved from Entry Level 1 to Entry Level 2.",
+    ),
   );
 });
 
@@ -190,21 +196,30 @@ describe("computeCohortMetrics", () => {
 
     // In-window
     await LevelChange.create({
-      learnerId: learner._id, orgId: org._id,
-      fromLevel: "e1", toLevel: "e2", changedBy: admin,
+      learnerId: learner._id,
+      orgId: org._id,
+      fromLevel: "e1",
+      toLevel: "e2",
+      changedBy: admin,
       reason: "in window",
       effectiveDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
     });
     await LevelChange.create({
-      learnerId: learner._id, orgId: org._id,
-      fromLevel: "e2", toLevel: "e3", changedBy: admin,
+      learnerId: learner._id,
+      orgId: org._id,
+      fromLevel: "e2",
+      toLevel: "e3",
+      changedBy: admin,
       reason: "also in window",
       effectiveDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
     });
     // Out-of-window
     await LevelChange.create({
-      learnerId: learner._id, orgId: org._id,
-      fromLevel: "e3", toLevel: "l1", changedBy: admin,
+      learnerId: learner._id,
+      orgId: org._id,
+      fromLevel: "e3",
+      toLevel: "l1",
+      changedBy: admin,
       reason: "old",
       effectiveDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
     });
@@ -303,7 +318,9 @@ describe("getCohortNarrativeService", () => {
     const row = await NarrativeCache.findOne({ org_id: org._id }).lean();
     expect(row).toBeTruthy();
     expect(row?.narrative).toBe(data.narrative);
-    expect(row?.expires_at.getTime()).toBeGreaterThan(row?.generated_at.getTime() ?? 0);
+    expect(row?.expires_at.getTime()).toBeGreaterThan(
+      row?.generated_at.getTime() ?? 0,
+    );
   });
 
   it("G2 — second call within 24h returns cached, Gemini NOT called again", async () => {
@@ -337,7 +354,7 @@ describe("getCohortNarrativeService", () => {
     });
 
     generateContentMock.mockResolvedValue(
-      fakeGeminiResponse("fresh narrative from today")
+      fakeGeminiResponse("fresh narrative from today"),
     );
 
     const res = await getCohortNarrativeService(org._id.toString());
@@ -380,7 +397,7 @@ describe("getCohortNarrativeService", () => {
     generateContentMock.mockRejectedValueOnce(new Error("Vertex down"));
 
     await expect(
-      getCohortNarrativeService(org._id.toString())
+      getCohortNarrativeService(org._id.toString()),
     ).rejects.toMatchObject({ statusCode: 502 });
   });
 
@@ -438,7 +455,7 @@ describe("prompt + validation", () => {
 
   it("P2 — invalid orgId → 400", async () => {
     await expect(
-      getCohortNarrativeService("not-an-objectid")
+      getCohortNarrativeService("not-an-objectid"),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 });

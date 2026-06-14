@@ -103,9 +103,7 @@ export interface MisPushJobResult {
 // ─────────────────────────────────────────────────────────────────────
 
 const singleIdempotencyKey = (org_id: string, uln: string): string =>
-  createHash("sha256")
-    .update(`${org_id}|${uln}|mis_push`)
-    .digest("hex");
+  createHash("sha256").update(`${org_id}|${uln}|mis_push`).digest("hex");
 
 const batchIdempotencyKey = (org_id: string, ulns: string[]): string => {
   // Sort BEFORE hashing so two callers that happen to enqueue the
@@ -123,7 +121,12 @@ const batchIdempotencyKey = (org_id: string, ulns: string[]): string => {
 
 type BuiltOrHeld =
   | { kind: "ok"; record: MISRecord; validation: ValidationResult }
-  | { kind: "held"; uln: string; reasons: string[]; compliance_config_version: number | null }
+  | {
+      kind: "held";
+      uln: string;
+      reasons: string[];
+      compliance_config_version: number | null;
+    }
   | { kind: "build_error"; uln: string; error: string };
 
 const buildAndValidate = async (
@@ -331,9 +334,7 @@ const runSingle = async (
       pushed: 0,
       failed: 1,
       skipped: false,
-      per_record: [
-        { uln, status: "build_error", error: result.error },
-      ],
+      per_record: [{ uln, status: "build_error", error: result.error }],
     };
   }
 
@@ -353,9 +354,7 @@ const runSingle = async (
       pushed: 0,
       failed: 0,
       skipped: false,
-      per_record: [
-        { uln, status: "held", held_reasons: result.reasons },
-      ],
+      per_record: [{ uln, status: "held", held_reasons: result.reasons }],
     };
   }
 
@@ -574,7 +573,8 @@ const runBatch = async (
     seen.add(uln);
     return (
       perRecord.find(
-        (r, i) => r.uln === uln && !perRecord.slice(0, i).some((r2) => r2.uln === uln),
+        (r, i) =>
+          r.uln === uln && !perRecord.slice(0, i).some((r2) => r2.uln === uln),
       ) ?? { uln, status: "failed" as const, error: "missing from results" }
     );
   });

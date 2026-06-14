@@ -33,7 +33,11 @@ const router = Router();
 
 router.use(isAuthenticated, isAdmin);
 
-router.post("/", triggerEvidenceReportAdminValidation(), triggerEvidenceReportAdmin);
+router.post(
+  "/",
+  triggerEvidenceReportAdminValidation(),
+  triggerEvidenceReportAdmin,
+);
 router.get("/:jobId/status", getEvidenceReportStatusAdmin);
 router.get("/:reportId/download", downloadEvidenceReportAdmin);
 router.delete("/cache/:org_id", clearEvidenceReportCacheAdmin);

@@ -33,7 +33,7 @@ jest.mock("../lib/gemini", () => {
 
 jest.mock("../queues", () => ({
   __esModule: true,
-  esolSessionQueue:   { add: jest.fn().mockResolvedValue(undefined) },
+  esolSessionQueue: { add: jest.fn().mockResolvedValue(undefined) },
   notificationsQueue: { add: jest.fn().mockResolvedValue(undefined) },
   priorityQueueQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
@@ -43,7 +43,8 @@ jest.mock("../services/ComplianceConfigService", () => ({
   default: { getCurrent: jest.fn().mockReturnValue({ version: 1 }) },
 }));
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 import { Types } from "mongoose";
 import Organisation from "../models/Organisation";
@@ -57,9 +58,11 @@ import SafeguardingDetector from "../services/safeguardingDetector.service";
 import logger from "../config/logger";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const mockGenerateContent = (require("../lib/gemini") as {
-  __mockGenerateContent: jest.Mock;
-}).__mockGenerateContent;
+const mockGenerateContent = (
+  require("../lib/gemini") as {
+    __mockGenerateContent: jest.Mock;
+  }
+).__mockGenerateContent;
 
 // ─────────────────────────────────────────────────────────────────────
 // Fixtures
@@ -144,10 +147,34 @@ describe("V1 — startup log format", () => {
   it("loadAll emits 'SafeguardingDetector loaded: <N> patterns across <L> languages …'", async () => {
     // Seed a small known set so we can assert the exact counts
     await SafeguardingKeyword.create([
-      { pattern: "want to die",   language: "en", category: "self_harm",            severity: "high", active: true },
-      { pattern: "kill myself",   language: "en", category: "self_harm",            severity: "high", active: true },
-      { pattern: "أريد أن أموت",  language: "ar", category: "self_harm",            severity: "high", active: true },
-      { pattern: "my husband hit me", language: "en", category: "domestic_abuse",   severity: "high",     active: true },
+      {
+        pattern: "want to die",
+        language: "en",
+        category: "self_harm",
+        severity: "high",
+        active: true,
+      },
+      {
+        pattern: "kill myself",
+        language: "en",
+        category: "self_harm",
+        severity: "high",
+        active: true,
+      },
+      {
+        pattern: "أريد أن أموت",
+        language: "ar",
+        category: "self_harm",
+        severity: "high",
+        active: true,
+      },
+      {
+        pattern: "my husband hit me",
+        language: "en",
+        category: "domestic_abuse",
+        severity: "high",
+        active: true,
+      },
     ]);
 
     const infoSpy = jest.spyOn(logger, "info");
@@ -184,15 +211,17 @@ describe("V2 — order invariant (scan THEN gemini)", () => {
 
     // Record call ordering by stamping a counter on each invocation.
     let nextTick = 0;
-    const scanSpy = jest.spyOn(SafeguardingDetector, "scan").mockImplementation(
-      ((...args: Parameters<typeof SafeguardingDetector.scan>) => {
+    const scanSpy = jest
+      .spyOn(SafeguardingDetector, "scan")
+      .mockImplementation(((
+        ...args: Parameters<typeof SafeguardingDetector.scan>
+      ) => {
         (scanSpy as any).__order = ++nextTick;
         // Delegate to the real implementation via the original method:
         // jest.spyOn preserves it on `scanSpy.mockRestore` later. For
         // this assertion the return value just needs to be NO_MATCH.
         return { triggered: false, category: null, matched_pattern: null };
-      }) as any
-    );
+      }) as any);
     mockGenerateContent.mockImplementation(async () => {
       (mockGenerateContent as any).__order = ++nextTick;
       return okGeminiResponse(validTurnJson());
@@ -246,7 +275,10 @@ describe("V3 — scan() performance with 1000 patterns", () => {
     await SafeguardingDetector.loadAll();
 
     // Sanity: cache really did load
-    const sample = SafeguardingDetector.scan("english pattern number 1 that should not match", "en");
+    const sample = SafeguardingDetector.scan(
+      "english pattern number 1 that should not match",
+      "en",
+    );
     expect(sample.triggered).toBe(true);
 
     // Time 500 scans against a NON-matching message — worst case
@@ -269,7 +301,9 @@ describe("V3 — scan() performance with 1000 patterns", () => {
     // points at the actual numbers.
     if (p95 >= 5) {
       // eslint-disable-next-line no-console
-      console.error(`Perf samples: median=${median.toFixed(3)}ms p95=${p95.toFixed(3)}ms`);
+      console.error(
+        `Perf samples: median=${median.toFixed(3)}ms p95=${p95.toFixed(3)}ms`,
+      );
     }
     expect(p95).toBeLessThan(5);
   }, 30_000);
@@ -335,8 +369,8 @@ describe("V5 — AI-only safeguarding flag (defence-in-depth)", () => {
         validTurnJson({
           safeguarding_flag: true,
           safeguarding_category: "mental_health_crisis",
-        })
-      )
+        }),
+      ),
     );
 
     const { org, learner, session } = await createOrgAndLearner();

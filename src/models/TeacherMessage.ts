@@ -91,7 +91,7 @@ const teacherMessageSchema = new Schema<ITeacherMessage>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // Most common queries: "what messages has THIS learner got?" and
@@ -102,7 +102,7 @@ teacherMessageSchema.index({ org_id: 1, sent_at: -1 });
 
 const TeacherMessage = model<ITeacherMessage>(
   "TeacherMessage",
-  teacherMessageSchema
+  teacherMessageSchema,
 );
 
 export default TeacherMessage;

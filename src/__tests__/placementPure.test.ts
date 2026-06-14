@@ -61,17 +61,37 @@ describe("computeOutcome (calibration)", () => {
   it("covers the full 5×5 outcome matrix consistently", () => {
     const expected: Record<string, string> = {
       // known/assigned → bucket
-      "e1/e1": "correct",   "e1/e2": "one_above", "e1/e3": "over",     "e1/l1": "over",     "e1/l2": "over",
-      "e2/e1": "one_below", "e2/e2": "correct",   "e2/e3": "one_above","e2/l1": "over",     "e2/l2": "over",
-      "e3/e1": "under",     "e3/e2": "one_below", "e3/e3": "correct",  "e3/l1": "one_above","e3/l2": "over",
-      "l1/e1": "under",     "l1/e2": "under",     "l1/e3": "one_below","l1/l1": "correct",  "l1/l2": "one_above",
-      "l2/e1": "under",     "l2/e2": "under",     "l2/e3": "under",    "l2/l1": "one_below","l2/l2": "correct",
+      "e1/e1": "correct",
+      "e1/e2": "one_above",
+      "e1/e3": "over",
+      "e1/l1": "over",
+      "e1/l2": "over",
+      "e2/e1": "one_below",
+      "e2/e2": "correct",
+      "e2/e3": "one_above",
+      "e2/l1": "over",
+      "e2/l2": "over",
+      "e3/e1": "under",
+      "e3/e2": "one_below",
+      "e3/e3": "correct",
+      "e3/l1": "one_above",
+      "e3/l2": "over",
+      "l1/e1": "under",
+      "l1/e2": "under",
+      "l1/e3": "one_below",
+      "l1/l1": "correct",
+      "l1/l2": "one_above",
+      "l2/e1": "under",
+      "l2/e2": "under",
+      "l2/e3": "under",
+      "l2/l1": "one_below",
+      "l2/l2": "correct",
     };
     for (const known of LEVELS) {
       for (const assigned of LEVELS) {
         const key = `${known}/${assigned}`;
         expect(`${key}=${computeOutcome(known, assigned)}`).toBe(
-          `${key}=${expected[key]}`
+          `${key}=${expected[key]}`,
         );
       }
     }
@@ -104,10 +124,38 @@ const buildBank = (): PlacementQuestion[] => {
           question_fa: `Q ${id}`,
           question_zh: `Q ${id}`,
           options: [
-            { id: "a", text_en: "A", text_ar: "A", text_so: "A", text_fa: "A", text_zh: "A" },
-            { id: "b", text_en: "B", text_ar: "B", text_so: "B", text_fa: "B", text_zh: "B" },
-            { id: "c", text_en: "C", text_ar: "C", text_so: "C", text_fa: "C", text_zh: "C" },
-            { id: "d", text_en: "D", text_ar: "D", text_so: "D", text_fa: "D", text_zh: "D" },
+            {
+              id: "a",
+              text_en: "A",
+              text_ar: "A",
+              text_so: "A",
+              text_fa: "A",
+              text_zh: "A",
+            },
+            {
+              id: "b",
+              text_en: "B",
+              text_ar: "B",
+              text_so: "B",
+              text_fa: "B",
+              text_zh: "B",
+            },
+            {
+              id: "c",
+              text_en: "C",
+              text_ar: "C",
+              text_so: "C",
+              text_fa: "C",
+              text_zh: "C",
+            },
+            {
+              id: "d",
+              text_en: "D",
+              text_ar: "D",
+              text_so: "D",
+              text_fa: "D",
+              text_zh: "D",
+            },
           ],
           correct_answer: "a",
           difficulty_weight: 1.0,
@@ -163,7 +211,7 @@ describe("selectAdaptiveQuestions (placement)", () => {
 
       // First 5 are pinned — exactly the answered questions, in order
       expect(plan.slice(0, 5).map((q) => q.id)).toEqual(
-        firstFive.map((a) => a.question_id)
+        firstFive.map((a) => a.question_id),
       );
       // Trailing 15: no e3/l1/l2 (those levels are dropped on all-wrong)
       const trailing = plan.slice(5);
@@ -182,7 +230,7 @@ describe("selectAdaptiveQuestions (placement)", () => {
 
       expect(plan).toHaveLength(20);
       expect(plan.slice(0, 5).map((q) => q.id)).toEqual(
-        firstFive.map((a) => a.question_id)
+        firstFive.map((a) => a.question_id),
       );
       const trailing = plan.slice(5);
       // The first 5 already used one e1 (initial position 1), so the
@@ -202,22 +250,22 @@ describe("selectAdaptiveQuestions (placement)", () => {
       "leaves the trailing 15 untouched when %s answers are correct",
       (correctCount) => {
         const initial = selectAdaptiveQuestions([], bank);
-        const firstFive = initial.slice(0, 5).map((q, i) =>
-          answer(q, i < correctCount)
-        );
+        const firstFive = initial
+          .slice(0, 5)
+          .map((q, i) => answer(q, i < correctCount));
         const plan = selectAdaptiveQuestions(firstFive, bank);
 
         // First 5 still pinned
         expect(plan.slice(0, 5).map((q) => q.id)).toEqual(
-          firstFive.map((a) => a.question_id)
+          firstFive.map((a) => a.question_id),
         );
         // Trailing 15 matches the initial selection's trailing 15
         // (sans any of the answered ids — none here since the first
         // 5 are positions 0-4 only)
         expect(plan.slice(5).map((q) => q.id)).toEqual(
-          initial.slice(5).map((q) => q.id)
+          initial.slice(5).map((q) => q.id),
         );
-      }
+      },
     );
   });
 
@@ -239,14 +287,14 @@ describe("selectAdaptiveQuestions (placement)", () => {
 
     it("throws when the bank has fewer than 4 questions at any level", () => {
       const thinBank = bank.filter(
-        (q) => !(q.level === "e3" && q.id.endsWith("004"))
+        (q) => !(q.level === "e3" && q.id.endsWith("004")),
       );
       // e3 now has 15 questions (4 reading + 4 writing + 4 listening + 3 speaking) which is still ≥ 4
       // so we need a bigger cut. Drop all speaking-domain e3 questions
       // so e3 has 12 = still ≥ 4. We need < 4 at one level — strip e3 entirely.
       const truncated = thinBank.filter((q) => q.level !== "e3");
       expect(() => selectAdaptiveQuestions([], truncated)).toThrow(
-        /Placement bank has 0 e3 question/i
+        /Placement bank has 0 e3 question/i,
       );
     });
   });
@@ -266,7 +314,7 @@ describe("buildStage3ObjectivesForPlacement (RARPA)", () => {
       set_from: "placement_assessment",
     });
     expect(out[0].description).toBe(
-      "Develop functional English communication skills at Level 1"
+      "Develop functional English communication skills at Level 1",
     );
     expect(out[0].id).toMatch(/^[0-9a-f-]{36}$/); // UUID v4 shape
   });
@@ -277,7 +325,7 @@ describe("buildStage3ObjectivesForPlacement (RARPA)", () => {
     expect(out).toHaveLength(2);
     expect(out[0].skill_domain).toBe("Rt");
     expect(out[0].description).toBe(
-      "Develop reading skills for everyday texts at Entry Level 2"
+      "Develop reading skills for everyday texts at Entry Level 2",
     );
     expect(out[1].skill_domain).toBe("general");
   });
@@ -287,7 +335,7 @@ describe("buildStage3ObjectivesForPlacement (RARPA)", () => {
     expect(out).toHaveLength(2);
     expect(out[0].skill_domain).toBe("Wt");
     expect(out[0].description).toBe(
-      "Develop writing skills for everyday tasks at Entry Level 3"
+      "Develop writing skills for everyday tasks at Entry Level 3",
     );
   });
 
@@ -296,7 +344,7 @@ describe("buildStage3ObjectivesForPlacement (RARPA)", () => {
     expect(out).toHaveLength(2);
     expect(out[0].skill_domain).toBe("Sc");
     expect(out[0].description).toBe(
-      "Develop spoken English for everyday situations at Entry Level 1"
+      "Develop spoken English for everyday situations at Entry Level 1",
     );
   });
 
@@ -305,7 +353,7 @@ describe("buildStage3ObjectivesForPlacement (RARPA)", () => {
     expect(out).toHaveLength(2);
     expect(out[0].skill_domain).toBe("Lr");
     expect(out[0].description).toBe(
-      "Develop listening comprehension for everyday situations at Level 2"
+      "Develop listening comprehension for everyday situations at Level 2",
     );
   });
 
@@ -330,10 +378,10 @@ describe("buildStage3ObjectivesForPlacement (RARPA)", () => {
       "Lr",
     ] as IlrSkillCode[]);
     expect(reverse.map((o) => o.skill_domain)).toEqual([
-      "Rt",   // reading first (Rs maps to Rt anchor)
+      "Rt", // reading first (Rs maps to Rt anchor)
       "Wt",
       "Lr",
-      "Sc",   // speaking last (Sd maps to Sc anchor)
+      "Sc", // speaking last (Sd maps to Sc anchor)
       "general",
     ]);
   });

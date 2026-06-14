@@ -45,6 +45,9 @@ export interface IOrganisation extends Document {
   assigned_teacher_ids?: Types.ObjectId[];
   max_learners_per_teacher?: number;
 
+  // Phase 2 / Final Addendum §13 (BE-G) onboarding embed
+  org_onboarding_completed_at?: Date | null;
+
   // Addendum §21 MIS integration (credentials encrypted at rest)
   misType?: MisType;
   misApiEndpoint?: string | null;

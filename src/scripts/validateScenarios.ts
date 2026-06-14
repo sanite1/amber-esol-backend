@@ -56,10 +56,15 @@ const PASS_MAX = 0.9;
 const LEVELS_ASC: EsolLevel[] = ["e1", "e2", "e3", "l1", "l2"];
 
 const VALID_ILR_CODES: ReadonlySet<IlrSkillCode> = new Set<IlrSkillCode>([
-  "Rt", "Rs", "Rw",
-  "Wt", "Ws", "Ww",
+  "Rt",
+  "Rs",
+  "Rw",
+  "Wt",
+  "Ws",
+  "Ww",
   "Lr",
-  "Sc", "Sd",
+  "Sc",
+  "Sd",
 ]);
 
 // Brief Function 8 To-Do 3: scenario.stage3_objective_domains stores
@@ -77,7 +82,7 @@ const ALL_LANGS: ScenarioLanguage[] = ["en", ...NON_EN_LANGS];
 // ─────────────────────────────────────────────────────────────────────
 
 interface Issue {
-  scope: string;     // "<scenario_id>.<field>" or "set"
+  scope: string; // "<scenario_id>.<field>" or "set"
   severity: "error" | "warning";
   message: string;
 }
@@ -111,7 +116,7 @@ const loadScenarioFiles = (): { id: string; path: string; raw: string }[] => {
 
 const parseScenario = (
   fileName: string,
-  raw: string
+  raw: string,
 ): { ok: true; data: IScenarioFile } | { ok: false; error: Issue } => {
   try {
     return { ok: true, data: JSON.parse(raw) as IScenarioFile };
@@ -129,28 +134,52 @@ const parseScenario = (
 
 const validateRange = (
   range: { min: EsolLevel; max: EsolLevel } | undefined,
-  scope: string
+  scope: string,
 ): Issue[] => {
   if (!range || !range.min || !range.max) {
-    return [{ scope: `${scope}.nqf_level_range`, severity: "error", message: "missing min/max" }];
+    return [
+      {
+        scope: `${scope}.nqf_level_range`,
+        severity: "error",
+        message: "missing min/max",
+      },
+    ];
   }
   const minIdx = LEVELS_ASC.indexOf(range.min);
   const maxIdx = LEVELS_ASC.indexOf(range.max);
   if (minIdx === -1) {
-    return [{ scope: `${scope}.nqf_level_range.min`, severity: "error", message: `"${range.min}" is not a valid EsolLevel` }];
+    return [
+      {
+        scope: `${scope}.nqf_level_range.min`,
+        severity: "error",
+        message: `"${range.min}" is not a valid EsolLevel`,
+      },
+    ];
   }
   if (maxIdx === -1) {
-    return [{ scope: `${scope}.nqf_level_range.max`, severity: "error", message: `"${range.max}" is not a valid EsolLevel` }];
+    return [
+      {
+        scope: `${scope}.nqf_level_range.max`,
+        severity: "error",
+        message: `"${range.max}" is not a valid EsolLevel`,
+      },
+    ];
   }
   if (minIdx > maxIdx) {
-    return [{ scope: `${scope}.nqf_level_range`, severity: "error", message: `min "${range.min}" > max "${range.max}"` }];
+    return [
+      {
+        scope: `${scope}.nqf_level_range`,
+        severity: "error",
+        message: `min "${range.min}" > max "${range.max}"`,
+      },
+    ];
   }
   return [];
 };
 
 const validateMultilingualText = (
   obj: Record<string, unknown> | undefined,
-  scope: string
+  scope: string,
 ): Issue[] => {
   const issues: Issue[] = [];
   if (!obj) {
@@ -175,10 +204,7 @@ const validateMultilingualText = (
   return issues;
 };
 
-const validateVocabulary = (
-  vocab: unknown,
-  scope: string
-): Issue[] => {
+const validateVocabulary = (vocab: unknown, scope: string): Issue[] => {
   const issues: Issue[] = [];
   if (!Array.isArray(vocab)) {
     return [{ scope, severity: "error", message: "must be an array" }];
@@ -200,17 +226,37 @@ const validateVocabulary = (
     }>;
     const itemScope = `${scope}[${idx}]${v?.word ? ` "${v.word}"` : ""}`;
     if (!isNonEmptyString(v?.word)) {
-      issues.push({ scope: `${itemScope}.word`, severity: "error", message: "must be a non-empty string" });
+      issues.push({
+        scope: `${itemScope}.word`,
+        severity: "error",
+        message: "must be a non-empty string",
+      });
     } else if (containsTodo(v.word)) {
-      issues.push({ scope: `${itemScope}.word`, severity: "warning", message: "contains TODO/REPLACE — placeholder vocabulary item" });
+      issues.push({
+        scope: `${itemScope}.word`,
+        severity: "warning",
+        message: "contains TODO/REPLACE — placeholder vocabulary item",
+      });
     }
     if (!isNonEmptyString(v?.definition_en)) {
-      issues.push({ scope: `${itemScope}.definition_en`, severity: "error", message: "must be a non-empty string" });
+      issues.push({
+        scope: `${itemScope}.definition_en`,
+        severity: "error",
+        message: "must be a non-empty string",
+      });
     } else if (containsTodo(v.definition_en)) {
-      issues.push({ scope: `${itemScope}.definition_en`, severity: "warning", message: "contains TODO/REPLACE marker" });
+      issues.push({
+        scope: `${itemScope}.definition_en`,
+        severity: "warning",
+        message: "contains TODO/REPLACE marker",
+      });
     }
     if (!isNonEmptyString(v?.example_sentence)) {
-      issues.push({ scope: `${itemScope}.example_sentence`, severity: "error", message: "must be a non-empty string" });
+      issues.push({
+        scope: `${itemScope}.example_sentence`,
+        severity: "error",
+        message: "must be a non-empty string",
+      });
     }
     if (
       typeof v?.reinforcement_weight !== "number" ||
@@ -225,7 +271,11 @@ const validateVocabulary = (
       });
     }
     if (!v?.translations) {
-      issues.push({ scope: `${itemScope}.translations`, severity: "error", message: "missing — must contain ar/so/fa/zh" });
+      issues.push({
+        scope: `${itemScope}.translations`,
+        severity: "error",
+        message: "missing — must contain ar/so/fa/zh",
+      });
     } else {
       for (const lang of NON_EN_LANGS) {
         const t = v.translations[lang];
@@ -248,7 +298,11 @@ const validateScenario = (id: string, s: IScenarioFile): Issue[] => {
 
   // scenario_id
   if (!isNonEmptyString(s.scenario_id)) {
-    issues.push({ scope: `${scope}.scenario_id`, severity: "error", message: "must be non-empty" });
+    issues.push({
+      scope: `${scope}.scenario_id`,
+      severity: "error",
+      message: "must be non-empty",
+    });
   } else if (s.scenario_id !== id) {
     issues.push({
       scope: `${scope}.scenario_id`,
@@ -261,7 +315,11 @@ const validateScenario = (id: string, s: IScenarioFile): Issue[] => {
 
   // skill_codes
   if (!Array.isArray(s.skill_codes) || s.skill_codes.length === 0) {
-    issues.push({ scope: `${scope}.skill_codes`, severity: "error", message: "must be a non-empty array" });
+    issues.push({
+      scope: `${scope}.skill_codes`,
+      severity: "error",
+      message: "must be a non-empty array",
+    });
   } else {
     for (const code of s.skill_codes) {
       if (!VALID_ILR_CODES.has(code as IlrSkillCode)) {
@@ -275,8 +333,15 @@ const validateScenario = (id: string, s: IScenarioFile): Issue[] => {
   }
 
   // stage3_objective_domains
-  if (!Array.isArray(s.stage3_objective_domains) || s.stage3_objective_domains.length === 0) {
-    issues.push({ scope: `${scope}.stage3_objective_domains`, severity: "error", message: "must be a non-empty array" });
+  if (
+    !Array.isArray(s.stage3_objective_domains) ||
+    s.stage3_objective_domains.length === 0
+  ) {
+    issues.push({
+      scope: `${scope}.stage3_objective_domains`,
+      severity: "error",
+      message: "must be a non-empty array",
+    });
   } else {
     for (const d of s.stage3_objective_domains) {
       if (!VALID_STAGE3_DOMAINS.has(d as Stage3ObjectiveAnchor)) {
@@ -297,7 +362,11 @@ const validateScenario = (id: string, s: IScenarioFile): Issue[] => {
     const key = `cultural_notes_${lang}` as keyof IScenarioFile;
     const value = s[key];
     if (!isNonEmptyString(value)) {
-      issues.push({ scope: `${scope}.${key}`, severity: "error", message: "must be a non-empty string" });
+      issues.push({
+        scope: `${scope}.${key}`,
+        severity: "error",
+        message: "must be a non-empty string",
+      });
     } else if (containsTodo(value as string)) {
       issues.push({
         scope: `${scope}.${key}`,
@@ -309,7 +378,11 @@ const validateScenario = (id: string, s: IScenarioFile): Issue[] => {
 
   // grammar_targets
   if (!Array.isArray(s.grammar_targets) || s.grammar_targets.length === 0) {
-    issues.push({ scope: `${scope}.grammar_targets`, severity: "error", message: "must be a non-empty array" });
+    issues.push({
+      scope: `${scope}.grammar_targets`,
+      severity: "error",
+      message: "must be a non-empty array",
+    });
   } else if (s.grammar_targets.some((g) => containsTodo(g))) {
     issues.push({
       scope: `${scope}.grammar_targets`,
@@ -320,9 +393,17 @@ const validateScenario = (id: string, s: IScenarioFile): Issue[] => {
 
   // roleplay_prompt_en
   if (!isNonEmptyString(s.roleplay_prompt_en)) {
-    issues.push({ scope: `${scope}.roleplay_prompt_en`, severity: "error", message: "must be non-empty" });
+    issues.push({
+      scope: `${scope}.roleplay_prompt_en`,
+      severity: "error",
+      message: "must be non-empty",
+    });
   } else if (containsTodo(s.roleplay_prompt_en)) {
-    issues.push({ scope: `${scope}.roleplay_prompt_en`, severity: "warning", message: "contains TODO/REPLACE marker" });
+    issues.push({
+      scope: `${scope}.roleplay_prompt_en`,
+      severity: "warning",
+      message: "contains TODO/REPLACE marker",
+    });
   }
 
   // pass_threshold
@@ -340,7 +421,9 @@ const validateScenario = (id: string, s: IScenarioFile): Issue[] => {
   }
 
   // vocabulary_set
-  issues.push(...validateVocabulary(s.vocabulary_set, `${scope}.vocabulary_set`));
+  issues.push(
+    ...validateVocabulary(s.vocabulary_set, `${scope}.vocabulary_set`),
+  );
 
   // authoring metadata — warning only
   if (!s.authoring) {
@@ -389,7 +472,7 @@ const main = () => {
   const warnings = allIssues.filter((i) => i.severity === "warning");
 
   console.log(
-    `Validated ${files.length} scenario file(s): ${errors.length} error(s), ${warnings.length} warning(s)`
+    `Validated ${files.length} scenario file(s): ${errors.length} error(s), ${warnings.length} warning(s)`,
   );
 
   if (warnings.length > 0) {
@@ -399,7 +482,7 @@ const main = () => {
 
   if (errors.length === 0) {
     console.log(
-      `\n✓ all scenarios pass the schema — ${warnings.length > 0 ? "warnings remain (placeholders / missing sign-off)" : "ready for production"}`
+      `\n✓ all scenarios pass the schema — ${warnings.length > 0 ? "warnings remain (placeholders / missing sign-off)" : "ready for production"}`,
     );
     process.exit(0);
   }
@@ -407,7 +490,7 @@ const main = () => {
   console.error(`\nErrors:`);
   for (const e of errors) console.error(formatIssue(e));
   console.error(
-    `\nMinimums: ≥ ${MIN_VOCAB} vocab items per scenario, all 5 MVP languages present, pass_threshold ∈ [${PASS_MIN}, ${PASS_MAX}]`
+    `\nMinimums: ≥ ${MIN_VOCAB} vocab items per scenario, all 5 MVP languages present, pass_threshold ∈ [${PASS_MIN}, ${PASS_MAX}]`,
   );
   process.exit(1);
 };

@@ -26,7 +26,7 @@ const listNotificationsSchema = {
 export const listNotificationsValidation = validate(
   listNotificationsSchema,
   { context: true },
-  { abortEarly: false }
+  { abortEarly: false },
 );
 
 /* ══════════════════════════════════════════════
@@ -43,7 +43,7 @@ const markReadSchema = {
 export const markReadValidation = validate(
   markReadSchema,
   { context: true },
-  { abortEarly: false }
+  { abortEarly: false },
 );
 
 /* ══════════════════════════════════════════════
@@ -57,7 +57,7 @@ const markAllReadSchema = {
 export const markAllReadValidation = validate(
   markAllReadSchema,
   { context: true },
-  { abortEarly: false }
+  { abortEarly: false },
 );
 
 /* ══════════════════════════════════════════════
@@ -74,5 +74,5 @@ const deleteNotificationSchema = {
 export const deleteNotificationValidation = validate(
   deleteNotificationSchema,
   { context: true },
-  { abortEarly: false }
+  { abortEarly: false },
 );

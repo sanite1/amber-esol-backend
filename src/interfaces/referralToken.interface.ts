@@ -13,6 +13,9 @@ export interface IReferralToken extends Document {
   // Brief Function 1 fields
   created_by?: Types.ObjectId | null;
   usage_count?: number;
+  // Reminder tracking
+  lastRemindedAt?: Date | null;
+  reminder_count?: number;
   createdAt: Date;
   updatedAt: Date;
 }

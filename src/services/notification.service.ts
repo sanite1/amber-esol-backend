@@ -15,7 +15,7 @@ import logger from "../config/logger";
    (called by other services, NOT by a controller)
    ══════════════════════════════════════════════ */
 export const createNotification = async (
-  payload: ICreateNotificationPayload
+  payload: ICreateNotificationPayload,
 ): Promise<void> => {
   try {
     const notification = await Notification.create({
@@ -43,7 +43,7 @@ export const createNotification = async (
 };
 
 export const createBulkNotifications = async (
-  payload: IBulkCreateNotificationPayload
+  payload: IBulkCreateNotificationPayload,
 ): Promise<void> => {
   try {
     const docs = payload.userIds.map((userId) => ({
@@ -84,7 +84,7 @@ export const setNotificationIO = (io: any) => {
 
 const emitNotification = (
   userId: string,
-  payload: NotificationSocketPayload
+  payload: NotificationSocketPayload,
 ) => {
   if (ioInstance) {
     ioInstance.to(`user:${userId}`).emit("notification:new", payload);
@@ -106,7 +106,7 @@ export const emitUnreadCount = async (userId: string) => {
 
 export const listNotificationsService = async (
   userId: string,
-  query: INotificationQuery
+  query: INotificationQuery,
 ) => {
   const page = parseInt(query.page || "1", 10);
   const limit = parseInt(query.limit || "20", 10);
@@ -155,7 +155,7 @@ export const listNotificationsService = async (
 
 export const markNotificationReadService = async (
   userId: string,
-  notificationId: string
+  notificationId: string,
 ) => {
   const notification = await Notification.findOne({
     _id: notificationId,
@@ -182,7 +182,7 @@ export const markNotificationReadService = async (
 export const markAllNotificationsReadService = async (userId: string) => {
   const result = await Notification.updateMany(
     { userId: new Types.ObjectId(userId), read: false },
-    { $set: { read: true } }
+    { $set: { read: true } },
   );
 
   // Emit updated unread count (now 0)
@@ -195,7 +195,7 @@ export const markAllNotificationsReadService = async (userId: string) => {
 
 export const deleteNotificationService = async (
   userId: string,
-  notificationId: string
+  notificationId: string,
 ) => {
   const notification = await Notification.findOneAndDelete({
     _id: notificationId,

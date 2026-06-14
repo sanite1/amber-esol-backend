@@ -13,6 +13,7 @@ to a learner: they go out in moments of crisis, often to people whose
 English is rudimentary, often in seconds after disclosure.
 
 A poorly-worded pre-cache reply can:
+
 - Escalate distress (over-clinical wording, mis-pitched warmth)
 - Mis-signpost (wrong helpline for the category)
 - Confuse (translation that loses the meaning)
@@ -53,14 +54,14 @@ Format rules baked into every message:
 - **Single helpline per category** — per the brief, more helplines
   = decision fatigue in a crisis. The signposting per category:
 
-| Category | Signposting |
-|---|---|
-| `self_harm` | Samaritans 116 123 (24/7); text SHOUT to 85258 |
-| `domestic_abuse` | National Domestic Abuse Helpline 0808 2000 247 |
-| `radicalisation` | **No external signposting** — "I've made a note, someone will be in touch" |
-| `child_concern` | NSPCC 0808 800 5000 |
-| `exploitation` | Modern Slavery Helpline 08000 121 700 |
-| `mental_health_crisis` | NHS 111 (option 2); text SHOUT 85258 |
+| Category               | Signposting                                                                |
+| ---------------------- | -------------------------------------------------------------------------- |
+| `self_harm`            | Samaritans 116 123 (24/7); text SHOUT to 85258                             |
+| `domestic_abuse`       | National Domestic Abuse Helpline 0808 2000 247                             |
+| `radicalisation`       | **No external signposting** — "I've made a note, someone will be in touch" |
+| `child_concern`        | NSPCC 0808 800 5000                                                        |
+| `exploitation`         | Modern Slavery Helpline 08000 121 700                                      |
+| `mental_health_crisis` | NHS 111 (option 2); text SHOUT 85258                                       |
 
 - **Offer of continuity.** Every message ends with "I'm here when
   you're ready" or similar — the learner stays in control of what
@@ -183,7 +184,7 @@ linguistic-quality weight.
 Both parties counter-sign:
 
 - **Joey** confirms the content workflow was followed and translators
-  + reviewer were engaged + paid.
+  - reviewer were engaged + paid.
 - **Safeguarding professional** confirms in writing that the messages
   are fit for use with adult ESOL learners disclosing safeguarding
   concerns.
@@ -264,11 +265,13 @@ One-PR rename. Track as a separate ticket from the content review.
 `npm run validate:safeguarding-messages`:
 
 **Errors (block CI):**
+
 - Missing category
 - Missing language within a category
 - Empty / non-string message value
 
 **Warnings (don't block):**
+
 - TODO / REPLACE markers in any value
 - English message under 80 chars (likely a stub)
 - English message doesn't reference the expected signposting for

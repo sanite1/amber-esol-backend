@@ -42,20 +42,19 @@ export const checkProgressionService = async () => {
     if (latestSession?.completedAt) {
       daysSince = Math.floor(
         (Date.now() - latestSession.completedAt.getTime()) /
-          (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24),
       );
     } else if (learner.esolOnboardedAt) {
       daysSince = Math.floor(
         (Date.now() - learner.esolOnboardedAt.getTime()) /
-          (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24),
       );
     }
 
     const inactive =
       latestSession === null
         ? // No session ever — flag if onboarded > threshold ago
-          learner.esolOnboardedAt &&
-          learner.esolOnboardedAt < cutoff
+          learner.esolOnboardedAt && learner.esolOnboardedAt < cutoff
         : latestSession.completedAt && latestSession.completedAt < cutoff;
 
     if (inactive) {
@@ -76,7 +75,7 @@ export const checkProgressionService = async () => {
       flagged: flagged.length,
       threshold: INACTIVE_DAYS_THRESHOLD,
     },
-    "Progression check completed"
+    "Progression check completed",
   );
 
   return {

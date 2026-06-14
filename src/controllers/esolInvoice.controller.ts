@@ -46,7 +46,10 @@ export const getInvoice: ExpressFunction = async (req, res, next) => {
 export const markInvoicePaid: ExpressFunction = async (req, res, next) => {
   try {
     const params = req.params as Record<string, string>;
-    const data = await markInvoicePaidService(params.invoiceId, req.body as any);
+    const data = await markInvoicePaidService(
+      params.invoiceId,
+      req.body as any,
+    );
     return res.status(200).json(data);
   } catch (error) {
     next(error);
@@ -67,7 +70,7 @@ export const downloadInvoicePdf: ExpressFunction = async (req, res, next) => {
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      `inline; filename="${invoice.invoiceNumber}.pdf"`
+      `inline; filename="${invoice.invoiceNumber}.pdf"`,
     );
     res.setHeader("Content-Length", String(pdfBuffer.length));
     return res.status(200).send(pdfBuffer);

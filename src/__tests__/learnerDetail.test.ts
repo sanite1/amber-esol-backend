@@ -31,7 +31,8 @@
  *  Q2   Pagination caps applied (sessions ≤100, audit ≤200)
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 import { Types } from "mongoose";
 import Organisation from "../models/Organisation";
@@ -104,7 +105,7 @@ const seedSession = async (
     passed?: boolean;
     scenarioId?: string;
     createdAt?: Date;
-  } = {}
+  } = {},
 ) => {
   const session = await AISession.create({
     learnerId,
@@ -127,7 +128,7 @@ const seedSession = async (
   if (args.createdAt) {
     await AISession.collection.updateOne(
       { _id: session._id as unknown as never },
-      { $set: { createdAt: args.createdAt } }
+      { $set: { createdAt: args.createdAt } },
     );
   }
   return session;
@@ -145,12 +146,12 @@ describe("getLearnerDetailService — access control (Function 12 To-Do 2)", () 
     const res = await getLearnerDetailService(
       learner._id.toString(),
       "org_admin",
-      org._id.toString()
+      org._id.toString(),
     );
 
     expect(res.statusCode).toBe(200);
     expect((res.data as { learner: { _id: string } }).learner._id).toBe(
-      learner._id.toString()
+      learner._id.toString(),
     );
   });
 
@@ -163,8 +164,8 @@ describe("getLearnerDetailService — access control (Function 12 To-Do 2)", () 
       getLearnerDetailService(
         learnerInOther._id.toString(),
         "org_admin",
-        orgMine._id.toString()
-      )
+        orgMine._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 403 });
   });
 
@@ -174,12 +175,16 @@ describe("getLearnerDetailService — access control (Function 12 To-Do 2)", () 
       getLearnerDetailService(
         new Types.ObjectId().toString(),
         "org_admin",
-        org._id.toString()
-      )
+        org._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 404 });
 
     await expect(
-      getLearnerDetailService("not-an-objectid", "org_admin", org._id.toString())
+      getLearnerDetailService(
+        "not-an-objectid",
+        "org_admin",
+        org._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -191,7 +196,7 @@ describe("getLearnerDetailService — access control (Function 12 To-Do 2)", () 
     const res = await getLearnerDetailService(
       learner._id.toString(),
       "admin",
-      null
+      null,
     );
     expect(res.statusCode).toBe(200);
   });
@@ -205,11 +210,16 @@ describe("payload shape", () => {
   it("P1 — top-level learner object carries every cohort-table column", async () => {
     const org = await createOrg();
     const teacher = await User.create({
-      firstname: "Tara", lastname: "Tutor",
+      firstname: "Tara",
+      lastname: "Tutor",
       email: `t-${Date.now()}@detail.local`,
-      password: "x", phoneNumber: "07000000001",
-      role: "tutor", orgId: org._id,
-      isActive: true, status: "active", verified: true,
+      password: "x",
+      phoneNumber: "07000000001",
+      role: "tutor",
+      orgId: org._id,
+      isActive: true,
+      status: "active",
+      verified: true,
     });
     const learner = await createLearner({
       orgId: org._id,
@@ -225,14 +235,25 @@ describe("payload shape", () => {
       l1: "arabic",
     });
 
-    await seedSession(learner._id, org._id, { source: "ai_tutor", durationMins: 90, passed: true });
-    await seedSession(learner._id, org._id, { source: "pre_platform", durationMins: 180 });
-    await seedSession(learner._id, org._id, { source: "ai_tutor", durationMins: 60, passed: true });
+    await seedSession(learner._id, org._id, {
+      source: "ai_tutor",
+      durationMins: 90,
+      passed: true,
+    });
+    await seedSession(learner._id, org._id, {
+      source: "pre_platform",
+      durationMins: 180,
+    });
+    await seedSession(learner._id, org._id, {
+      source: "ai_tutor",
+      durationMins: 60,
+      passed: true,
+    });
 
     const res = await getLearnerDetailService(
       learner._id.toString(),
       "org_admin",
-      org._id.toString()
+      org._id.toString(),
     );
     const data = res.data as {
       learner: Record<string, unknown>;
@@ -249,10 +270,10 @@ describe("payload shape", () => {
     expect(L.uln_status).toBe("recorded");
     expect(L.cohort_status).toBe("active");
     expect(L.status).toBe("active");
-    expect(L.total_ai_hours).toBe(2.5);     // (90 + 60) / 60
-    expect(L.imported_hours).toBe(3.0);     // 180 / 60
+    expect(L.total_ai_hours).toBe(2.5); // (90 + 60) / 60
+    expect(L.imported_hours).toBe(3.0); // 180 / 60
     expect(L.teacher_contact_hours).toBe(4.5);
-    expect(L.total_glh).toBe(10.0);         // 2.5 + 3.0 + 4.5
+    expect(L.total_glh).toBe(10.0); // 2.5 + 3.0 + 4.5
     expect(L.scenarios_passed).toBe(2);
     expect(typeof L.last_active).toBe("string");
     expect(L.assigned_teacher_id).toBe(teacher._id.toString());
@@ -262,15 +283,31 @@ describe("payload shape", () => {
   it("P2 — stage3_objectives included as a full array", async () => {
     const org = await createOrg();
     const stage3 = [
-      { id: "obj-1", skill_domain: "Sc", description: "speak clearly", target_level: "e2", set_from: "placement_assessment" },
-      { id: "obj-2", skill_domain: "Wt", description: "write a note",  target_level: "e2", set_from: "placement_assessment" },
+      {
+        id: "obj-1",
+        skill_domain: "Sc",
+        description: "speak clearly",
+        target_level: "e2",
+        set_from: "placement_assessment",
+      },
+      {
+        id: "obj-2",
+        skill_domain: "Wt",
+        description: "write a note",
+        target_level: "e2",
+        set_from: "placement_assessment",
+      },
     ];
     const learner = await createLearner({ orgId: org._id, stage3 });
 
     const res = await getLearnerDetailService(
-      learner._id.toString(), "org_admin", org._id.toString()
+      learner._id.toString(),
+      "org_admin",
+      org._id.toString(),
     );
-    const arr = (res.data as { stage3_objectives: Array<Record<string, unknown>> }).stage3_objectives;
+    const arr = (
+      res.data as { stage3_objectives: Array<Record<string, unknown>> }
+    ).stage3_objectives;
     expect(arr).toHaveLength(2);
     expect(arr[0].id).toBe("obj-1");
     expect(arr[1].skill_domain).toBe("Wt");
@@ -280,17 +317,46 @@ describe("payload shape", () => {
     const org = await createOrg();
     const learner = await createLearner({ orgId: org._id });
     await VocabLedger.insertMany([
-      { learnerId: learner._id, word: "apple",  retained: true,  times_encountered: 6, introducedAt: new Date("2026-01-01"), last_seen_at: new Date() },
-      { learnerId: learner._id, word: "banana", retained: false, times_encountered: 2, introducedAt: new Date("2026-02-01"), last_seen_at: new Date("2026-02-10") },
-      { learnerId: learner._id, word: "cherry", retained: false, times_encountered: 1, introducedAt: new Date("2026-02-15"), last_seen_at: new Date("2026-02-20") },
+      {
+        learnerId: learner._id,
+        word: "apple",
+        retained: true,
+        times_encountered: 6,
+        introducedAt: new Date("2026-01-01"),
+        last_seen_at: new Date(),
+      },
+      {
+        learnerId: learner._id,
+        word: "banana",
+        retained: false,
+        times_encountered: 2,
+        introducedAt: new Date("2026-02-01"),
+        last_seen_at: new Date("2026-02-10"),
+      },
+      {
+        learnerId: learner._id,
+        word: "cherry",
+        retained: false,
+        times_encountered: 1,
+        introducedAt: new Date("2026-02-15"),
+        last_seen_at: new Date("2026-02-20"),
+      },
     ]);
 
     const res = await getLearnerDetailService(
-      learner._id.toString(), "org_admin", org._id.toString()
+      learner._id.toString(),
+      "org_admin",
+      org._id.toString(),
     );
-    const vl = (res.data as {
-      vocab_ledger: { retained: Array<{ word: string }>; in_progress: Array<{ word: string }>; totals: { retained: number; in_progress: number; total: number } };
-    }).vocab_ledger;
+    const vl = (
+      res.data as {
+        vocab_ledger: {
+          retained: Array<{ word: string }>;
+          in_progress: Array<{ word: string }>;
+          totals: { retained: number; in_progress: number; total: number };
+        };
+      }
+    ).vocab_ledger;
 
     expect(vl.retained.map((r) => r.word)).toEqual(["apple"]);
     expect(vl.in_progress.map((r) => r.word)).toEqual(["banana", "cherry"]);
@@ -308,15 +374,32 @@ describe("payload shape", () => {
     }
 
     const res = await getLearnerDetailService(
-      learner._id.toString(), "org_admin", org._id.toString(),
-      { sessions_limit: "20" }
+      learner._id.toString(),
+      "org_admin",
+      org._id.toString(),
+      { sessions_limit: "20" },
     );
-    const s = (res.data as {
-      sessions: { rows: Array<{ createdAt: string; turns?: unknown[] }>; pagination: { page: number; limit: number; total: number; total_pages: number } };
-    }).sessions;
+    const s = (
+      res.data as {
+        sessions: {
+          rows: Array<{ createdAt: string; turns?: unknown[] }>;
+          pagination: {
+            page: number;
+            limit: number;
+            total: number;
+            total_pages: number;
+          };
+        };
+      }
+    ).sessions;
 
     expect(s.rows).toHaveLength(20);
-    expect(s.pagination).toEqual({ page: 1, limit: 20, total: 22, total_pages: 2 });
+    expect(s.pagination).toEqual({
+      page: 1,
+      limit: 20,
+      total: 22,
+      total_pages: 2,
+    });
     // Recent-first ordering
     const times = s.rows.map((r) => new Date(r.createdAt).getTime());
     for (let i = 1; i < times.length; i++) {
@@ -335,24 +418,47 @@ describe("payload shape", () => {
     const middle = new Date("2026-04-01");
     const newest = new Date("2026-06-10");
     await LevelChange.create({
-      learnerId: learner._id, orgId: org._id, fromLevel: "e1", toLevel: "e2",
-      changedBy: admin, reason: "first promotion", effectiveDate: oldest,
+      learnerId: learner._id,
+      orgId: org._id,
+      fromLevel: "e1",
+      toLevel: "e2",
+      changedBy: admin,
+      reason: "first promotion",
+      effectiveDate: oldest,
     });
     await LevelChange.create({
-      learnerId: learner._id, orgId: org._id, fromLevel: "e2", toLevel: "e3",
-      changedBy: admin, reason: "second promotion", effectiveDate: newest,
+      learnerId: learner._id,
+      orgId: org._id,
+      fromLevel: "e2",
+      toLevel: "e3",
+      changedBy: admin,
+      reason: "second promotion",
+      effectiveDate: newest,
     });
     await LevelChange.create({
-      learnerId: learner._id, orgId: org._id, fromLevel: "e2", toLevel: "e2",
-      changedBy: admin, reason: "no-op adjustment", effectiveDate: middle,
+      learnerId: learner._id,
+      orgId: org._id,
+      fromLevel: "e2",
+      toLevel: "e2",
+      changedBy: admin,
+      reason: "no-op adjustment",
+      effectiveDate: middle,
     });
 
     const res = await getLearnerDetailService(
-      learner._id.toString(), "org_admin", org._id.toString()
+      learner._id.toString(),
+      "org_admin",
+      org._id.toString(),
     );
-    const lp = (res.data as {
-      level_progression: Array<{ fromLevel: string; toLevel: string; effectiveDate: string }>;
-    }).level_progression;
+    const lp = (
+      res.data as {
+        level_progression: Array<{
+          fromLevel: string;
+          toLevel: string;
+          effectiveDate: string;
+        }>;
+      }
+    ).level_progression;
 
     expect(lp).toHaveLength(3);
     const dates = lp.map((l) => new Date(l.effectiveDate).getTime());
@@ -365,7 +471,9 @@ describe("payload shape", () => {
 
     for (let i = 0; i < 3; i++) {
       await SafeguardingAlert.create({
-        learnerId: learner._id, orgId: org._id, sessionId: new Types.ObjectId(),
+        learnerId: learner._id,
+        orgId: org._id,
+        sessionId: new Types.ObjectId(),
         alertLevel: "critical",
         messageContentHash: "a".repeat(64),
         triggerCategory: "self_harm",
@@ -375,7 +483,9 @@ describe("payload shape", () => {
     }
 
     const res = await getLearnerDetailService(
-      learner._id.toString(), "org_admin", org._id.toString()
+      learner._id.toString(),
+      "org_admin",
+      org._id.toString(),
     );
     const data = res.data as { safeguarding_alert_count: number };
     expect(data.safeguarding_alert_count).toBe(3);
@@ -395,22 +505,40 @@ describe("payload shape", () => {
     const newest = new Date("2026-05-15");
 
     await TeacherReview.create({
-      learner_id: learner._id, teacher_id: teacherId, org_id: org._id,
-      review_type: "async_review", duration_mins: 10, notes: "first",
-      ai_recommendation_acted_on: true, created_at: newest,
+      learner_id: learner._id,
+      teacher_id: teacherId,
+      org_id: org._id,
+      review_type: "async_review",
+      duration_mins: 10,
+      notes: "first",
+      ai_recommendation_acted_on: true,
+      created_at: newest,
     });
     await TeacherReview.create({
-      learner_id: learner._id, teacher_id: teacherId, org_id: org._id,
-      review_type: "contact_session", duration_mins: 45, notes: "second",
-      ai_recommendation_acted_on: false, created_at: oldest,
+      learner_id: learner._id,
+      teacher_id: teacherId,
+      org_id: org._id,
+      review_type: "contact_session",
+      duration_mins: 45,
+      notes: "second",
+      ai_recommendation_acted_on: false,
+      created_at: oldest,
     });
 
     const res = await getLearnerDetailService(
-      learner._id.toString(), "org_admin", org._id.toString()
+      learner._id.toString(),
+      "org_admin",
+      org._id.toString(),
     );
-    const reviews = (res.data as {
-      teacher_reviews: Array<{ review_type: string; created_at: string; notes: string }>;
-    }).teacher_reviews;
+    const reviews = (
+      res.data as {
+        teacher_reviews: Array<{
+          review_type: string;
+          created_at: string;
+          notes: string;
+        }>;
+      }
+    ).teacher_reviews;
 
     expect(reviews).toHaveLength(2);
     expect(reviews[0].notes).toBe("second"); // oldest first
@@ -425,25 +553,45 @@ describe("payload shape", () => {
     for (let i = 0; i < 5; i++) {
       await AuditLog.create({
         timestamp: new Date(baseTime + i * 60_000),
-        actor_type: "system", actor_id: null,
-        org_id: org._id, learner_id: learner._id,
+        actor_type: "system",
+        actor_id: null,
+        org_id: org._id,
+        learner_id: learner._id,
         action: "session_completed",
-        before_state: null, after_state: { i },
+        before_state: null,
+        after_state: { i },
         reason: `entry ${i}`,
         compliance_config_version: null,
       });
     }
 
     const res = await getLearnerDetailService(
-      learner._id.toString(), "org_admin", org._id.toString(),
-      { audit_limit: "3" }
+      learner._id.toString(),
+      "org_admin",
+      org._id.toString(),
+      { audit_limit: "3" },
     );
-    const audit = (res.data as {
-      audit_log_entries: { rows: Array<{ reason: string; timestamp: string }>; pagination: { page: number; limit: number; total: number; total_pages: number } };
-    }).audit_log_entries;
+    const audit = (
+      res.data as {
+        audit_log_entries: {
+          rows: Array<{ reason: string; timestamp: string }>;
+          pagination: {
+            page: number;
+            limit: number;
+            total: number;
+            total_pages: number;
+          };
+        };
+      }
+    ).audit_log_entries;
 
     expect(audit.rows).toHaveLength(3);
-    expect(audit.pagination).toEqual({ page: 1, limit: 3, total: 5, total_pages: 2 });
+    expect(audit.pagination).toEqual({
+      page: 1,
+      limit: 3,
+      total: 5,
+      total_pages: 2,
+    });
     // Most recent first
     const times = audit.rows.map((r) => new Date(r.timestamp).getTime());
     for (let i = 1; i < times.length; i++) {
@@ -454,7 +602,10 @@ describe("payload shape", () => {
   it("P9 — cohort_status drives status; live fallback when null", async () => {
     const org = await createOrg();
 
-    const a = await createLearner({ orgId: org._id, cohortStatus: "inactive_moderate" });
+    const a = await createLearner({
+      orgId: org._id,
+      cohortStatus: "inactive_moderate",
+    });
     const b = await createLearner({ orgId: org._id, cohortStatus: null });
     await seedSession(b._id, org._id, {
       source: "ai_tutor",
@@ -462,13 +613,31 @@ describe("payload shape", () => {
     });
     const c = await createLearner({ orgId: org._id, cohortStatus: null }); // no session
 
-    const aR = await getLearnerDetailService(a._id.toString(), "org_admin", org._id.toString());
-    const bR = await getLearnerDetailService(b._id.toString(), "org_admin", org._id.toString());
-    const cR = await getLearnerDetailService(c._id.toString(), "org_admin", org._id.toString());
+    const aR = await getLearnerDetailService(
+      a._id.toString(),
+      "org_admin",
+      org._id.toString(),
+    );
+    const bR = await getLearnerDetailService(
+      b._id.toString(),
+      "org_admin",
+      org._id.toString(),
+    );
+    const cR = await getLearnerDetailService(
+      c._id.toString(),
+      "org_admin",
+      org._id.toString(),
+    );
 
-    expect((aR.data as { learner: { status: string } }).learner.status).toBe("inactive");
-    expect((bR.data as { learner: { status: string } }).learner.status).toBe("dormant");
-    expect((cR.data as { learner: { status: string } }).learner.status).toBe("unknown");
+    expect((aR.data as { learner: { status: string } }).learner.status).toBe(
+      "inactive",
+    );
+    expect((bR.data as { learner: { status: string } }).learner.status).toBe(
+      "dormant",
+    );
+    expect((cR.data as { learner: { status: string } }).learner.status).toBe(
+      "unknown",
+    );
   });
 
   it("P10 — uln_status: recorded vs missing", async () => {
@@ -478,29 +647,60 @@ describe("payload shape", () => {
     const nul = await createLearner({ orgId: org._id, uln: null });
 
     for (const [learner, expected] of [
-      [with_, "recorded"], [empty, "missing"], [nul, "missing"],
+      [with_, "recorded"],
+      [empty, "missing"],
+      [nul, "missing"],
     ] as const) {
-      const r = await getLearnerDetailService(learner._id.toString(), "org_admin", org._id.toString());
-      expect((r.data as { learner: { uln_status: string } }).learner.uln_status).toBe(expected);
+      const r = await getLearnerDetailService(
+        learner._id.toString(),
+        "org_admin",
+        org._id.toString(),
+      );
+      expect(
+        (r.data as { learner: { uln_status: string } }).learner.uln_status,
+      ).toBe(expected);
     }
   });
 
   it("P11 — assigned_teacher_name resolved when assigned_teacher_id set", async () => {
     const org = await createOrg();
     const teacher = await User.create({
-      firstname: "Sara", lastname: "Stage",
+      firstname: "Sara",
+      lastname: "Stage",
       email: `s-${Date.now()}@detail.local`,
-      password: "x", phoneNumber: "07000000002",
-      role: "tutor", orgId: org._id, isActive: true, status: "active", verified: true,
+      password: "x",
+      phoneNumber: "07000000002",
+      role: "tutor",
+      orgId: org._id,
+      isActive: true,
+      status: "active",
+      verified: true,
     });
-    const withT = await createLearner({ orgId: org._id, assignedTeacherId: teacher._id });
+    const withT = await createLearner({
+      orgId: org._id,
+      assignedTeacherId: teacher._id,
+    });
     const noT = await createLearner({ orgId: org._id });
 
-    const r1 = await getLearnerDetailService(withT._id.toString(), "org_admin", org._id.toString());
-    expect((r1.data as { learner: { assigned_teacher_name: string } }).learner.assigned_teacher_name).toBe("Sara Stage");
+    const r1 = await getLearnerDetailService(
+      withT._id.toString(),
+      "org_admin",
+      org._id.toString(),
+    );
+    expect(
+      (r1.data as { learner: { assigned_teacher_name: string } }).learner
+        .assigned_teacher_name,
+    ).toBe("Sara Stage");
 
-    const r2 = await getLearnerDetailService(noT._id.toString(), "org_admin", org._id.toString());
-    expect((r2.data as { learner: { assigned_teacher_name: string | null } }).learner.assigned_teacher_name).toBeNull();
+    const r2 = await getLearnerDetailService(
+      noT._id.toString(),
+      "org_admin",
+      org._id.toString(),
+    );
+    expect(
+      (r2.data as { learner: { assigned_teacher_name: string | null } }).learner
+        .assigned_teacher_name,
+    ).toBeNull();
   });
 });
 
@@ -514,7 +714,9 @@ describe("pagination caps", () => {
     const learner = await createLearner({ orgId: org._id });
 
     const res = await getLearnerDetailService(
-      learner._id.toString(), "org_admin", org._id.toString()
+      learner._id.toString(),
+      "org_admin",
+      org._id.toString(),
     );
     const data = res.data as {
       sessions: { pagination: { limit: number } };
@@ -529,8 +731,10 @@ describe("pagination caps", () => {
     const learner = await createLearner({ orgId: org._id });
 
     const res = await getLearnerDetailService(
-      learner._id.toString(), "org_admin", org._id.toString(),
-      { sessions_limit: "5000", audit_limit: "5000" }
+      learner._id.toString(),
+      "org_admin",
+      org._id.toString(),
+      { sessions_limit: "5000", audit_limit: "5000" },
     );
     const data = res.data as {
       sessions: { pagination: { limit: number } };

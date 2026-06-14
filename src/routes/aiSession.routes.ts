@@ -36,7 +36,7 @@ router.post(
   requireEsolLearner,
   requireOrgContext,
   aiTurnLimiter,
-  processTurn
+  processTurn,
 );
 
 /**
@@ -52,7 +52,7 @@ router.post(
   requireEsolLearner,
   requireOrgContext,
   sessionStartLimiter,
-  startSession
+  startSession,
 );
 
 /**
@@ -67,7 +67,7 @@ router.post(
   isAuthenticated,
   requireEsolLearner,
   requireOrgContext,
-  endSession
+  endSession,
 );
 
 export default router;

@@ -11,7 +11,7 @@ import { Types } from "mongoose";
 
 const objectIdRule = (
   value: string,
-  helpers: { error: (code: string) => unknown }
+  helpers: { error: (code: string) => unknown },
 ) => {
   if (!Types.ObjectId.isValid(value)) return helpers.error("any.invalid");
   return value;
@@ -52,16 +52,11 @@ const rejectSchema = {
       .custom(objectIdRule, "ObjectId")
       .required()
       .messages({ "any.required": "learner_id is required" }),
-    reason: Joi.string()
-      .trim()
-      .min(1)
-      .max(4_000)
-      .required()
-      .messages({
-        "any.required": "reason is required",
-        "string.empty": "reason must be a non-empty string",
-        "string.max": "reason must be 4000 characters or fewer",
-      }),
+    reason: Joi.string().trim().min(1).max(4_000).required().messages({
+      "any.required": "reason is required",
+      "string.empty": "reason must be a non-empty string",
+      "string.max": "reason must be 4000 characters or fewer",
+    }),
   }).unknown(false),
 };
 

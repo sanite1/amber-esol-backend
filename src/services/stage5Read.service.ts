@@ -75,7 +75,9 @@ export interface PendingStage5Response {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────
 
-const projectObjectives = (raw: unknown): Stage5ReviewSummary["stage3_objectives"] => {
+const projectObjectives = (
+  raw: unknown,
+): Stage5ReviewSummary["stage3_objectives"] => {
   if (!Array.isArray(raw)) return [];
   const out: Stage5ReviewSummary["stage3_objectives"] = [];
   for (const item of raw) {
@@ -84,7 +86,8 @@ const projectObjectives = (raw: unknown): Stage5ReviewSummary["stage3_objectives
       if (typeof it.id === "string") {
         out.push({
           id: it.id,
-          skill_domain: typeof it.skill_domain === "string" ? it.skill_domain : "",
+          skill_domain:
+            typeof it.skill_domain === "string" ? it.skill_domain : "",
           description: typeof it.description === "string" ? it.description : "",
           target_level:
             typeof it.target_level === "string" ? it.target_level : null,

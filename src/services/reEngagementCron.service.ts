@@ -120,7 +120,9 @@ export const fanOutReEngagement =
     const date = new Date().toISOString().slice(0, 10);
     const now = Date.now();
     const dormantCutoff = new Date(now - DORMANT_DAYS * MS_PER_DAY);
-    const cooldownCutoff = new Date(now - REENGAGEMENT_COOLDOWN_DAYS * MS_PER_DAY);
+    const cooldownCutoff = new Date(
+      now - REENGAGEMENT_COOLDOWN_DAYS * MS_PER_DAY,
+    );
 
     // Headline cohort size first — useful for the audit row even
     // when the candidate list is then capped below.
@@ -188,9 +190,7 @@ export const fanOutReEngagement =
       .select("learner_id")
       .lean();
     const recentlyNudged = new Set(
-      recentNudges.map((m) =>
-        (m.learner_id as Types.ObjectId).toString(),
-      ),
+      recentNudges.map((m) => (m.learner_id as Types.ObjectId).toString()),
     );
 
     // ── Teacher batch lookup ─────────────────────────────────
@@ -198,9 +198,11 @@ export const fanOutReEngagement =
     const teacherIds = Array.from(
       new Set(
         candidates
-          .map((c) =>
-            (c as { assigned_teacher_id?: Types.ObjectId | null })
-              .assigned_teacher_id?.toString() ?? "",
+          .map(
+            (c) =>
+              (
+                c as { assigned_teacher_id?: Types.ObjectId | null }
+              ).assigned_teacher_id?.toString() ?? "",
           )
           .filter(Boolean),
       ),
@@ -209,9 +211,10 @@ export const fanOutReEngagement =
     const teachers = await User.find({ _id: { $in: teacherIds } })
       .select("_id auto_re_engagement_enabled")
       .lean();
-    const teacherById = new Map<string, { auto_re_engagement_enabled?: boolean }>(
-      teachers.map((t) => [(t._id as Types.ObjectId).toString(), t]),
-    );
+    const teacherById = new Map<
+      string,
+      { auto_re_engagement_enabled?: boolean }
+    >(teachers.map((t) => [(t._id as Types.ObjectId).toString(), t]));
 
     // ── Per-learner send loop ────────────────────────────────
     let sent = 0;

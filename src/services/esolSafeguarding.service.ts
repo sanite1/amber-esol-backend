@@ -21,7 +21,7 @@ interface CallerContext {
 
 export const listAlertsService = async (
   options: ListAlertsOptions,
-  caller: CallerContext
+  caller: CallerContext,
 ) => {
   const page = parseInt(options.page || "1", 10);
   const limit = parseInt(options.limit || "20", 10);
@@ -63,12 +63,15 @@ export const listAlertsService = async (
 
 export const getAlertService = async (
   alertId: string,
-  caller: CallerContext
+  caller: CallerContext,
 ) => {
   const alert = await SafeguardingAlert.findById(alertId)
     .populate("learnerId", "firstname lastname email esolLevel")
     .populate("orgId", "name")
-    .populate("sessionId", "topic sessionMode esolLevel turns assessmentSummary")
+    .populate(
+      "sessionId",
+      "topic sessionMode esolLevel turns assessmentSummary",
+    )
     .populate("reviewedBy", "firstname lastname email");
 
   if (!alert) {
@@ -90,7 +93,7 @@ export const getAlertService = async (
 export const reviewAlertService = async (
   alertId: string,
   data: { status: string; resolution?: string },
-  caller: CallerContext
+  caller: CallerContext,
 ) => {
   const alert = await SafeguardingAlert.findById(alertId);
   if (!alert) {

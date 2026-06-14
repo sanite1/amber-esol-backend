@@ -29,7 +29,7 @@ const payoutSchema = new Schema<IPayout>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 const Payout = model<IPayout>("Payout", payoutSchema);

@@ -7,7 +7,7 @@
 > this email exists to prevent.
 >
 > The template below is the format. Replace anything in
-> `<angle brackets>` before sending. Anything in *italics* is a
+> `<angle brackets>` before sending. Anything in _italics_ is a
 > note to Joey and should be removed.
 
 ---
@@ -40,11 +40,9 @@ The dated archive is what the retrospective report (`PILOT_LAUNCH.md`
 
 > **Subject:** Project Silk pilot — weekly update, week of `<DD Month>`
 >
-> **To:** `<org admin email>`
-> **Cc:** *(optional: any other named contact at the org from the
-> Engagement Letter)*
-> **Bcc:** `engineering-pilot@ambertraining.co.uk` *(internal
-> archive)*
+> **To:** `<org admin email>` > **Cc:** _(optional: any other named contact at the org from the
+> Engagement Letter)_ > **Bcc:** `engineering-pilot@ambertraining.co.uk` _(internal
+> archive)_
 >
 > ---
 >
@@ -55,12 +53,13 @@ The dated archive is what the retrospective report (`PILOT_LAUNCH.md`
 >
 > ## Headline
 >
-> *One or two sentences. Lead with the most useful thing — either
+> _One or two sentences. Lead with the most useful thing — either
 > "everything ran cleanly this week" or the most material change
 > shipped. If a major fix landed, name it. If a P0 happened, name
-> it honestly here — never bury it lower down.*
+> it honestly here — never bury it lower down._
 >
 > e.g.
+>
 > - "All quiet from our side this week — the evidence-report
 >   speed-up landed on Wednesday and the dashboard load times are
 >   back below the 2 second target."
@@ -70,44 +69,47 @@ The dated archive is what the retrospective report (`PILOT_LAUNCH.md`
 >
 > ## Shipped this week
 >
-> *List every issue that closed AND landed on production this
+> _List every issue that closed AND landed on production this
 > week. Group by who reported it. If your org reported nothing
 > this week, the list might be empty for your section but other
 > pilot orgs' fixes will still appear here when they affect the
-> shared platform.*
+> shared platform._
 >
 > **From your team:**
+>
 > - Issue #`<n>` — `<one-line>`. Shipped `<day>`.
->   *Brief plain-English description of what the fix changes for
->   your day-to-day use.*
+>   _Brief plain-English description of what the fix changes for
+>   your day-to-day use._
 > - …
 >
 > **From other pilot orgs (these affect the shared platform too):**
+>
 > - Issue #`<n>` — `<one-line>`. Shipped `<day>`.
 > - …
 >
 > **Internal improvements (no user-visible change):**
-> - `<short bullet>` — *(only include items worth mentioning;
->   skip if nothing material)*
+>
+> - `<short bullet>` — _(only include items worth mentioning;
+>   skip if nothing material)_
 >
 > ## In flight
 >
-> *Open issues that engineering is actively working on. Name them,
-> name the severity, name the ETA.*
+> _Open issues that engineering is actively working on. Name them,
+> name the severity, name the ETA._
 >
 > - **P1 — Issue #`<n>`** — `<one-line>`. Reported `<day>`.
 >   Target deploy: `<day>`. Engineering owner: `<name>`.
 > - **P2 — Issue #`<n>`** — `<one-line>`. Will land in next
 >   Wednesday's batch release.
 >
-> *If nothing's in flight for your org, say so explicitly: "No
+> _If nothing's in flight for your org, say so explicitly: "No
 > open issues from your team this week — everything reported has
-> shipped."*
+> shipped."_
 >
 > ## What we'd like from you
 >
-> *Optional section. Use sparingly — at most once a fortnight.
-> Examples:*
+> _Optional section. Use sparingly — at most once a fortnight.
+> Examples:_
 >
 > - "Could `<name>` try the new Stage 5 confirmation flow before
 >   next Tuesday's check-in? We want to confirm the override
@@ -130,8 +132,8 @@ The dated archive is what the retrospective report (`PILOT_LAUNCH.md`
 >
 > Week `<N>` of `<4 / 5 / 6>`. `<N>` weeks to retrospective.
 >
-> *If this is the final-week email, the line reads "Final week —
-> retrospective conversation scheduled for `<day>`."*
+> _If this is the final-week email, the line reads "Final week —
+> retrospective conversation scheduled for `<day>`."_
 >
 > ---
 >
@@ -178,16 +180,16 @@ section between **Headline** and **Shipped this week**:
 > **When:** `<day, time UK, duration>`.
 >
 > **Who was affected:** `<scope — one org, all pilot orgs,
-> learners only, etc>`.
+learners only, etc>`.
 >
 > **What we did:** `<fix + deploy>`. Live on production since
 > `<day, time UK>`.
 >
 > **What we learned:** `<one or two sentences from the
-> post-mortem>`. Full write-up at `<link to docs/INCIDENTS/…>`.
+post-mortem>`. Full write-up at `<link to docs/INCIDENTS/…>`.
 >
 > **What we're changing:** `<concrete change to prevent
-> recurrence>`. If still TBD, name when we'll have it.
+recurrence>`. If still TBD, name when we'll have it.
 >
 > I'm sorry this affected you. If you have any concerns, please
 > reply or call me directly.
@@ -207,7 +209,7 @@ The email STILL goes out. Format:
 >
 > ## In flight
 >
-> *(list open items as normal)*
+> _(list open items as normal)_
 >
 > ## What we'd like from you
 >
@@ -216,7 +218,7 @@ The email STILL goes out. Format:
 > them — we have engineering capacity for the P2 batch next
 > Wednesday.
 >
-> *(continue with reminders + countdown as normal)*
+> _(continue with reminders + countdown as normal)_
 
 A "nothing shipped" email is itself useful — it confirms the
 platform is stable and signals engineering capacity is available.

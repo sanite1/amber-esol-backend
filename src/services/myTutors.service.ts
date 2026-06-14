@@ -71,7 +71,7 @@ const formatResponseTime = (minutes?: number): string => {
 
 export const listMyTutorsService = async (
   studentId: string,
-  query: IMyTutorsQuery
+  query: IMyTutorsQuery,
 ) => {
   const page = parseInt(query.page || "1", 10);
   const limit = parseInt(query.limit || "20", 10);
@@ -313,7 +313,7 @@ export const listMyTutorsService = async (
       break;
     case "past":
       tutorItems = tutorItems.filter(
-        (t) => t.nextLesson === null && t.completedLessons > 0
+        (t) => t.nextLesson === null && t.completedLessons > 0,
       );
       break;
     case "favourites":
@@ -361,7 +361,7 @@ export const listMyTutorsService = async (
 
 export const getMyTutorDetailService = async (
   studentId: string,
-  tutorId: string
+  tutorId: string,
 ) => {
   // Verify this student has at least one booking with this tutor
   const hasBooking = await Booking.findOne({
@@ -393,7 +393,7 @@ export const getMyTutorDetailService = async (
     .lean();
 
   const completedLessons = bookings.filter(
-    (b) => b.status === "completed"
+    (b) => b.status === "completed",
   ).length;
   const lastCompleted = bookings.find((b) => b.status === "completed");
 
@@ -401,7 +401,7 @@ export const getMyTutorDetailService = async (
   const today = new Date().toISOString().split("T")[0];
   const upcoming = bookings.find(
     (b) =>
-      (b.status === "pending" || b.status === "confirmed") && b.date >= today
+      (b.status === "pending" || b.status === "confirmed") && b.date >= today,
   );
 
   const nextLesson: INextLesson | null = upcoming
@@ -487,7 +487,7 @@ export const getMyTutorDetailService = async (
 
 export const toggleFavouriteTutorService = async (
   studentId: string,
-  tutorId: string
+  tutorId: string,
 ) => {
   // Verify tutor exists
   const tutor = await User.findById(tutorId);

@@ -52,7 +52,7 @@ const failedJobSchema = new Schema<IFailedJob>(
     dismissed_by: { type: Schema.Types.ObjectId, ref: "User", default: null },
     dismissed_at: { type: Date, default: null },
   },
-  { collection: "failed_jobs", versionKey: false }
+  { collection: "failed_jobs", versionKey: false },
 );
 
 // Compound index for the dashboard's "failures in queue X this week" query.

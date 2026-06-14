@@ -14,18 +14,18 @@
 
 ## At a glance
 
-| Surface              | URL                                            |
-|----------------------|------------------------------------------------|
-| Frontend (prod)      | <https://esol.ambertraining.co.uk>             |
-| Backend API (prod)   | <https://api.esol.ambertraining.co.uk>         |
-| Frontend (demo)      | <https://esol-demo.ambertraining.co.uk>        |
-| Backend API (demo)   | <https://api-demo.ambertraining.co.uk>         |
-| Bull Board (prod)    | <https://api.esol.ambertraining.co.uk/admin/queues> |
-| Health check (prod)  | <https://api.esol.ambertraining.co.uk/api/health> |
-| Status page          | <https://status.ambertraining.co.uk> (BetterUptime) |
-| Sentry (backend prod)| <https://sentry.io/organizations/amber/projects/amber-esol-backend/> |
-| Sentry (frontend prod)| <https://sentry.io/organizations/amber/projects/amber-esol-mvp/> |
-| Better Stack logs    | <https://logs.betterstack.com/sources/<source-id>> |
+| Surface                | URL                                                                  |
+| ---------------------- | -------------------------------------------------------------------- |
+| Frontend (prod)        | <https://esol.ambertraining.co.uk>                                   |
+| Backend API (prod)     | <https://api.esol.ambertraining.co.uk>                               |
+| Frontend (demo)        | <https://esol-demo.ambertraining.co.uk>                              |
+| Backend API (demo)     | <https://api-demo.ambertraining.co.uk>                               |
+| Bull Board (prod)      | <https://api.esol.ambertraining.co.uk/admin/queues>                  |
+| Health check (prod)    | <https://api.esol.ambertraining.co.uk/api/health>                    |
+| Status page            | <https://status.ambertraining.co.uk> (BetterUptime)                  |
+| Sentry (backend prod)  | <https://sentry.io/organizations/amber/projects/amber-esol-backend/> |
+| Sentry (frontend prod) | <https://sentry.io/organizations/amber/projects/amber-esol-mvp/>     |
+| Better Stack logs      | <https://logs.betterstack.com/sources/<source-id>>                   |
 
 ---
 
@@ -82,13 +82,13 @@ same repo, the same build, two different process entry points.**
 
 ### Custom domains
 
-| Domain                              | Points to                | TLS |
-|-------------------------------------|--------------------------|-----|
-| `esol.ambertraining.co.uk`          | Vercel frontend (prod)   | Let's Encrypt (Vercel auto) |
-| `api.esol.ambertraining.co.uk`      | Vercel backend (prod)    | Let's Encrypt (Vercel auto) |
-| `esol-demo.ambertraining.co.uk`     | Vercel frontend (demo)   | Let's Encrypt (Vercel auto) |
-| `api-demo.ambertraining.co.uk`      | Vercel backend (demo)    | Let's Encrypt (Vercel auto) |
-| `status.ambertraining.co.uk`        | BetterUptime status page | BetterUptime managed |
+| Domain                          | Points to                | TLS                         |
+| ------------------------------- | ------------------------ | --------------------------- |
+| `esol.ambertraining.co.uk`      | Vercel frontend (prod)   | Let's Encrypt (Vercel auto) |
+| `api.esol.ambertraining.co.uk`  | Vercel backend (prod)    | Let's Encrypt (Vercel auto) |
+| `esol-demo.ambertraining.co.uk` | Vercel frontend (demo)   | Let's Encrypt (Vercel auto) |
+| `api-demo.ambertraining.co.uk`  | Vercel backend (demo)    | Let's Encrypt (Vercel auto) |
+| `status.ambertraining.co.uk`    | BetterUptime status page | BetterUptime managed        |
 
 ### DNS provider
 
@@ -105,18 +105,18 @@ DNS lives at **<DNS provider name>** under the
 
 ### Other services
 
-| Service                         | Resource name / handle                       |
-|---------------------------------|----------------------------------------------|
-| MongoDB Atlas project           | `amber-prod` (cluster: `silk-prod-cluster`) |
-| MongoDB Atlas project (demo)    | `amber-demo` (cluster: `silk-demo-cluster`) |
-| Upstash Redis (prod)            | `silk-prod-redis` (eu-west-2)               |
-| Upstash Redis (demo)            | `silk-demo-redis` (eu-west-2)               |
-| Railway project                 | `amber-esol-workers`                        |
-| Sentry organisation             | `amber`                                     |
-| Better Stack workspace          | `amber-training`                            |
-| BetterUptime account            | `amber-training` (via Better Stack SSO)     |
-| Vertex AI / GCP project         | `amber-esol-prod` (region `europe-west2`)   |
-| Stripe account                  | Amber Training Ltd (live keys live in 1Password) |
+| Service                      | Resource name / handle                           |
+| ---------------------------- | ------------------------------------------------ |
+| MongoDB Atlas project        | `amber-prod` (cluster: `silk-prod-cluster`)      |
+| MongoDB Atlas project (demo) | `amber-demo` (cluster: `silk-demo-cluster`)      |
+| Upstash Redis (prod)         | `silk-prod-redis` (eu-west-2)                    |
+| Upstash Redis (demo)         | `silk-demo-redis` (eu-west-2)                    |
+| Railway project              | `amber-esol-workers`                             |
+| Sentry organisation          | `amber`                                          |
+| Better Stack workspace       | `amber-training`                                 |
+| BetterUptime account         | `amber-training` (via Better Stack SSO)          |
+| Vertex AI / GCP project      | `amber-esol-prod` (region `europe-west2`)        |
+| Stripe account               | Amber Training Ltd (live keys live in 1Password) |
 
 ---
 
@@ -126,34 +126,34 @@ DNS lives at **<DNS provider name>** under the
 and this document only reference vault entries by name — never
 include the value.
 
-| Category                 | 1Password vault entry                          |
-|--------------------------|------------------------------------------------|
-| Mongo URI (prod)         | `Mongo — Prod URI`                             |
-| Mongo URI (demo)         | `Mongo — Demo URI`                             |
-| Redis URL (prod)         | `Upstash — Prod URL`                           |
-| Redis URL (demo)         | `Upstash — Demo URL`                           |
-| `JWT_SECRET`             | `JWT_SECRET — Prod`                            |
-| `REFERRAL_JWT_SECRET`    | `REFERRAL_JWT_SECRET — Prod`                   |
-| `MIS_CREDENTIALS_KEY`    | `MIS_CREDENTIALS_KEY — Prod`                   |
-| `CRON_SECRET`            | `CRON_SECRET — Prod`                           |
-| `INVOICE_CRON_SECRET`    | `INVOICE_CRON_SECRET — Prod`                   |
-| `BULL_BOARD_TOKEN`       | `BULL_BOARD_TOKEN — Prod`                      |
-| Stripe live keys         | `Stripe — Live secret + webhook`               |
-| privateemail.com SMTP    | `privateemail.com — Auth user + pass`          |
-| GCP service account JSON | `GCP — Service account (amber-esol-prod)`      |
-| Cloudinary               | `Cloudinary — API credentials`                 |
-| Daily.co                 | `Daily.co — API key`                           |
-| Zoom                     | `Zoom — Account + client credentials`          |
-| Sentry DSN (backend)     | `Sentry — amber-esol-backend DSN`              |
-| Sentry DSN (frontend)    | `Sentry — amber-esol-mvp DSN`                  |
-| Better Stack token       | `Better Stack — Logtail source token`          |
-| Vercel deploy access     | `Vercel — Amber Training org owners`           |
-| Railway deploy access    | `Railway — Project admin`                      |
-| Mongo Atlas access       | `Mongo Atlas — Amber project admin`            |
-| Upstash access           | `Upstash — Account login`                      |
-| Demo logins (Sarah Chen) | `Project Silk Demo — Org Admin`                |
-| Demo logins (Amber admin)| `Project Silk Demo — Amber Admin`              |
-| Demo logins (Learner)    | `Project Silk Demo — Learner`                  |
+| Category                  | 1Password vault entry                     |
+| ------------------------- | ----------------------------------------- |
+| Mongo URI (prod)          | `Mongo — Prod URI`                        |
+| Mongo URI (demo)          | `Mongo — Demo URI`                        |
+| Redis URL (prod)          | `Upstash — Prod URL`                      |
+| Redis URL (demo)          | `Upstash — Demo URL`                      |
+| `JWT_SECRET`              | `JWT_SECRET — Prod`                       |
+| `REFERRAL_JWT_SECRET`     | `REFERRAL_JWT_SECRET — Prod`              |
+| `MIS_CREDENTIALS_KEY`     | `MIS_CREDENTIALS_KEY — Prod`              |
+| `CRON_SECRET`             | `CRON_SECRET — Prod`                      |
+| `INVOICE_CRON_SECRET`     | `INVOICE_CRON_SECRET — Prod`              |
+| `BULL_BOARD_TOKEN`        | `BULL_BOARD_TOKEN — Prod`                 |
+| Stripe live keys          | `Stripe — Live secret + webhook`          |
+| privateemail.com SMTP     | `privateemail.com — Auth user + pass`     |
+| GCP service account JSON  | `GCP — Service account (amber-esol-prod)` |
+| Cloudinary                | `Cloudinary — API credentials`            |
+| Daily.co                  | `Daily.co — API key`                      |
+| Zoom                      | `Zoom — Account + client credentials`     |
+| Sentry DSN (backend)      | `Sentry — amber-esol-backend DSN`         |
+| Sentry DSN (frontend)     | `Sentry — amber-esol-mvp DSN`             |
+| Better Stack token        | `Better Stack — Logtail source token`     |
+| Vercel deploy access      | `Vercel — Amber Training org owners`      |
+| Railway deploy access     | `Railway — Project admin`                 |
+| Mongo Atlas access        | `Mongo Atlas — Amber project admin`       |
+| Upstash access            | `Upstash — Account login`                 |
+| Demo logins (Sarah Chen)  | `Project Silk Demo — Org Admin`           |
+| Demo logins (Amber admin) | `Project Silk Demo — Amber Admin`         |
+| Demo logins (Learner)     | `Project Silk Demo — Learner`             |
 
 ### Rotating a credential
 
@@ -184,39 +184,39 @@ Schedule this and email org admins in advance.
 Which projects need which vars. The full list lives in
 `.env.example`; this matrix shows scope.
 
-| Variable                          | Vercel backend (prod) | Railway workers | Vercel backend (demo) | Vercel frontend (prod) |
-|-----------------------------------|:---:|:---:|:---:|:---:|
-| `NODE_ENV=production`             | ✅ | ✅ | ✅ | ✅ |
-| `MONGODB_URI`                     | ✅ | ✅ |  ❌ — leave unset | — |
-| `DEMO_MODE=true`                  | ❌ | ❌ | ✅ | — |
-| `DEMO_MONGODB_URI`                | ❌ — leave unset | — | ✅ | — |
-| `REDIS_URL`                       | ✅ | ✅ | ✅ | — |
-| `JWT_SECRET`                      | ✅ | ✅ | ✅ | — |
-| `REFERRAL_JWT_SECRET`             | ✅ | ✅ | ✅ | — |
-| `MIS_CREDENTIALS_KEY`             | ✅ | ✅ | ✅ | — |
-| `CRON_SECRET`                     | ✅ | ❌ | ✅ | — |
-| `INVOICE_CRON_SECRET`             | ✅ | ❌ | ❌ | — |
-| `BULL_BOARD_TOKEN`                | ✅ | ❌ | ✅ | — |
-| `STRIPE_SECRET_KEY` (`sk_live_…`) | ✅ | ❌ | ❌ — Stripe test keys only | — |
-| `STRIPE_WEBHOOK_SECRET`           | ✅ | ❌ | ❌ | — |
-| `AUTH_EMAIL`, `AUTH_PASS`         | ✅ | ✅ | ✅ — `[DEMO]` prefix wraps subject | — |
-| `GOOGLE_APPLICATION_CREDENTIALS` (JSON literal) | ✅ | ✅ | ✅ | — |
-| `GOOGLE_CLOUD_PROJECT_ID`         | ✅ | ✅ | ✅ | — |
-| `GEMINI_MODEL=gemini-2.5-flash`   | ✅ | ✅ | ✅ | — |
-| `CLOUDINARY_*`                    | ✅ | ❌ | ✅ | — |
-| `DAILY_API_KEY`                   | ✅ | ❌ | ✅ | — |
-| `ZOOM_*`                          | ✅ | ❌ | ✅ | — |
-| `ACADEMIC_YEAR`                   | ✅ | ✅ | ✅ | — |
-| `AMBER_UKPRN`                     | ✅ | ✅ | — | — |
-| `DOMAIN_NAME`                     | ✅ | ❌ | ✅ | — |
-| `LARGE_DATASET_TIMEOUT`           | ✅ | ✅ | ✅ | — |
-| `LOG_LEVEL=info`                  | ✅ | ✅ | ✅ | — |
-| `LOGTAIL_SOURCE_TOKEN`            | ✅ | ✅ | ✅ — separate source | — |
-| `SENTRY_DSN`                      | ✅ | ✅ | ❌ — separate DSN | — |
-| `JOEY_EMAIL`                      | — | — | ✅ (demo reset outcome) | — |
-| `REACT_APP_BACKEND_URL`           | — | — | — | ✅ |
-| `REACT_APP_SENTRY_DSN`            | — | — | — | ✅ |
-| `REACT_APP_ENVIRONMENT=production`| — | — | — | ✅ |
+| Variable                                        | Vercel backend (prod) | Railway workers |       Vercel backend (demo)        | Vercel frontend (prod) |
+| ----------------------------------------------- | :-------------------: | :-------------: | :--------------------------------: | :--------------------: |
+| `NODE_ENV=production`                           |          ✅           |       ✅        |                 ✅                 |           ✅           |
+| `MONGODB_URI`                                   |          ✅           |       ✅        |          ❌ — leave unset          |           —            |
+| `DEMO_MODE=true`                                |          ❌           |       ❌        |                 ✅                 |           —            |
+| `DEMO_MONGODB_URI`                              |   ❌ — leave unset    |        —        |                 ✅                 |           —            |
+| `REDIS_URL`                                     |          ✅           |       ✅        |                 ✅                 |           —            |
+| `JWT_SECRET`                                    |          ✅           |       ✅        |                 ✅                 |           —            |
+| `REFERRAL_JWT_SECRET`                           |          ✅           |       ✅        |                 ✅                 |           —            |
+| `MIS_CREDENTIALS_KEY`                           |          ✅           |       ✅        |                 ✅                 |           —            |
+| `CRON_SECRET`                                   |          ✅           |       ❌        |                 ✅                 |           —            |
+| `INVOICE_CRON_SECRET`                           |          ✅           |       ❌        |                 ❌                 |           —            |
+| `BULL_BOARD_TOKEN`                              |          ✅           |       ❌        |                 ✅                 |           —            |
+| `STRIPE_SECRET_KEY` (`sk_live_…`)               |          ✅           |       ❌        |     ❌ — Stripe test keys only     |           —            |
+| `STRIPE_WEBHOOK_SECRET`                         |          ✅           |       ❌        |                 ❌                 |           —            |
+| `AUTH_EMAIL`, `AUTH_PASS`                       |          ✅           |       ✅        | ✅ — `[DEMO]` prefix wraps subject |           —            |
+| `GOOGLE_APPLICATION_CREDENTIALS` (JSON literal) |          ✅           |       ✅        |                 ✅                 |           —            |
+| `GOOGLE_CLOUD_PROJECT_ID`                       |          ✅           |       ✅        |                 ✅                 |           —            |
+| `GEMINI_MODEL=gemini-2.5-flash`                 |          ✅           |       ✅        |                 ✅                 |           —            |
+| `CLOUDINARY_*`                                  |          ✅           |       ❌        |                 ✅                 |           —            |
+| `DAILY_API_KEY`                                 |          ✅           |       ❌        |                 ✅                 |           —            |
+| `ZOOM_*`                                        |          ✅           |       ❌        |                 ✅                 |           —            |
+| `ACADEMIC_YEAR`                                 |          ✅           |       ✅        |                 ✅                 |           —            |
+| `AMBER_UKPRN`                                   |          ✅           |       ✅        |                 —                  |           —            |
+| `DOMAIN_NAME`                                   |          ✅           |       ❌        |                 ✅                 |           —            |
+| `LARGE_DATASET_TIMEOUT`                         |          ✅           |       ✅        |                 ✅                 |           —            |
+| `LOG_LEVEL=info`                                |          ✅           |       ✅        |                 ✅                 |           —            |
+| `LOGTAIL_SOURCE_TOKEN`                          |          ✅           |       ✅        |        ✅ — separate source        |           —            |
+| `SENTRY_DSN`                                    |          ✅           |       ✅        |         ❌ — separate DSN          |           —            |
+| `JOEY_EMAIL`                                    |           —           |        —        |      ✅ (demo reset outcome)       |           —            |
+| `REACT_APP_BACKEND_URL`                         |           —           |        —        |                 —                  |           ✅           |
+| `REACT_APP_SENTRY_DSN`                          |           —           |        —        |                 —                  |           ✅           |
+| `REACT_APP_ENVIRONMENT=production`              |           —           |        —        |                 —                  |           ✅           |
 
 ---
 
@@ -231,7 +231,7 @@ Which projects need which vars. The full list lives in
   the repo, rebuilds (`npm ci && npm run build`), restarts the
   service with `node dist/workers/run.js`.
 - **Frontend (Vercel):** push to `main` → Vercel auto-builds (CRA)
-  + auto-deploys.
+  - auto-deploys.
 - **Preview deploys:** every PR opens a preview URL on its own
   subdomain. PR previews **point at the same backend/workers as
   the staging environment** (not production). To avoid pollution,
@@ -299,6 +299,7 @@ follow-up script). The append-only audit log makes "what changed"
 discoverable.
 
 ### Scenario B — Bad data (deploy is fine; an org admin or admin
+
 took a destructive action)
 
 There is no "undo" UI today. Recovery:
@@ -408,10 +409,10 @@ When something breaks in production:
 
 Signatures:
 
-| Role                | Date | Name | Signature |
-|---------------------|------|------|-----------|
-| Engineering lead    |      |      |           |
-| Joey (Amber Training)|     |      |           |
+| Role                  | Date | Name | Signature |
+| --------------------- | ---- | ---- | --------- |
+| Engineering lead      |      |      |           |
+| Joey (Amber Training) |      |      |           |
 
 **Update this document on every material change** — new service,
 moved domain, rotated provider. The doc is only as useful as it

@@ -7,7 +7,7 @@ const TicketAttachmentSchema = new Schema(
     size: { type: String, required: true },
     url: { type: String },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const TicketMessageSchema = new Schema(
@@ -27,7 +27,7 @@ const TicketMessageSchema = new Schema(
     attachments: { type: [TicketAttachmentSchema], default: [] },
     createdAt: { type: Date, default: Date.now },
   },
-  { _id: true }
+  { _id: true },
 );
 
 const ticketSchema = new Schema<ITicket>(
@@ -86,7 +86,7 @@ const ticketSchema = new Schema<ITicket>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 /* ── Indexes ── */

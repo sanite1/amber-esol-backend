@@ -7,7 +7,8 @@
     "fa": "",
     "zh": ""
   },
-  "nqf_level_range": { "min": "e2", "max": "l1" },
+  "_dev_note_level_range": "Widened from max:l1 → max:l2 in Dec to unblock L2 testing while proper L2 content is authored. The vocab and roleplay below were authored at e2–l1 difficulty; an L2 learner will find them easy. Revert to max:l1 when a real L2 scenario ships.",
+  "nqf_level_range": { "min": "e2", "max": "l2" },
   "skill_codes": ["Rt", "Sc", "Lr"],
   "stage3_objective_domains": ["Rt", "Sc", "Lr"],
   "vocabulary_set": [

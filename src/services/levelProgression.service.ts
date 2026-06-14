@@ -108,7 +108,7 @@ const loadScenarioById = (scenarioId: string): IScenarioFile | null => {
   } catch (err) {
     logger.warn(
       { err: (err as Error).message, scenarioId },
-      "levelProgression: scenario file not found — session will be excluded from passed-set"
+      "levelProgression: scenario file not found — session will be excluded from passed-set",
     );
     scenarioCache.set(scenarioId, null);
     return null;
@@ -132,7 +132,7 @@ const loadScenarioById = (scenarioId: string): IScenarioFile | null => {
  * skipped-code debug line.
  */
 export const getDomainsFromCodes = (
-  codes: string[] | null | undefined
+  codes: string[] | null | undefined,
 ): { count: number; domains: ForSkillsDomain[] } => {
   if (!codes || codes.length === 0) return { count: 0, domains: [] };
 
@@ -144,7 +144,7 @@ export const getDomainsFromCodes = (
       // the progression check on it; just don't credit a domain.
       logger.debug(
         { code },
-        "getDomainsFromCodes: dropping non-canonical skill code"
+        "getDomainsFromCodes: dropping non-canonical skill code",
       );
       continue;
     }
@@ -152,7 +152,12 @@ export const getDomainsFromCodes = (
   }
 
   // Stable order for snapshot tests / log readability.
-  const DOMAIN_ORDER: ForSkillsDomain[] = ["speaking", "reading", "writing", "listening"];
+  const DOMAIN_ORDER: ForSkillsDomain[] = [
+    "speaking",
+    "reading",
+    "writing",
+    "listening",
+  ];
   const domains = DOMAIN_ORDER.filter((d) => domainSet.has(d));
   return { count: domains.length, domains };
 };
@@ -184,7 +189,7 @@ export const getDomainsFromCodes = (
 const resolveLevelAssignedAt = async (
   learnerId: Types.ObjectId,
   currentLevel: EsolLevel,
-  userCreatedAt: Date | null
+  userCreatedAt: Date | null,
 ): Promise<Date | null> => {
   const latestChange = await LevelChange.findOne({
     learnerId,
@@ -219,13 +224,13 @@ const resolveLevelAssignedAt = async (
  * is the right call.
  */
 const evaluateAnchorDominance = (
-  sequences: string[][]
+  sequences: string[][],
 ): { passed: boolean; ratios: number[] } => {
   const window = sequences.slice(0, RECENT_SESSIONS_WINDOW);
   const ratios = window.map((seq) => {
     if (!Array.isArray(seq) || seq.length === 0) return 0;
     const anchorTurns = seq.filter(
-      (m) => typeof m === "string" && m.toLowerCase() === "anchor"
+      (m) => typeof m === "string" && m.toLowerCase() === "anchor",
     ).length;
     return anchorTurns / seq.length;
   });
@@ -299,10 +304,12 @@ export interface LevelProgressionCheckResult {
  * swallowed as "not ready".
  */
 export const checkLevelProgression = async (
-  learnerId: string
+  learnerId: string,
 ): Promise<LevelProgressionCheckResult> => {
   if (!learnerId || !Types.ObjectId.isValid(learnerId)) {
-    throw new Error("checkLevelProgression: learner_id must be a valid ObjectId");
+    throw new Error(
+      "checkLevelProgression: learner_id must be a valid ObjectId",
+    );
   }
   const learnerObjectId = new Types.ObjectId(learnerId);
 
@@ -320,14 +327,19 @@ export const checkLevelProgression = async (
   // No level → nothing to progress FROM. Return a fully-false result
   // so the caller knows to run placement first.
   if (!currentLevel) {
-    return emptyResult(learnerId, null, checkedAt, "no current_level on learner");
+    return emptyResult(
+      learnerId,
+      null,
+      checkedAt,
+      "no current_level on learner",
+    );
   }
 
   // 2. Level assignment date — for C5
   const levelAssignedAt = await resolveLevelAssignedAt(
     learnerObjectId,
     currentLevel,
-    learner.createdAt instanceof Date ? learner.createdAt : null
+    learner.createdAt instanceof Date ? learner.createdAt : null,
   );
 
   // 3. Pull sessions at the current level. Only consider AI-tutor and
@@ -342,21 +354,20 @@ export const checkLevelProgression = async (
     learnerId: learnerObjectId,
     completedAt: { $ne: null },
     session_source: { $in: ["ai_tutor", "teacher_consolidation"] },
-    $or: [
-      { nqf_level_at_start: currentLevel },
-      { esolLevel: currentLevel },
-    ],
+    $or: [{ nqf_level_at_start: currentLevel }, { esolLevel: currentLevel }],
   })
     .sort({ completedAt: -1 })
     .select(
-      "scenario_id final_score skill_codes_covered teaching_mode_sequence completedAt esolLevel nqf_level_at_start session_source"
+      "scenario_id final_score skill_codes_covered teaching_mode_sequence completedAt esolLevel nqf_level_at_start session_source",
     )
     .lean();
 
   // ── C4: ANCHOR-dominance check on the two most recent sessions ──
   // Done up here because it operates on the recency-sorted list as-is.
   const anchorEval = evaluateAnchorDominance(
-    sessions.map((s) => (s.teaching_mode_sequence as string[] | undefined) ?? [])
+    sessions.map(
+      (s) => (s.teaching_mode_sequence as string[] | undefined) ?? [],
+    ),
   );
 
   // ── C1: distinct-scenarios-passed ──────────────────────────────
@@ -374,9 +385,7 @@ export const checkLevelProgression = async (
     const scenarioIdRaw = s.scenario_id;
     if (!scenarioIdRaw) continue;
     const scenarioId =
-      typeof scenarioIdRaw === "string"
-        ? scenarioIdRaw
-        : String(scenarioIdRaw); // ObjectId or other
+      typeof scenarioIdRaw === "string" ? scenarioIdRaw : String(scenarioIdRaw); // ObjectId or other
     const scenario = loadScenarioById(scenarioId);
     if (!scenario) continue;
 
@@ -405,7 +414,8 @@ export const checkLevelProgression = async (
   // ── C2: average score across passed sessions ───────────────────
   const c2Average =
     passedSessions.length > 0
-      ? passedSessions.reduce((sum, p) => sum + p.finalScore, 0) / passedSessions.length
+      ? passedSessions.reduce((sum, p) => sum + p.finalScore, 0) /
+        passedSessions.length
       : null;
   const c2Passed = c2Average !== null && c2Average >= AVERAGE_SCORE_THRESHOLD;
 
@@ -454,7 +464,8 @@ export const checkLevelProgression = async (
     },
   };
 
-  const ready = c1Passed && c2Passed && c3Passed && anchorEval.passed && c5Passed;
+  const ready =
+    c1Passed && c2Passed && c3Passed && anchorEval.passed && c5Passed;
 
   return {
     learner_id: learnerId,
@@ -473,11 +484,11 @@ const emptyResult = (
   learnerId: string,
   currentLevel: EsolLevel | null,
   checkedAt: string,
-  reason: string
+  reason: string,
 ): LevelProgressionCheckResult => {
   logger.info(
     { learner_id: learnerId, reason },
-    "checkLevelProgression: returning not-ready with no criteria evaluated"
+    "checkLevelProgression: returning not-ready with no criteria evaluated",
   );
   return {
     learner_id: learnerId,
@@ -617,14 +628,16 @@ const REFLECTION_PROMPTS: Record<
 export const buildReflectionMessage = (
   levelCompleted: EsolLevel,
   newLevel: EsolLevel,
-  l1Language: string | null | undefined
+  l1Language: string | null | undefined,
 ): { message: string; language_used: string } => {
   const completedLabel = LEVEL_LABELS[levelCompleted];
   const newLabel = LEVEL_LABELS[newLevel];
   const key = (l1Language ?? "").toString().trim().toLowerCase();
   const slot = REFLECTION_PROMPTS[key] ?? REFLECTION_PROMPTS.english;
   return {
-    message: slot.template.replace("%s", completedLabel).replace("%s", newLabel),
+    message: slot.template
+      .replace("%s", completedLabel)
+      .replace("%s", newLabel),
     language_used: slot.renderedLanguage,
   };
 };
@@ -670,12 +683,12 @@ export interface TriggerStage5ReviewResult {
 export const triggerStage5Review = async (
   learner_id: string,
   level_completed: EsolLevel,
-  new_level: EsolLevel
+  new_level: EsolLevel,
 ): Promise<TriggerStage5ReviewResult | null> => {
   if (!learner_id || !Types.ObjectId.isValid(learner_id)) {
     logger.warn(
       { learner_id },
-      "triggerStage5Review: invalid learner_id — skipping"
+      "triggerStage5Review: invalid learner_id — skipping",
     );
     return null;
   }
@@ -686,14 +699,14 @@ export const triggerStage5Review = async (
   if (!learner) {
     logger.warn(
       { learner_id },
-      "triggerStage5Review: learner not found — skipping"
+      "triggerStage5Review: learner not found — skipping",
     );
     return null;
   }
   if (!learner.orgId) {
     logger.warn(
       { learner_id },
-      "triggerStage5Review: learner has no orgId — skipping (cannot pin Stage5Review without an org)"
+      "triggerStage5Review: learner has no orgId — skipping (cannot pin Stage5Review without an org)",
     );
     return null;
   }
@@ -723,7 +736,7 @@ export const triggerStage5Review = async (
         learner_id,
         level_completed,
       },
-      "triggerStage5Review: Stage5Review.create failed — level change continues"
+      "triggerStage5Review: Stage5Review.create failed — level change continues",
     );
     // Hard fail of the row create means nothing downstream is
     // meaningful — the AI summary has nothing to write to, the
@@ -774,7 +787,7 @@ export const triggerStage5Review = async (
   const { message, language_used } = buildReflectionMessage(
     level_completed,
     new_level,
-    learner.l1Language
+    learner.l1Language,
   );
   try {
     await createNotification({
@@ -797,7 +810,7 @@ export const triggerStage5Review = async (
         learner_id,
         stage5_review_id: stage5_id,
       },
-      "triggerStage5Review: learner reflection notification failed — review row still committed"
+      "triggerStage5Review: learner reflection notification failed — review row still committed",
     );
   }
 
@@ -807,7 +820,8 @@ export const triggerStage5Review = async (
   // queued behind a single person. Fire-and-forget per admin so
   // one missing user doc doesn't block the others.
   const learnerFirstName = (learner.firstname ?? "").trim() || "A learner";
-  const levelLabel = LEVEL_LABELS[level_completed] ?? level_completed.toUpperCase();
+  const levelLabel =
+    LEVEL_LABELS[level_completed] ?? level_completed.toUpperCase();
   const orgAdminMessage = `${learnerFirstName} has completed ${levelLabel}. Please review their Stage 5 self-assessment when submitted.`;
 
   let org_admins_notified = 0;
@@ -900,7 +914,7 @@ export const triggerStage5Review = async (
       org_admins_notified,
       notification_language_used: language_used,
     },
-    "triggerStage5Review: complete"
+    "triggerStage5Review: complete",
   );
 
   return {

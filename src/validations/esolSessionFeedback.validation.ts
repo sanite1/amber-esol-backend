@@ -18,7 +18,7 @@ export const sessionIdParamValidation = () =>
   validate(
     { params: Joi.object({ sessionId: objectId.required() }) },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const submitLearnerFeedbackValidation = () =>
@@ -40,7 +40,7 @@ export const submitLearnerFeedbackValidation = () =>
         }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const submitTeacherFeedbackValidation = () =>
@@ -55,5 +55,5 @@ export const submitTeacherFeedbackValidation = () =>
       }).min(1),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

@@ -61,12 +61,10 @@ import ApiResponse from "../errors/apiResponse";
 import User from "../models/User";
 import TeacherReview from "../models/TeacherReview";
 import logger from "../config/logger";
+import { glhContributionHours } from "./teacherGlhContribution";
 import { writeAuditLog } from "./auditLog.service";
 import { enqueueLearnerPriorityRecalc } from "./priorityQueueRecalc.service";
-import {
-  EsolLevel,
-  normaliseEsolLevel,
-} from "./esolSkills";
+import { EsolLevel, normaliseEsolLevel } from "./esolSkills";
 import { IScenarioFile } from "../interfaces/scenario.interface";
 
 // ─────────────────────────────────────────────────────────────────────
@@ -90,13 +88,7 @@ const loadScenarioById = (scenarioId: string): IScenarioFile | null => {
   }
 };
 
-const LEVEL_LADDER: ReadonlyArray<EsolLevel> = [
-  "e1",
-  "e2",
-  "e3",
-  "l1",
-  "l2",
-];
+const LEVEL_LADDER: ReadonlyArray<EsolLevel> = ["e1", "e2", "e3", "l1", "l2"];
 
 const isLevelInRange = (
   level: EsolLevel,
@@ -163,9 +155,7 @@ export const setPathwayOverrideService = async (
 
   // ── 1. Assignment gate ────────────────────────────────────────
   const learner = await User.findById(learnerObjectId)
-    .select(
-      "_id role assigned_teacher_id orgId esolLevel pathway_override",
-    )
+    .select("_id role assigned_teacher_id orgId esolLevel pathway_override")
     .lean();
   if (!learner || learner.role !== "student") {
     throw new ApiError(404, "Learner not found");
@@ -174,10 +164,7 @@ export const setPathwayOverrideService = async (
     learner as { assigned_teacher_id?: Types.ObjectId | null }
   ).assigned_teacher_id;
   if (!assignedTo || assignedTo.toString() !== input.teacher_id) {
-    throw new ApiError(
-      403,
-      "Forbidden — this learner is not assigned to you.",
-    );
+    throw new ApiError(403, "Forbidden — this learner is not assigned to you.");
   }
   const orgId = (learner as { orgId?: Types.ObjectId | null }).orgId;
   if (!orgId) {
@@ -234,9 +221,12 @@ export const setPathwayOverrideService = async (
   }
 
   // ── Capture before-state for the audit row ───────────────────
-  const before_override = (learner as {
-    pathway_override?: unknown;
-  }).pathway_override ?? null;
+  const before_override =
+    (
+      learner as {
+        pathway_override?: unknown;
+      }
+    ).pathway_override ?? null;
 
   // ── 3. Write the override ────────────────────────────────────
   const set_at = new Date();
@@ -258,9 +248,9 @@ export const setPathwayOverrideService = async (
   );
 
   // ── 4. Append-only TeacherReview row ─────────────────────────
-  // duration_mins: 0 per the brief — pathway-adjustment doesn't
-  // count as teacher-contact hours. The TeacherReview's schema
-  // enforces min: 0, so this is valid.
+  // duration_mins stays 0 (there's no wall-clock contact), but the
+  // activity still earns its FIXED GLH credit — Final Addendum §4.3
+  // sets pathway_adjustment at 0.25h regardless of duration.
   const reviewDoc = await TeacherReview.create({
     learner_id: learnerObjectId,
     teacher_id: teacherObjectId,
@@ -273,6 +263,17 @@ export const setPathwayOverrideService = async (
     ai_recommendation_acted_on: false,
     created_at: set_at,
   });
+
+  // ── 4b. GLH credit + review timestamp (§4.3 / §12) ───────────
+  await User.updateOne(
+    { _id: learnerObjectId },
+    {
+      $inc: {
+        glh_teacher_contact: glhContributionHours("pathway_adjustment", 0),
+      },
+      $set: { teacher_last_reviewed_at: set_at },
+    },
+  );
 
   // ── 5. AuditLog row ──────────────────────────────────────────
   await writeAuditLog(
@@ -306,10 +307,7 @@ export const setPathwayOverrideService = async (
   // actions onto one recalc job. Queue write failures are
   // swallowed inside the helper; the daily per-org cron is the
   // safety net.
-  await enqueueLearnerPriorityRecalc(
-    input.learner_id,
-    "pathway_override_set",
-  );
+  await enqueueLearnerPriorityRecalc(input.learner_id, "pathway_override_set");
 
   logger.info(
     {

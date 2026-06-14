@@ -28,14 +28,14 @@ import Conversation from "../models/Conversation";
 export const listConversations = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const data = await listConversationsService(
       userId,
-      req.query as unknown as IConversationQuery
+      req.query as unknown as IConversationQuery,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -63,7 +63,7 @@ export const startConversation: ExpressFunction<
 export const listMessages = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -71,7 +71,7 @@ export const listMessages = async (
     const data = await listMessagesService(
       req.params.id,
       userId,
-      req.query as unknown as IMessageQuery
+      req.query as unknown as IMessageQuery,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -84,7 +84,7 @@ export const listMessages = async (
 export const sendMessage: ExpressFunction<ISendMessageRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -95,7 +95,7 @@ export const sendMessage: ExpressFunction<ISendMessageRequest> = async (
       req.params.id,
       userId,
       userRole,
-      req.body
+      req.body,
     );
 
     // Emit via WebSocket
@@ -105,12 +105,12 @@ export const sendMessage: ExpressFunction<ISendMessageRequest> = async (
     const conversation = await Conversation.findById(req.params.id)
       .populate(
         "participants",
-        "firstname lastname profilePicture role onlineStatus lastSeen"
+        "firstname lastname profilePicture role onlineStatus lastSeen",
       )
       .populate("lastMessageSenderId", "firstname lastname");
     if (conversation) {
       const pIds = conversation.participants.map((p: any) =>
-        p._id ? p._id.toString() : p.toString()
+        p._id ? p._id.toString() : p.toString(),
       );
       emitConversationUpdated(pIds, conversation.toJSON());
     }
@@ -126,7 +126,7 @@ export const sendMessage: ExpressFunction<ISendMessageRequest> = async (
 export const sendFileMessage = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -142,7 +142,7 @@ export const sendFileMessage = async (
       req.params.id,
       userId,
       userRole,
-      file
+      file,
     );
 
     // Emit via WebSocket
@@ -152,12 +152,12 @@ export const sendFileMessage = async (
     const conversation = await Conversation.findById(req.params.id)
       .populate(
         "participants",
-        "firstname lastname profilePicture role onlineStatus lastSeen"
+        "firstname lastname profilePicture role onlineStatus lastSeen",
       )
       .populate("lastMessageSenderId", "firstname lastname");
     if (conversation) {
       const pIds = conversation.participants.map((p: any) =>
-        p._id ? p._id.toString() : p.toString()
+        p._id ? p._id.toString() : p.toString(),
       );
       emitConversationUpdated(pIds, conversation.toJSON());
     }
@@ -173,7 +173,7 @@ export const sendFileMessage = async (
 export const markAllRead = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -190,7 +190,7 @@ export const markAllRead = async (
 export const togglePin = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -207,7 +207,7 @@ export const togglePin = async (
 export const toggleMute = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -224,7 +224,7 @@ export const toggleMute = async (
 export const toggleArchive = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();

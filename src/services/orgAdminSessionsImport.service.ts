@@ -102,7 +102,11 @@ interface ValidatedSessionRow {
 const isBlank = (v: unknown): boolean =>
   v === undefined || v === null || (typeof v === "string" && v.trim() === "");
 
-const mkError = (row: number, field: string, message: string): SessionRowIssue => ({
+const mkError = (
+  row: number,
+  field: string,
+  message: string,
+): SessionRowIssue => ({
   row,
   field,
   message,
@@ -110,7 +114,7 @@ const mkError = (row: number, field: string, message: string): SessionRowIssue =
 
 export const validateSessionDate = (
   raw: unknown,
-  row: number
+  row: number,
 ): SessionRowIssue | null => {
   if (isBlank(raw)) {
     return mkError(row, "session_date", "session_date is required");
@@ -119,19 +123,23 @@ export const validateSessionDate = (
     return mkError(
       row,
       "session_date",
-      "session_date must be in YYYY-MM-DD format"
+      "session_date must be in YYYY-MM-DD format",
     );
   }
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) {
-    return mkError(row, "session_date", "session_date is not a real calendar date");
+    return mkError(
+      row,
+      "session_date",
+      "session_date is not a real calendar date",
+    );
   }
   // Sessions in the future make no sense for a "historical" import.
   if (d.getTime() > Date.now() + 24 * 60 * 60 * 1000) {
     return mkError(
       row,
       "session_date",
-      "session_date is in the future — historical imports must use past dates"
+      "session_date is in the future — historical imports must use past dates",
     );
   }
   return null;
@@ -139,7 +147,7 @@ export const validateSessionDate = (
 
 export const validateDurationMinutes = (
   raw: unknown,
-  row: number
+  row: number,
 ): { value: number | null; error: SessionRowIssue | null } => {
   if (isBlank(raw)) {
     return {
@@ -147,15 +155,14 @@ export const validateDurationMinutes = (
       error: mkError(row, "duration_minutes", "duration_minutes is required"),
     };
   }
-  const asNum =
-    typeof raw === "number" ? raw : Number(String(raw).trim());
+  const asNum = typeof raw === "number" ? raw : Number(String(raw).trim());
   if (!Number.isFinite(asNum) || asNum <= 0) {
     return {
       value: null,
       error: mkError(
         row,
         "duration_minutes",
-        "duration_minutes must be a positive number"
+        "duration_minutes must be a positive number",
       ),
     };
   }
@@ -166,7 +173,7 @@ export const validateDurationMinutes = (
       error: mkError(
         row,
         "duration_minutes",
-        `duration_minutes must be between ${MIN_DURATION_MINS} and ${MAX_DURATION_MINS}`
+        `duration_minutes must be between ${MIN_DURATION_MINS} and ${MAX_DURATION_MINS}`,
       ),
     };
   }
@@ -181,7 +188,7 @@ export const validateDurationMinutes = (
  */
 export const validateSkillCodes = (
   raw: unknown,
-  row: number
+  row: number,
 ): { value: IlrSkillCode[]; error: SessionRowIssue | null } => {
   if (isBlank(raw)) return { value: [], error: null };
   if (typeof raw !== "string") {
@@ -202,7 +209,7 @@ export const validateSkillCodes = (
         row,
         "skill_codes",
         `skill_codes contains unknown ILR code(s): ${unknown.join(", ")}. ` +
-          `Valid codes: ${ALL_ILR_CODES.join(", ")}`
+          `Valid codes: ${ALL_ILR_CODES.join(", ")}`,
       ),
     };
   }
@@ -216,7 +223,7 @@ export const validateSkillCodes = (
 
 export const validateRow = (
   raw: RawSessionRow,
-  row: number
+  row: number,
 ): { value: ValidatedSessionRow | null; errors: SessionRowIssue[] } => {
   const errors: SessionRowIssue[] = [];
 
@@ -260,10 +267,10 @@ const bufferToStream = (buf: Buffer): Readable => {
 };
 
 async function* streamRows(
-  buf: Buffer
+  buf: Buffer,
 ): AsyncGenerator<
-  { row: number; value: ValidatedSessionRow; errors: null } |
-  { row: number; value: null; errors: SessionRowIssue[] }
+  | { row: number; value: ValidatedSessionRow; errors: null }
+  | { row: number; value: null; errors: SessionRowIssue[] }
 > {
   const parser = bufferToStream(buf).pipe(
     parse({
@@ -272,7 +279,7 @@ async function* streamRows(
       skip_empty_lines: true,
       relax_quotes: true,
       bom: true,
-    })
+    }),
   );
 
   let rowNumber = 0;
@@ -295,13 +302,13 @@ async function* streamRows(
 const insertSession = async (
   row: ValidatedSessionRow,
   orgId: string,
-  actorId: string
+  actorId: string,
 ): Promise<{ sessionId: string; learnerId: string }> => {
   const learner = await findLearnerInOrg(row.match, orgId);
   if (!learner) {
     throw new ApiError(
       404,
-      `No learner in this organisation matched the row's identity fields`
+      `No learner in this organisation matched the row's identity fields`,
     );
   }
 
@@ -364,8 +371,8 @@ const insertSession = async (
   }).catch((err) =>
     logger.error(
       { err, sessionId: doc._id, learnerId: learner._id, orgId },
-      "AuditLog write failed for historical_session_imported"
-    )
+      "AuditLog write failed for historical_session_imported",
+    ),
   );
 
   return {
@@ -381,7 +388,7 @@ const insertSession = async (
 export const importSessionsService = async (
   file: Express.Multer.File | undefined,
   orgId: string,
-  actorId: string
+  actorId: string,
 ): Promise<ApiResponse> => {
   if (!file) {
     throw new ApiError(400, "CSV file is required (multipart field 'file')");
@@ -426,7 +433,7 @@ export const importSessionsService = async (
     logger.error({ err, orgId }, "CSV parse aborted during sessions import");
     throw new ApiError(
       400,
-      `CSV parse failed: ${err instanceof Error ? err.message : "unknown error"}`
+      `CSV parse failed: ${err instanceof Error ? err.message : "unknown error"}`,
     );
   }
 

@@ -7,7 +7,7 @@ import { getTutorDashboardService } from "../services/tutorDashboard.service";
 export const getTutorDashboard = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const tutorId = (req as any).user?.id?.toString();
@@ -16,7 +16,7 @@ export const getTutorDashboard = async (
     }
     const data = await getTutorDashboardService(
       tutorId,
-      req.query as unknown as ITutorDashboardQuery
+      req.query as unknown as ITutorDashboardQuery,
     );
     return res.status(200).json(data);
   } catch (error) {

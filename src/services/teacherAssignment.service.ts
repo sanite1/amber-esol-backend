@@ -60,6 +60,12 @@ export interface OrgTeacherRow {
   near_capacity: boolean;
   /** Hard cap from the org doc — included for the frontend to render. */
   max_learners_per_teacher: number;
+  /** Matching foundation — rendered as chips on the teacher row. */
+  teaching_profile: {
+    levels_taught: string[];
+    languages_spoken: string[];
+    specialisms: string[];
+  };
 }
 
 export interface OrgTeacherListResult {
@@ -84,7 +90,10 @@ const NEAR_CAPACITY_RATIO = 0.8;
  */
 const loadOrgOrThrow = async (callerOrgId: string) => {
   if (!callerOrgId || !Types.ObjectId.isValid(callerOrgId)) {
-    throw new ApiError(400, "Organisation context is required and must be valid");
+    throw new ApiError(
+      400,
+      "Organisation context is required and must be valid",
+    );
   }
   const org = await Organisation.findById(callerOrgId)
     .select("name assigned_teacher_ids max_learners_per_teacher")
@@ -141,7 +150,8 @@ export const listOrgTeachersService = async (
   const org = await loadOrgOrThrow(callerOrgId);
   const orgObjectId = new Types.ObjectId(callerOrgId);
   const cap = (org.max_learners_per_teacher as number) ?? 0;
-  const assignedTeacherIds = (org.assigned_teacher_ids ?? []) as Types.ObjectId[];
+  const assignedTeacherIds = (org.assigned_teacher_ids ??
+    []) as Types.ObjectId[];
 
   if (assignedTeacherIds.length === 0) {
     return new ApiResponse(200, "No teachers assigned to this org yet", {
@@ -157,7 +167,7 @@ export const listOrgTeachersService = async (
     role: "tutor",
     esolTeacherApproved: true,
   })
-    .select("firstname lastname email")
+    .select("firstname lastname email teaching_profile")
     .lean();
 
   // Count learners per teacher in ONE aggregation, then merge in Node.
@@ -172,7 +182,9 @@ export const listOrgTeachersService = async (
     },
     { $group: { _id: "$assigned_teacher_id", count: { $sum: 1 } } },
   ]);
-  const countByTeacher = new Map(counts.map((c) => [c._id.toString(), c.count]));
+  const countByTeacher = new Map(
+    counts.map((c) => [c._id.toString(), c.count]),
+  );
 
   const rows: OrgTeacherRow[] = teachers
     .map((t) => {
@@ -186,6 +198,11 @@ export const listOrgTeachersService = async (
         utilisation: utilisationFor(count, cap),
         near_capacity: isNearCapacity(count, cap),
         max_learners_per_teacher: cap,
+        teaching_profile: {
+          levels_taught: t.teaching_profile?.levels_taught ?? [],
+          languages_spoken: t.teaching_profile?.languages_spoken ?? [],
+          specialisms: t.teaching_profile?.specialisms ?? [],
+        },
       };
     })
     // Stable sort — alphabetical by lastname so the table reads
@@ -453,7 +470,8 @@ export const assignTeacherToLearnerService = async (
   }
   const teacherObjectId = new Types.ObjectId(body.teacher_id);
 
-  const assignedTeacherIds = (org.assigned_teacher_ids ?? []) as Types.ObjectId[];
+  const assignedTeacherIds = (org.assigned_teacher_ids ??
+    []) as Types.ObjectId[];
   const teacherInOrg = assignedTeacherIds.some(
     (id) => id.toString() === body.teacher_id,
   );

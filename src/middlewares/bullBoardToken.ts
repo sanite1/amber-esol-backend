@@ -29,7 +29,7 @@ import ApiError from "../errors/apiError";
 export const requireBullBoardToken = (
   req: Request,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const expected = process.env.BULL_BOARD_TOKEN;
 
@@ -37,8 +37,8 @@ export const requireBullBoardToken = (
     return next(
       new ApiError(
         500,
-        "BULL_BOARD_TOKEN is not configured. Generate one with `node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"` and set in .env."
-      )
+        "BULL_BOARD_TOKEN is not configured. Generate one with `node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"` and set in .env.",
+      ),
     );
   }
 

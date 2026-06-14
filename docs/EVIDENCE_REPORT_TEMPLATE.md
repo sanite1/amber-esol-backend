@@ -41,7 +41,7 @@ body::before {
   left: 50%;
   transform: translate(-50%, -50%) rotate(-30deg);
   font-size: 60pt;
-  color: rgba(11, 35, 67, 0.04);  /* near-invisible navy */
+  color: rgba(11, 35, 67, 0.04); /* near-invisible navy */
   white-space: nowrap;
   z-index: -1;
   pointer-events: none;
@@ -132,7 +132,10 @@ The watermark "Project Silk Evidence Report" is rendered as a near-transparent r
     <h1>RARPA Evidence Report</h1>
     <p class="org-name">{org_name}</p>
     <div class="cover-meta">
-      <div><span class="label">Reporting period</span>{period_start_human} — {period_end_human}</div>
+      <div>
+        <span class="label">Reporting period</span>{period_start_human} —
+        {period_end_human}
+      </div>
       <div><span class="label">Generated</span>{generated_at_human}</div>
     </div>
   </div>
@@ -159,7 +162,8 @@ section.cover header.logos {
   justify-content: space-between;
   align-items: flex-start;
 }
-.org-logo, .amber-logo {
+.org-logo,
+.amber-logo {
   max-height: 22mm;
   max-width: 60mm;
   object-fit: contain;
@@ -179,7 +183,9 @@ section.cover header.logos {
   border-top: 1pt solid #e5e7eb;
   padding-top: 6mm;
 }
-.cover-meta > div { margin-bottom: 3mm; }
+.cover-meta > div {
+  margin-bottom: 3mm;
+}
 .cover-meta .label {
   display: inline-block;
   width: 40mm;
@@ -259,9 +265,8 @@ section.cover header.logos {
       <dd>
         {cohort.total_glh} h
         <span class="breakdown">
-          AI {cohort.ai_glh} +
-          Imported {cohort.imported_glh} +
-          Teacher contact {cohort.teacher_contact_glh}
+          AI {cohort.ai_glh} + Imported {cohort.imported_glh} + Teacher contact
+          {cohort.teacher_contact_glh}
         </span>
       </dd>
     </div>
@@ -281,11 +286,19 @@ section.cover header.logos {
   <h2 class="subsection">Learners by level</h2>
   <table class="data-table">
     <thead>
-      <tr><th scope="col">Level</th><th scope="col">Count</th><th scope="col">% of cohort</th></tr>
+      <tr>
+        <th scope="col">Level</th>
+        <th scope="col">Count</th>
+        <th scope="col">% of cohort</th>
+      </tr>
     </thead>
     <tbody>
       {#each cohort.by_level}
-        <tr><td>{label}</td><td>{count}</td><td>{percent}%</td></tr>
+      <tr>
+        <td>{label}</td>
+        <td>{count}</td>
+        <td>{percent}%</td>
+      </tr>
       {/each}
     </tbody>
   </table>
@@ -331,7 +344,8 @@ table.data-table {
   border-collapse: collapse;
   margin-top: 3mm;
 }
-table.data-table th, table.data-table td {
+table.data-table th,
+table.data-table td {
   border-bottom: 1pt solid #e5e7eb;
   padding: 2mm 3mm;
   text-align: left;
@@ -383,7 +397,9 @@ One row per learner, oldest enrolment first. Multi-page when the cohort exceeds 
 
 ```html
 <section class="report-section">
-  <h1 class="section-title"><span class="number">§03</span>RARPA Stage 1 — Initial assessment</h1>
+  <h1 class="section-title">
+    <span class="number">§03</span>RARPA Stage 1 — Initial assessment
+  </h1>
 
   <table class="data-table learners">
     <thead>
@@ -396,12 +412,12 @@ One row per learner, oldest enrolment first. Multi-page when the cohort exceeds 
     </thead>
     <tbody>
       {#each stage1_rows}
-        <tr>
-          <td><code>{uln}</code></td>
-          <td>{assessment_date_human}</td>
-          <td>{source_label}</td>
-          <td><span class="level-chip">{recommended_level}</span></td>
-        </tr>
+      <tr>
+        <td><code>{uln}</code></td>
+        <td>{assessment_date_human}</td>
+        <td>{source_label}</td>
+        <td><span class="level-chip">{recommended_level}</span></td>
+      </tr>
       {/each}
     </tbody>
   </table>
@@ -472,27 +488,40 @@ Two-row-per-learner block: domain scores on row 1, descriptor on row 2.
 
 ```html
 <section class="report-section">
-  <h1 class="section-title"><span class="number">§04</span>RARPA Stage 2 — Diagnostic</h1>
+  <h1 class="section-title">
+    <span class="number">§04</span>RARPA Stage 2 — Diagnostic
+  </h1>
 
   {#each stage2_rows}
-    <article class="diagnostic-block">
-      <header>
-        <span class="uln"><code>{uln}</code></span>
-        <span class="source">{source_label} • {assessment_date_human}</span>
-      </header>
-      <div class="score-row">
-        <div class="score"><span class="domain">Reading</span><span class="value">{reading}/100</span></div>
-        <div class="score"><span class="domain">Writing</span><span class="value">{writing}/100</span></div>
-        <div class="score"><span class="domain">Listening</span><span class="value">{listening}/100</span></div>
-        <div class="score"><span class="domain">Speaking</span><span class="value">{speaking}/100</span></div>
+  <article class="diagnostic-block">
+    <header>
+      <span class="uln"><code>{uln}</code></span>
+      <span class="source">{source_label} • {assessment_date_human}</span>
+    </header>
+    <div class="score-row">
+      <div class="score">
+        <span class="domain">Reading</span
+        ><span class="value">{reading}/100</span>
       </div>
-      <p class="descriptor">
-        Recommended level <strong>{recommended_level}</strong>.
-        {#if weakness_flags.length > 0}
-          Weakness flagged: <em>{weakness_flags_human}</em>.
-        {/if}
-      </p>
-    </article>
+      <div class="score">
+        <span class="domain">Writing</span
+        ><span class="value">{writing}/100</span>
+      </div>
+      <div class="score">
+        <span class="domain">Listening</span
+        ><span class="value">{listening}/100</span>
+      </div>
+      <div class="score">
+        <span class="domain">Speaking</span
+        ><span class="value">{speaking}/100</span>
+      </div>
+    </div>
+    <p class="descriptor">
+      Recommended level <strong>{recommended_level}</strong>. {#if
+      weakness_flags.length > 0} Weakness flagged:
+      <em>{weakness_flags_human}</em>. {/if}
+    </p>
+  </article>
   {/each}
 </section>
 ```
@@ -512,8 +541,12 @@ article.diagnostic-block header {
   margin-bottom: 2mm;
   font-size: 9.5pt;
 }
-.uln code { font-weight: 700; }
-.source { color: #6b7280; }
+.uln code {
+  font-weight: 700;
+}
+.source {
+  color: #6b7280;
+}
 .score-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -579,24 +612,26 @@ Grouped by learner, then sub-grouped by target level so the inspector reads the 
 
 ```html
 <section class="report-section">
-  <h1 class="section-title"><span class="number">§05</span>RARPA Stage 3 — Objective setting</h1>
+  <h1 class="section-title">
+    <span class="number">§05</span>RARPA Stage 3 — Objective setting
+  </h1>
 
   {#each stage3_rows}
-    <article class="learner-objectives">
-      <header>ULN <code>{uln}</code></header>
-      {#each grouped_by_level}
-        <h3 class="target-level">Target {level_label}</h3>
-        <ul class="objectives">
-          {#each objectives}
-            <li>
-              <span class="skill-code">[{skill_domain}]</span>
-              <span class="description">{description}</span>
-              <span class="source">{source_label}</span>
-            </li>
-          {/each}
-        </ul>
+  <article class="learner-objectives">
+    <header>ULN <code>{uln}</code></header>
+    {#each grouped_by_level}
+    <h3 class="target-level">Target {level_label}</h3>
+    <ul class="objectives">
+      {#each objectives}
+      <li>
+        <span class="skill-code">[{skill_domain}]</span>
+        <span class="description">{description}</span>
+        <span class="source">{source_label}</span>
+      </li>
       {/each}
-    </article>
+    </ul>
+    {/each}
+  </article>
   {/each}
 </section>
 ```
@@ -665,6 +700,7 @@ ul.objectives li {
 ### Layout
 
 The biggest section. One sub-section per learner with three blocks:
+
 1. Numeric summary (sessions, scenarios passed, vocab retention)
 2. Top 10 retained vocab words (horizontal chip strip)
 3. 2–3 sample turn excerpts (anonymised — `[learner]` and `[tutor]` labels, no PII)
@@ -700,38 +736,49 @@ The biggest section. One sub-section per learner with three blocks:
 
 ```html
 <section class="report-section">
-  <h1 class="section-title"><span class="number">§06</span>RARPA Stage 4 — Formative evidence</h1>
+  <h1 class="section-title">
+    <span class="number">§06</span>RARPA Stage 4 — Formative evidence
+  </h1>
 
   {#each stage4_rows}
-    <article class="learner-formative">
-      <header>ULN <code>{uln}</code></header>
+  <article class="learner-formative">
+    <header>ULN <code>{uln}</code></header>
 
-      <dl class="formative-stats">
-        <div><dt>Sessions</dt><dd>{session_count}</dd></div>
-        <div><dt>Scenarios passed</dt><dd>{scenarios_passed}</dd></div>
-        <div><dt>Vocab retention</dt><dd>{vocab_retention_pct}%</dd></div>
-      </dl>
-
-      <h3>Top retained vocabulary</h3>
-      <div class="vocab-strip">
-        {#each top_10_retained}
-          <span class="vocab-chip">{word}</span>
-        {/each}
+    <dl class="formative-stats">
+      <div>
+        <dt>Sessions</dt>
+        <dd>{session_count}</dd>
       </div>
+      <div>
+        <dt>Scenarios passed</dt>
+        <dd>{scenarios_passed}</dd>
+      </div>
+      <div>
+        <dt>Vocab retention</dt>
+        <dd>{vocab_retention_pct}%</dd>
+      </div>
+    </dl>
 
-      <h3>Sample turn excerpts</h3>
-      {#each excerpts}
-        <div class="excerpt">
-          <p class="excerpt-meta">
-            Session {session_date_human} —
-            <em>{scenario_id_human}</em>
-          </p>
-          {#each turns}
-            <p class="turn"><span class="speaker">[{role}]</span> {text}</p>
-          {/each}
-        </div>
+    <h3>Top retained vocabulary</h3>
+    <div class="vocab-strip">
+      {#each top_10_retained}
+      <span class="vocab-chip">{word}</span>
       {/each}
-    </article>
+    </div>
+
+    <h3>Sample turn excerpts</h3>
+    {#each excerpts}
+    <div class="excerpt">
+      <p class="excerpt-meta">
+        Session {session_date_human} —
+        <em>{scenario_id_human}</em>
+      </p>
+      {#each turns}
+      <p class="turn"><span class="speaker">[{role}]</span> {text}</p>
+      {/each}
+    </div>
+    {/each}
+  </article>
   {/each}
 </section>
 ```
@@ -864,39 +911,38 @@ One block per completed Stage 5 review (`org_admin_confirmed_at IS NOT NULL`). P
 
 ```html
 <section class="report-section">
-  <h1 class="section-title"><span class="number">§07</span>RARPA Stage 5 — Summative review</h1>
+  <h1 class="section-title">
+    <span class="number">§07</span>RARPA Stage 5 — Summative review
+  </h1>
 
   <h2 class="subsection">Completed reviews ({completed_count})</h2>
   {#each stage5_completed}
-    <article class="stage5-review">
-      <header>
-        ULN <code>{uln}</code> —
-        {old_level_label} → {new_level_label}
-      </header>
-      <p class="meta">Confirmed {confirmed_at_human} by {confirmed_by_name}</p>
+  <article class="stage5-review">
+    <header>
+      ULN <code>{uln}</code> — {old_level_label} → {new_level_label}
+    </header>
+    <p class="meta">Confirmed {confirmed_at_human} by {confirmed_by_name}</p>
 
-      <h3>Learner self-assessment</h3>
-      <blockquote class="learner-quote">{learner_self_assessment}</blockquote>
+    <h3>Learner self-assessment</h3>
+    <blockquote class="learner-quote">{learner_self_assessment}</blockquote>
 
-      <h3>AI tutor summary</h3>
-      <p class="ai-summary">{ai_tutor_summary}</p>
+    <h3>AI tutor summary</h3>
+    <p class="ai-summary">{ai_tutor_summary}</p>
 
-      <h3>Next steps</h3>
-      <p class="next-steps">{next_steps}</p>
-    </article>
-  {/each}
-
-  {#if pending_reviews.length > 0}
-    <h2 class="subsection">Pending reviews ({pending_count})</h2>
-    <p>
-      The following learners have a Stage 5 review row created but
-      not yet confirmed by the org admin:
-    </p>
-    <ul class="pending-list">
-      {#each pending_reviews}
-        <li>ULN <code>{uln}</code> — pending since {created_at_human}</li>
-      {/each}
-    </ul>
+    <h3>Next steps</h3>
+    <p class="next-steps">{next_steps}</p>
+  </article>
+  {/each} {#if pending_reviews.length > 0}
+  <h2 class="subsection">Pending reviews ({pending_count})</h2>
+  <p>
+    The following learners have a Stage 5 review row created but not yet
+    confirmed by the org admin:
+  </p>
+  <ul class="pending-list">
+    {#each pending_reviews}
+    <li>ULN <code>{uln}</code> — pending since {created_at_human}</li>
+    {/each}
+  </ul>
   {/if}
 </section>
 ```
@@ -928,7 +974,8 @@ blockquote.learner-quote {
   font-family: "Georgia", serif;
   color: #1f2937;
 }
-.ai-summary, .next-steps {
+.ai-summary,
+.next-steps {
   font-size: 10pt;
   margin: 1mm 0 3mm 4mm;
 }
@@ -974,7 +1021,9 @@ Per-learner table with teacher activity. Sorted by total teacher GLH descending 
 
 ```html
 <section class="report-section">
-  <h1 class="section-title"><span class="number">§08</span>Teacher oversight</h1>
+  <h1 class="section-title">
+    <span class="number">§08</span>Teacher oversight
+  </h1>
 
   <table class="data-table teacher-oversight">
     <thead>
@@ -991,16 +1040,16 @@ Per-learner table with teacher activity. Sorted by total teacher GLH descending 
     </thead>
     <tbody>
       {#each teacher_oversight_rows}
-        <tr>
-          <td><code>{uln}</code></td>
-          <td>{teacher_name_or_dash}</td>
-          <td class="num">{total_teacher_glh}</td>
-          <td class="num">{counts.async_review}</td>
-          <td class="num">{counts.contact_session}</td>
-          <td class="num">{counts.pathway_adjustment}</td>
-          <td class="num">{counts.rarpa_signoff}</td>
-          <td>{last_review_human}</td>
-        </tr>
+      <tr>
+        <td><code>{uln}</code></td>
+        <td>{teacher_name_or_dash}</td>
+        <td class="num">{total_teacher_glh}</td>
+        <td class="num">{counts.async_review}</td>
+        <td class="num">{counts.contact_session}</td>
+        <td class="num">{counts.pathway_adjustment}</td>
+        <td class="num">{counts.rarpa_signoff}</td>
+        <td>{last_review_human}</td>
+      </tr>
       {/each}
     </tbody>
   </table>
@@ -1009,10 +1058,9 @@ Per-learner table with teacher activity. Sorted by total teacher GLH descending 
     Review types align with the platform's TeacherReview taxonomy:
     <em>async_review</em> (teacher read AI output without contact),
     <em>contact_session</em> (synchronous teacher–learner session),
-    <em>pathway_adjustment</em> (teacher modified the learner's
-    scenario sequence), <em>rarpa_signoff</em> (teacher confirmed a
-    RARPA stage advance). Teacher GLH counts toward the funded GLH
-    total in §02.
+    <em>pathway_adjustment</em> (teacher modified the learner's scenario
+    sequence), <em>rarpa_signoff</em> (teacher confirmed a RARPA stage advance).
+    Teacher GLH counts toward the funded GLH total in §02.
   </p>
 </section>
 ```
@@ -1074,37 +1122,64 @@ Single-page summary linked back to the ILR export from Function 13.
 
   <h2 class="subsection">Linked ILR export</h2>
   <dl class="key-value">
-    <div><dt>Export ID</dt><dd><code>{ilr.export_id}</code></dd></div>
-    <div><dt>Generated</dt><dd>{ilr.generated_at_human}</dd></div>
-    <div><dt>Period</dt><dd>{ilr.period_start_human} — {ilr.period_end_human}</dd></div>
-    <div><dt>Compliance config version</dt><dd>{ilr.compliance_config_version}</dd></div>
+    <div>
+      <dt>Export ID</dt>
+      <dd><code>{ilr.export_id}</code></dd>
+    </div>
+    <div>
+      <dt>Generated</dt>
+      <dd>{ilr.generated_at_human}</dd>
+    </div>
+    <div>
+      <dt>Period</dt>
+      <dd>{ilr.period_start_human} — {ilr.period_end_human}</dd>
+    </div>
+    <div>
+      <dt>Compliance config version</dt>
+      <dd>{ilr.compliance_config_version}</dd>
+    </div>
   </dl>
 
   <h2 class="subsection">Counts</h2>
   <dl class="headline-stats compact">
-    <div><dt>Rows exported</dt><dd>{ilr.rows_exported}</dd></div>
-    <div><dt>Rows blocked</dt><dd class="warn">{ilr.rows_blocked}</dd></div>
-    <div><dt>Warnings</dt><dd class="warn">{ilr.warnings.length}</dd></div>
+    <div>
+      <dt>Rows exported</dt>
+      <dd>{ilr.rows_exported}</dd>
+    </div>
+    <div>
+      <dt>Rows blocked</dt>
+      <dd class="warn">{ilr.rows_blocked}</dd>
+    </div>
+    <div>
+      <dt>Warnings</dt>
+      <dd class="warn">{ilr.warnings.length}</dd>
+    </div>
   </dl>
 
   <h2 class="subsection">Issue breakdown</h2>
   <table class="data-table">
     <thead>
-      <tr><th scope="col">Issue type</th><th scope="col" class="num">Count</th></tr>
+      <tr>
+        <th scope="col">Issue type</th>
+        <th scope="col" class="num">Count</th>
+      </tr>
     </thead>
     <tbody>
       {#each ilr.warnings_by_type}
-        <tr><td>{type}</td><td class="num">{count}</td></tr>
+      <tr>
+        <td>{type}</td>
+        <td class="num">{count}</td>
+      </tr>
       {/each}
     </tbody>
   </table>
 
   {#if ilr.rows_blocked > 0}
-    <p class="callout warn">
-      ⚠ {ilr.rows_blocked} row(s) blocked from submission. Action
-      required: open the ILR export's companion JSON for the per-row
-      detail, or re-run the export from the dashboard.
-    </p>
+  <p class="callout warn">
+    ⚠ {ilr.rows_blocked} row(s) blocked from submission. Action required: open
+    the ILR export's companion JSON for the per-row detail, or re-run the export
+    from the dashboard.
+  </p>
   {/if}
 </section>
 ```
@@ -1129,9 +1204,15 @@ dl.key-value dd {
   margin: 0;
   font-size: 10pt;
 }
-dl.headline-stats.compact > div { border-left-width: 2pt; }
-dl.headline-stats.compact dd { font-size: 13pt; }
-dl.headline-stats.compact dd.warn { color: #b45309; }
+dl.headline-stats.compact > div {
+  border-left-width: 2pt;
+}
+dl.headline-stats.compact dd {
+  font-size: 13pt;
+}
+dl.headline-stats.compact dd.warn {
+  color: #b45309;
+}
 .callout.warn {
   background: #fef3c7;
   border-left: 4pt solid #d97706;
@@ -1193,18 +1274,28 @@ dl.headline-stats.compact dd.warn { color: #b45309; }
 
 ```html
 <section class="report-section">
-  <h1 class="section-title"><span class="number">§10</span>Safeguarding overview</h1>
+  <h1 class="section-title">
+    <span class="number">§10</span>Safeguarding overview
+  </h1>
 
-  <p class="meta">Reporting period: {period_start_human} — {period_end_human}</p>
+  <p class="meta">
+    Reporting period: {period_start_human} — {period_end_human}
+  </p>
 
   <h2 class="subsection">Alerts by category</h2>
   <table class="data-table">
     <thead>
-      <tr><th scope="col">Category</th><th scope="col" class="num">Count</th></tr>
+      <tr>
+        <th scope="col">Category</th>
+        <th scope="col" class="num">Count</th>
+      </tr>
     </thead>
     <tbody>
       {#each safeguarding.by_category}
-        <tr><td>{category_label}</td><td class="num">{count}</td></tr>
+      <tr>
+        <td>{category_label}</td>
+        <td class="num">{count}</td>
+      </tr>
       {/each}
       <tr class="totals">
         <td><strong>Total</strong></td>
@@ -1215,21 +1306,31 @@ dl.headline-stats.compact dd.warn { color: #b45309; }
 
   <h2 class="subsection">Resolution metrics</h2>
   <dl class="key-value">
-    <div><dt>Resolved</dt>
-         <dd>{safeguarding.resolved_count} of {safeguarding.total} ({safeguarding.resolution_rate_pct}%)</dd></div>
-    <div><dt>Average time to resolution</dt>
-         <dd>{safeguarding.avg_resolution_days} days</dd></div>
-    <div><dt>Median time to resolution</dt>
-         <dd>{safeguarding.median_resolution_days} days</dd></div>
-    <div><dt>Oldest unresolved</dt>
-         <dd>{safeguarding.oldest_unresolved_days} days</dd></div>
+    <div>
+      <dt>Resolved</dt>
+      <dd>
+        {safeguarding.resolved_count} of {safeguarding.total}
+        ({safeguarding.resolution_rate_pct}%)
+      </dd>
+    </div>
+    <div>
+      <dt>Average time to resolution</dt>
+      <dd>{safeguarding.avg_resolution_days} days</dd>
+    </div>
+    <div>
+      <dt>Median time to resolution</dt>
+      <dd>{safeguarding.median_resolution_days} days</dd>
+    </div>
+    <div>
+      <dt>Oldest unresolved</dt>
+      <dd>{safeguarding.oldest_unresolved_days} days</dd>
+    </div>
   </dl>
 
   <p class="callout privacy">
-    No learner-identifying information appears in this section by design.
-    Per Function 10 of the platform brief, alert detail is restricted to
-    the Amber safeguarding lead and is not eligible for inclusion in
-    inspection reports.
+    No learner-identifying information appears in this section by design. Per
+    Function 10 of the platform brief, alert detail is restricted to the Amber
+    safeguarding lead and is not eligible for inclusion in inspection reports.
   </p>
 </section>
 ```
@@ -1273,49 +1374,51 @@ A single explanatory page, no data. Plain prose so an inspector skimming the app
 
 ```html
 <section class="report-section appendix">
-  <h1 class="section-title"><span class="number">§11</span>Appendix — Methodology</h1>
+  <h1 class="section-title">
+    <span class="number">§11</span>Appendix — Methodology
+  </h1>
 
   <h2 class="subsection">How this report was built</h2>
   <p>
-    This report is generated by Project Silk, Amber Training's
-    AI-augmented ESOL learning platform. Every figure on these pages
-    is derived from records the platform itself created — there is no
-    manual editing between data capture and PDF generation.
+    This report is generated by Project Silk, Amber Training's AI-augmented ESOL
+    learning platform. Every figure on these pages is derived from records the
+    platform itself created — there is no manual editing between data capture
+    and PDF generation.
   </p>
 
   <h2 class="subsection">Data flow</h2>
   <ol class="methodology-list">
     <li>
-      <strong>Initial assessment.</strong> Either imported from a
-      ForSkills sub-score CSV (§04) or completed on-platform via a
-      12-question adaptive assessment.
+      <strong>Initial assessment.</strong> Either imported from a ForSkills
+      sub-score CSV (§04) or completed on-platform via a 12-question adaptive
+      assessment.
     </li>
     <li>
       <strong>Stage 3 objectives.</strong> Generated at placement and
-      re-generated at every confirmed level change, sourced from the
-      learner's skill-weakness flags and target NQF level.
+      re-generated at every confirmed level change, sourced from the learner's
+      skill-weakness flags and target NQF level.
     </li>
     <li>
-      <strong>AI tutor sessions.</strong> Conducted via Google
-      Gemini 2.5 Flash. Every session is logged turn-by-turn; sample
-      excerpts in §06 are selected algorithmically (early / mid /
-      late) and never include safeguarding-flagged content.
+      <strong>AI tutor sessions.</strong> Conducted via Google Gemini 2.5 Flash.
+      Every session is logged turn-by-turn; sample excerpts in §06 are selected
+      algorithmically (early / mid / late) and never include
+      safeguarding-flagged content.
     </li>
     <li>
-      <strong>Teacher oversight.</strong> Teachers file structured
-      reviews (§08) which count toward funded GLH alongside platform
-      sessions and prior imported learning.
+      <strong>Teacher oversight.</strong> Teachers file structured reviews (§08)
+      which count toward funded GLH alongside platform sessions and prior
+      imported learning.
     </li>
     <li>
-      <strong>RARPA Stage 5.</strong> Triggered automatically on a
-      confirmed level change; combines the learner's self-assessment,
-      an AI tutor narrative summary, and the org admin's sign-off.
+      <strong>RARPA Stage 5.</strong> Triggered automatically on a confirmed
+      level change; combines the learner's self-assessment, an AI tutor
+      narrative summary, and the org admin's sign-off.
     </li>
     <li>
-      <strong>ILR generation.</strong> The same data, mapped through
-      ESFA's 2025/26 schema, produces the funding-claim CSV (§09).
-      Every transformation reads from a versioned compliance-rules
-      configuration (audit-traceable via the Report ID on the cover).
+      <strong>ILR generation.</strong> The same data, mapped through ESFA's
+      2025/26 schema, produces the funding-claim CSV (§09). Every transformation
+      reads from a versioned compliance-rules configuration (audit-traceable via
+      the Report ID on the cover).
     </li>
   </ol>
 
@@ -1330,46 +1433,43 @@ A single explanatory page, no data. Plain prose so an inspector skimming the app
     <li>Stage 5 summative narratives (Phase 18)</li>
   </ul>
   <p>
-    No other AI provider has access to learner data. Anthropic Claude
-    is used internally for engineering development only and never
-    processes production data.
+    No other AI provider has access to learner data. Anthropic Claude is used
+    internally for engineering development only and never processes production
+    data.
   </p>
 
   <h2 class="subsection">Data residency</h2>
   <p>
-    All learner data — sessions, vocabulary records, safeguarding
-    alerts, ILR rows — is stored in the
-    <strong>europe-west2 (London)</strong> region of MongoDB Atlas
-    and processed exclusively in Google Cloud's
-    <strong>europe-west2 (London)</strong> region. No learner data
-    leaves the EU/UK at any stage of the platform's pipeline,
-    including AI inference (Vertex AI Gemini is hosted in
-    europe-west2).
+    All learner data — sessions, vocabulary records, safeguarding alerts, ILR
+    rows — is stored in the
+    <strong>europe-west2 (London)</strong> region of MongoDB Atlas and processed
+    exclusively in Google Cloud's <strong>europe-west2 (London)</strong> region.
+    No learner data leaves the EU/UK at any stage of the platform's pipeline,
+    including AI inference (Vertex AI Gemini is hosted in europe-west2).
   </p>
 
   <h2 class="subsection">Safeguarding</h2>
   <p>
-    Every learner message is screened against a multilingual
-    safeguarding keyword bank <em>before</em> being sent to Gemini.
-    Triggered messages produce an alert to the platform-wide
-    Designated Safeguarding Lead at Amber, and the learner is served
-    a pre-vetted signposting reply in their first language without
-    Gemini being called.
+    Every learner message is screened against a multilingual safeguarding
+    keyword bank <em>before</em> being sent to Gemini. Triggered messages
+    produce an alert to the platform-wide Designated Safeguarding Lead at Amber,
+    and the learner is served a pre-vetted signposting reply in their first
+    language without Gemini being called.
   </p>
   <p>
-    Per the platform's privacy contract, no safeguarding alert
-    content appears anywhere in this report or in any other report
-    accessible to the org admin. The aggregate counts in §10 are the
-    only safeguarding-derived figures included.
+    Per the platform's privacy contract, no safeguarding alert content appears
+    anywhere in this report or in any other report accessible to the org admin.
+    The aggregate counts in §10 are the only safeguarding-derived figures
+    included.
   </p>
 
   <h2 class="subsection">Audit trail</h2>
   <p>
-    Every state change — level confirmations, teacher assignments,
-    safeguarding triggers, ILR exports — is written to an append-only
-    audit log. The Report ID on the cover page is the index into that
-    log; an Amber engineer can reconstruct exactly which rows were
-    used to generate this PDF from the audit trail.
+    Every state change — level confirmations, teacher assignments, safeguarding
+    triggers, ILR exports — is written to an append-only audit log. The Report
+    ID on the cover page is the index into that log; an Amber engineer can
+    reconstruct exactly which rows were used to generate this PDF from the audit
+    trail.
   </p>
 </section>
 ```
@@ -1436,5 +1536,6 @@ buildEvidenceReport(...)  →  EvidenceReportPayload
 ```
 
 Tests:
+
 - **`evidenceReportTemplate.test.ts`** — asserts every brief-required section is present in the rendered HTML, every privacy invariant holds (no learner_id in §10, no PII in safeguarding section), and every section's heading reads `§NN  Title` for the table-of-contents extractor.
 - **Visual regression** — a single golden HTML fixture rendered with a known payload; diffs against the committed snapshot. Updated deliberately on layout changes.

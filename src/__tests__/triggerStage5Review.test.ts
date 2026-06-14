@@ -13,7 +13,8 @@
  *  S10   Integration: confirmLevelChangeService delegates to triggerStage5Review
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 // Queue mock — levelProgression.service imports rarpaEvidenceQueue at
 // module load (used by triggerStage5Review to enqueue the Stage-5 AI
@@ -98,20 +99,34 @@ describe("buildReflectionMessage", () => {
   it("S9 — substitutes the level labels in order: completed then new", () => {
     const { message } = buildReflectionMessage("e1", "e2", "english");
     expect(message).toBe(
-      "You have completed Entry Level 1. Please take 5 minutes to reflect on your progress before starting Entry Level 2."
+      "You have completed Entry Level 1. Please take 5 minutes to reflect on your progress before starting Entry Level 2.",
     );
   });
 
   it("S9.b — covers every adjacent transition", () => {
-    expect(buildReflectionMessage("e1", "e2", "english").message).toContain("Entry Level 1");
-    expect(buildReflectionMessage("e2", "e3", "english").message).toContain("Entry Level 2");
-    expect(buildReflectionMessage("e3", "l1", "english").message).toContain("Entry Level 3");
-    expect(buildReflectionMessage("l1", "l2", "english").message).toContain("Level 1");
-    expect(buildReflectionMessage("l1", "l2", "english").message).toContain("Level 2");
+    expect(buildReflectionMessage("e1", "e2", "english").message).toContain(
+      "Entry Level 1",
+    );
+    expect(buildReflectionMessage("e2", "e3", "english").message).toContain(
+      "Entry Level 2",
+    );
+    expect(buildReflectionMessage("e3", "l1", "english").message).toContain(
+      "Entry Level 3",
+    );
+    expect(buildReflectionMessage("l1", "l2", "english").message).toContain(
+      "Level 1",
+    );
+    expect(buildReflectionMessage("l1", "l2", "english").message).toContain(
+      "Level 2",
+    );
   });
 
   it("S4 — unrecognised L1 falls back to English", () => {
-    const { message, language_used } = buildReflectionMessage("e1", "e2", "klingon");
+    const { message, language_used } = buildReflectionMessage(
+      "e1",
+      "e2",
+      "klingon",
+    );
     expect(language_used).toBe("english");
     expect(message).toMatch(/^You have completed Entry Level 1/);
   });
@@ -124,9 +139,15 @@ describe("buildReflectionMessage", () => {
   });
 
   it("S9.c — Arabic / Somali / Chinese render their localised template", () => {
-    expect(buildReflectionMessage("e1", "e2", "arabic").message).toMatch(/أكملت/);
-    expect(buildReflectionMessage("e1", "e2", "somali").message).toMatch(/dhammaysay/);
-    expect(buildReflectionMessage("e1", "e2", "chinese").message).toMatch(/完成/);
+    expect(buildReflectionMessage("e1", "e2", "arabic").message).toMatch(
+      /أكملت/,
+    );
+    expect(buildReflectionMessage("e1", "e2", "somali").message).toMatch(
+      /dhammaysay/,
+    );
+    expect(buildReflectionMessage("e1", "e2", "chinese").message).toMatch(
+      /完成/,
+    );
   });
 });
 
@@ -158,11 +179,7 @@ describe("triggerStage5Review", () => {
       stage3: stage3Snapshot,
     });
 
-    const res = await triggerStage5Review(
-      learner._id.toString(),
-      "e1",
-      "e2"
-    );
+    const res = await triggerStage5Review(learner._id.toString(), "e1", "e2");
     expect(res).not.toBeNull();
     expect(res!.stage5_review_id).toMatch(/^[a-f0-9]{24}$/);
 
@@ -174,7 +191,10 @@ describe("triggerStage5Review", () => {
     expect(stage5?.ai_tutor_summary).toBeNull();
 
     // Snapshot copy of stage3_objectives
-    const snapshot = stage5?.stage3_objectives as Array<{ id: string; skill_domain: string }>;
+    const snapshot = stage5?.stage3_objectives as Array<{
+      id: string;
+      skill_domain: string;
+    }>;
     expect(snapshot).toHaveLength(2);
     expect(snapshot[0].id).toBe("obj-1");
     expect(snapshot[1].skill_domain).toBe("Lr");
@@ -184,11 +204,7 @@ describe("triggerStage5Review", () => {
     const org = await createOrg();
     const learner = await createLearner({ orgId: org._id, l1: "arabic" });
 
-    const res = await triggerStage5Review(
-      learner._id.toString(),
-      "e1",
-      "e2"
-    );
+    const res = await triggerStage5Review(learner._id.toString(), "e1", "e2");
     expect(res!.notification_language_used).toBe("arabic");
 
     expect(createNotificationMock).toHaveBeenCalledTimes(1);
@@ -210,7 +226,7 @@ describe("triggerStage5Review", () => {
 
     const notif = createNotificationMock.mock.calls[0][0];
     expect(notif.message).toBe(
-      "You have completed Entry Level 1. Please take 5 minutes to reflect on your progress before starting Entry Level 2."
+      "You have completed Entry Level 1. Please take 5 minutes to reflect on your progress before starting Entry Level 2.",
     );
   });
 
@@ -219,15 +235,17 @@ describe("triggerStage5Review", () => {
     const learner = await createLearner({
       orgId: org._id,
       stage3: [
-        { id: "obj-1", skill_domain: "Sc", description: "original", target_level: "e1", set_from: "placement_assessment" },
+        {
+          id: "obj-1",
+          skill_domain: "Sc",
+          description: "original",
+          target_level: "e1",
+          set_from: "placement_assessment",
+        },
       ],
     });
 
-    const res = await triggerStage5Review(
-      learner._id.toString(),
-      "e1",
-      "e2"
-    );
+    const res = await triggerStage5Review(learner._id.toString(), "e1", "e2");
 
     // Mutate the User doc AFTER the stub fired
     await User.updateOne(
@@ -242,7 +260,7 @@ describe("triggerStage5Review", () => {
             set_from: "level_change",
           },
         },
-      }
+      },
     );
 
     const stage5 = await Stage5Review.findById(res!.stage5_review_id).lean();
@@ -262,7 +280,7 @@ describe("triggerStage5Review error tolerance", () => {
     const res = await triggerStage5Review(
       new Types.ObjectId().toString(),
       "e1",
-      "e2"
+      "e2",
     );
     expect(res).toBeNull();
     const after = await Stage5Review.countDocuments({});
@@ -272,18 +290,19 @@ describe("triggerStage5Review error tolerance", () => {
 
   it("S7 — learner with no orgId → null (can't pin Stage5Review without org)", async () => {
     const learner = await User.create({
-      firstname: "Orphan", lastname: "L",
+      firstname: "Orphan",
+      lastname: "L",
       email: `orphan-${Date.now()}@s5.local`,
-      password: "x", phoneNumber: "07000000005",
-      role: "student", isActive: true, status: "active",
-      verified: true, esolLevel: "e1",
+      password: "x",
+      phoneNumber: "07000000005",
+      role: "student",
+      isActive: true,
+      status: "active",
+      verified: true,
+      esolLevel: "e1",
     });
 
-    const res = await triggerStage5Review(
-      learner._id.toString(),
-      "e1",
-      "e2"
-    );
+    const res = await triggerStage5Review(learner._id.toString(), "e1", "e2");
     expect(res).toBeNull();
     expect(createNotificationMock).not.toHaveBeenCalled();
   });

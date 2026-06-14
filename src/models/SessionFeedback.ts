@@ -3,7 +3,11 @@ import { ISessionFeedback } from "../interfaces/sessionFeedback.interface";
 
 const sessionFeedbackSchema = new Schema<ISessionFeedback>(
   {
-    sessionId: { type: Schema.Types.ObjectId, ref: "AISession", required: true },
+    sessionId: {
+      type: Schema.Types.ObjectId,
+      ref: "AISession",
+      required: true,
+    },
     bookingId: { type: Schema.Types.ObjectId, ref: "Booking", default: null },
     learnerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     teacherId: { type: Schema.Types.ObjectId, ref: "User", default: null },
@@ -27,7 +31,7 @@ const sessionFeedbackSchema = new Schema<ISessionFeedback>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 sessionFeedbackSchema.index({ sessionId: 1 });
@@ -36,7 +40,7 @@ sessionFeedbackSchema.index({ orgId: 1 });
 
 const SessionFeedback = model<ISessionFeedback>(
   "SessionFeedback",
-  sessionFeedbackSchema
+  sessionFeedbackSchema,
 );
 
 export default SessionFeedback;

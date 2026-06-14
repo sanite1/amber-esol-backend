@@ -120,9 +120,9 @@ export const fanOutProgressionCheck = async (): Promise<FanOutResult> => {
         // Job dedupe: BullMQ jobId is unique per queue. Setting it to
         // a deterministic per-(org, date) key means a duplicate cron
         // run (or Vercel firing the same job twice) is a no-op.
-        { jobId: `progression:${today}:${orgId.toString()}` }
-      )
-    )
+        { jobId: `progression:${today}:${orgId.toString()}` },
+      ),
+    ),
   );
 
   const enqueued = results.filter((r) => r.status === "fulfilled").length;
@@ -131,8 +131,11 @@ export const fanOutProgressionCheck = async (): Promise<FanOutResult> => {
     for (const r of results) {
       if (r.status === "rejected") {
         logger.error(
-          { err: r.reason instanceof Error ? r.reason.message : String(r.reason) },
-          "fanOutProgressionCheck: failed to enqueue org job"
+          {
+            err:
+              r.reason instanceof Error ? r.reason.message : String(r.reason),
+          },
+          "fanOutProgressionCheck: failed to enqueue org job",
         );
       }
     }
@@ -145,7 +148,7 @@ export const fanOutProgressionCheck = async (): Promise<FanOutResult> => {
       jobs_enqueued: enqueued,
       jobs_failed: failed,
     },
-    "Daily progression fan-out complete"
+    "Daily progression fan-out complete",
   );
 
   return {
@@ -188,7 +191,7 @@ export interface OrgProgressionRunStats {
  */
 export const decideCohortStatus = (
   daysSinceLastSession: number | null,
-  daysSinceEnrolment: number
+  daysSinceEnrolment: number,
 ): CohortStatus | null => {
   if (daysSinceLastSession === null) {
     // Never had a session
@@ -196,7 +199,8 @@ export const decideCohortStatus = (
     return "inactive_mild";
   }
   if (daysSinceLastSession <= COHORT_BAND_DAYS.ACTIVE_MAX) return "active";
-  if (daysSinceLastSession <= COHORT_BAND_DAYS.INACTIVE_MILD_MAX) return "inactive_mild";
+  if (daysSinceLastSession <= COHORT_BAND_DAYS.INACTIVE_MILD_MAX)
+    return "inactive_mild";
   if (daysSinceLastSession <= COHORT_BAND_DAYS.INACTIVE_MODERATE_MAX)
     return "inactive_moderate";
   return "dormant";
@@ -215,7 +219,7 @@ const isWithinDedupWindow = (
   lastSentAt: Date | null | undefined,
   lastSentLevel: string | null | undefined,
   currentLevel: string,
-  now: number
+  now: number,
 ): boolean => {
   if (!lastSentAt) return false;
   if (lastSentLevel !== currentLevel) return false;
@@ -232,7 +236,7 @@ const findOrgAdminId = async (orgId: string): Promise<string | null> => {
   if (!org?.adminUserId) {
     logger.warn(
       { orgId },
-      "runOrgProgressionCheck: org has no adminUserId — skipping email but writing in-app notification"
+      "runOrgProgressionCheck: org has no adminUserId — skipping email but writing in-app notification",
     );
     return null;
   }
@@ -251,7 +255,7 @@ const findOrgAdminId = async (orgId: string): Promise<string | null> => {
  * single bad learner doesn't kill the org's run.
  */
 export const runOrgProgressionCheck = async (
-  orgId: string
+  orgId: string,
 ): Promise<OrgProgressionRunStats> => {
   if (!Types.ObjectId.isValid(orgId)) {
     throw new Error(`runOrgProgressionCheck: invalid orgId ${orgId}`);
@@ -264,7 +268,7 @@ export const runOrgProgressionCheck = async (
     orgId: orgObjectId,
   })
     .select(
-      "_id firstname lastname email esolLevel createdAt cohort_status progression_notification_sent_at progression_notification_level"
+      "_id firstname lastname email esolLevel createdAt cohort_status progression_notification_sent_at progression_notification_level",
     )
     .lean();
 
@@ -297,7 +301,8 @@ export const runOrgProgressionCheck = async (
         .select("completedAt")
         .lean();
 
-      const lastSessionAt: Date | null = (latestSession?.completedAt as Date) ?? null;
+      const lastSessionAt: Date | null =
+        (latestSession?.completedAt as Date) ?? null;
       const daysSinceLastSession =
         lastSessionAt instanceof Date
           ? Math.floor((now - lastSessionAt.getTime()) / MS_PER_DAY)
@@ -307,7 +312,10 @@ export const runOrgProgressionCheck = async (
           ? Math.floor((now - learner.createdAt.getTime()) / MS_PER_DAY)
           : 0;
 
-      const nextStatus = decideCohortStatus(daysSinceLastSession, daysSinceEnrolment);
+      const nextStatus = decideCohortStatus(
+        daysSinceLastSession,
+        daysSinceEnrolment,
+      );
       const currentStatus = (learner.cohort_status ?? "new") as CohortStatus;
 
       // Dormant tally — feeds the per-org digest email at end of run.
@@ -326,7 +334,7 @@ export const runOrgProgressionCheck = async (
               cohort_status: nextStatus,
               last_session_at: lastSessionAt,
             },
-          }
+          },
         );
         stats.cohort_status_changes += 1;
         await AuditLog.create({
@@ -346,8 +354,8 @@ export const runOrgProgressionCheck = async (
         }).catch((err) =>
           logger.error(
             { err: (err as Error).message, learnerId: learner._id?.toString() },
-            "AuditLog write failed for cohort_status_changed"
-          )
+            "AuditLog write failed for cohort_status_changed",
+          ),
         );
       } else if (lastSessionAt) {
         // No status change but keep last_session_at fresh so the
@@ -355,7 +363,7 @@ export const runOrgProgressionCheck = async (
         // runs. Cheap conditional update — only writes when stale.
         await User.updateOne(
           { _id: learner._id, last_session_at: { $ne: lastSessionAt } },
-          { $set: { last_session_at: lastSessionAt } }
+          { $set: { last_session_at: lastSessionAt } },
         );
       }
 
@@ -372,7 +380,7 @@ export const runOrgProgressionCheck = async (
           learner.progression_notification_sent_at ?? null,
           learner.progression_notification_level ?? null,
           result.current_level,
-          now
+          now,
         )
       ) {
         stats.notifications_deduped += 1;
@@ -385,7 +393,8 @@ export const runOrgProgressionCheck = async (
       }
 
       const learnerName =
-        `${learner.firstname ?? ""} ${learner.lastname ?? ""}`.trim() || "(unnamed learner)";
+        `${learner.firstname ?? ""} ${learner.lastname ?? ""}`.trim() ||
+        "(unnamed learner)";
 
       if (orgAdminId) {
         await createNotification({
@@ -419,13 +428,16 @@ export const runOrgProgressionCheck = async (
                 ready_at: result.checked_at,
               },
             },
-            { priority: 1 }
+            { priority: 1 },
           )
           .catch((err) =>
             logger.error(
-              { err: (err as Error).message, learnerId: learner._id?.toString() },
-              "Failed to enqueue progression-ready-email"
-            )
+              {
+                err: (err as Error).message,
+                learnerId: learner._id?.toString(),
+              },
+              "Failed to enqueue progression-ready-email",
+            ),
           );
 
         stats.notifications_sent += 1;
@@ -443,7 +455,7 @@ export const runOrgProgressionCheck = async (
             progression_notification_sent_at: new Date(now),
             progression_notification_level: result.current_level,
           },
-        }
+        },
       );
 
       // ── 6. Audit the readiness flag ────────────────────────────
@@ -465,8 +477,8 @@ export const runOrgProgressionCheck = async (
       }).catch((err) =>
         logger.error(
           { err: (err as Error).message, learnerId: learner._id?.toString() },
-          "AuditLog write failed for progression_ready_flagged"
-        )
+          "AuditLog write failed for progression_ready_flagged",
+        ),
       );
     } catch (err) {
       stats.errors += 1;
@@ -476,7 +488,7 @@ export const runOrgProgressionCheck = async (
           orgId,
           learnerId: learner._id?.toString(),
         },
-        "runOrgProgressionCheck: per-learner failure — counted, continuing"
+        "runOrgProgressionCheck: per-learner failure — counted, continuing",
       );
     }
   }
@@ -504,19 +516,23 @@ export const runOrgProgressionCheck = async (
               window_days: COHORT_BAND_DAYS.INACTIVE_MODERATE_MAX, // 14
             },
           },
-          { priority: 5 } // standard — not urgent, daily cadence
+          { priority: 5 }, // standard — not urgent, daily cadence
         );
         stats.dormant_digest_email_sent = true;
       } catch (err) {
         logger.error(
-          { err: (err as Error).message, orgId, dormant_count: stats.dormant_learners_count },
-          "runOrgProgressionCheck: failed to enqueue dormant-learners-digest-email"
+          {
+            err: (err as Error).message,
+            orgId,
+            dormant_count: stats.dormant_learners_count,
+          },
+          "runOrgProgressionCheck: failed to enqueue dormant-learners-digest-email",
         );
       }
     } else {
       logger.warn(
         { orgId, dormant_count: stats.dormant_learners_count },
-        "runOrgProgressionCheck: dormant learners exist but org has no adminUserId — digest skipped"
+        "runOrgProgressionCheck: dormant learners exist but org has no adminUserId — digest skipped",
       );
     }
   }

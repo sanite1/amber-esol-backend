@@ -78,7 +78,7 @@ const loadAll = async (): Promise<void> => {
  */
 const getConfig = (
   domain: ComplianceDomain,
-  academicYear: string
+  academicYear: string,
 ): IComplianceConfig | null => {
   const hit = cache.get(makeKey(domain, academicYear));
   return hit ?? null;
@@ -110,7 +110,7 @@ const update = async (
   academicYear: string,
   rules: unknown,
   changelog: string,
-  userId: Types.ObjectId | string | null
+  userId: Types.ObjectId | string | null,
 ): Promise<IComplianceConfig> => {
   const existing = await ComplianceConfig.findOne({
     domain,

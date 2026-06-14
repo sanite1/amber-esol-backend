@@ -32,7 +32,7 @@ export const createLevelChangeValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const listLevelChangesValidation = () =>
@@ -46,5 +46,5 @@ export const listLevelChangesValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

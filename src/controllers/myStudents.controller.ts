@@ -9,7 +9,7 @@ import {
 export const listMyStudents = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -25,14 +25,14 @@ export const listMyStudents = async (
 export const getMyStudentDetail = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const response = await getMyStudentDetailService(
       userId,
-      req.params.studentId
+      req.params.studentId,
     );
     return res.status(response.statusCode).json(response);
   } catch (error) {
@@ -44,7 +44,7 @@ export const getMyStudentDetail = async (
 export const updateStudentNotes = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -52,7 +52,7 @@ export const updateStudentNotes = async (
     const response = await updateStudentNotesService(
       userId,
       req.params.studentId,
-      req.body.notes
+      req.body.notes,
     );
     return res.status(response.statusCode).json(response);
   } catch (error) {

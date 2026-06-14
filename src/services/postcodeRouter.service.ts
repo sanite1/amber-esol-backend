@@ -52,7 +52,7 @@ const normalise = (postcode: string): string =>
  * Target latency: < 10 ms for warm Redis (cold connections may be slower).
  */
 const lookup = async (
-  postcode: string
+  postcode: string,
 ): Promise<PostcodeRoutingEntry | null> => {
   if (!postcode) return null;
   const raw = await redis.get(`postcode:${normalise(postcode)}`);
@@ -62,7 +62,7 @@ const lookup = async (
   } catch (err) {
     logger.error(
       { postcode, raw, err: (err as Error).message },
-      "Malformed postcode entry in Redis"
+      "Malformed postcode entry in Redis",
     );
     return null;
   }
@@ -76,7 +76,9 @@ const lookup = async (
  * (treats them as empty strings). Quote handling is minimal — fine for the
  * gov.uk file which is unquoted.
  */
-const parseCsv = (csv: string): Array<PostcodeRoutingEntry & { postcode: string }> => {
+const parseCsv = (
+  csv: string,
+): Array<PostcodeRoutingEntry & { postcode: string }> => {
   const lines = csv.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (lines.length === 0) return [];
 
@@ -86,7 +88,7 @@ const parseCsv = (csv: string): Array<PostcodeRoutingEntry & { postcode: string 
   for (const col of required) {
     if (!headerCells.includes(col)) {
       throw new Error(
-        `Postcode CSV is missing required column "${col}". Header was: ${headerCells.join(", ")}`
+        `Postcode CSV is missing required column "${col}". Header was: ${headerCells.join(", ")}`,
       );
     }
   }
@@ -112,7 +114,7 @@ const parseCsv = (csv: string): Array<PostcodeRoutingEntry & { postcode: string 
  */
 const writeToRedis = async (
   rows: Array<PostcodeRoutingEntry & { postcode: string }>,
-  academicYear: string
+  academicYear: string,
 ): Promise<{ written: number }> => {
   const pipeline = redis.pipeline();
   for (const row of rows) {
@@ -141,7 +143,7 @@ const writeToRedis = async (
  *   3. Neither set → use bundled sample at src/data/postcode-sample.csv
  */
 const loadDatasetFromSource = async (
-  academicYear: string = TARGET_ACADEMIC_YEAR
+  academicYear: string = TARGET_ACADEMIC_YEAR,
 ): Promise<{ written: number; source: string }> => {
   const url = process.env.POSTCODE_DATASET_URL;
   const localPath = process.env.POSTCODE_DATASET_PATH;
@@ -156,7 +158,7 @@ const loadDatasetFromSource = async (
     //   (gov.uk has historically swapped formats) and add an ETag check
     //   so re-running doesn't re-download unchanged data.
     throw new Error(
-      "POSTCODE_DATASET_URL download not yet implemented. Set POSTCODE_DATASET_PATH to a local CSV instead, or unset both to use the bundled sample."
+      "POSTCODE_DATASET_URL download not yet implemented. Set POSTCODE_DATASET_PATH to a local CSV instead, or unset both to use the bundled sample.",
     );
   } else if (localPath) {
     source = `file:${localPath}`;
@@ -165,7 +167,7 @@ const loadDatasetFromSource = async (
     source = "bundled-sample";
     csv = readFileSync(
       path.join(__dirname, "../data/postcode-sample.csv"),
-      "utf-8"
+      "utf-8",
     );
   }
 
@@ -177,7 +179,7 @@ const loadDatasetFromSource = async (
   const result = await writeToRedis(rows, academicYear);
   logger.info(
     { source, written: result.written, academicYear },
-    "Postcode dataset loaded to Redis"
+    "Postcode dataset loaded to Redis",
   );
   return { ...result, source };
 };
@@ -187,7 +189,7 @@ const loadDatasetFromSource = async (
  * Called from boot to decide whether to enqueue the startup load job.
  */
 const isLoaded = async (
-  academicYear: string = TARGET_ACADEMIC_YEAR
+  academicYear: string = TARGET_ACADEMIC_YEAR,
 ): Promise<boolean> => {
   const v = await redis.get(MARKER_KEY);
   return v === academicYear;

@@ -17,7 +17,7 @@ router.get(
   isAuthenticated,
   isAdmin,
   getAdminStudentsValidation(),
-  getAdminStudents
+  getAdminStudents,
 );
 
 /* ── PATCH /api/admin-students/:id/status ── */
@@ -26,7 +26,7 @@ router.patch(
   isAuthenticated,
   isAdmin,
   updateStudentStatusValidation(),
-  updateStudentStatus
+  updateStudentStatus,
 );
 
 export default router;

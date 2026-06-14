@@ -55,7 +55,7 @@ export const options = {
       startVUs: 0,
       stages: [
         { duration: "30s", target: 50 },
-        { duration: "5m",  target: 50 },
+        { duration: "5m", target: 50 },
         { duration: "30s", target: 0 },
       ],
       gracefulRampDown: "30s",
@@ -63,10 +63,10 @@ export const options = {
   },
   thresholds: {
     // Brief's stated gate.
-    "turn_latency_ms":   ["p(95)<5000"],
+    turn_latency_ms: ["p(95)<5000"],
     // Baselines — failures here are warnings, not blockers.
     "turn_latency_ms{}": ["p(50)<2000", "p(99)<10000"],
-    "http_req_failed":   ["rate<0.01"],
+    http_req_failed: ["rate<0.01"],
   },
 };
 

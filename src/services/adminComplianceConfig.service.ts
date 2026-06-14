@@ -186,7 +186,10 @@ export const activateConfigService = async (
   if (typeof input.rules !== "object") {
     throw new ApiError(400, "rules must be a JSON object");
   }
-  if (typeof input.changelog !== "string" || input.changelog.trim().length < 1) {
+  if (
+    typeof input.changelog !== "string" ||
+    input.changelog.trim().length < 1
+  ) {
     throw new ApiError(
       400,
       "changelog is required — explain WHY this version is being activated",

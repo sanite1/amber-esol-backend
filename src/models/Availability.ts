@@ -20,7 +20,7 @@ const TimeBlockSchema = new Schema(
       ],
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const DayScheduleSchema = new Schema(
@@ -41,7 +41,7 @@ const DayScheduleSchema = new Schema(
     enabled: { type: Boolean, default: false },
     blocks: { type: [TimeBlockSchema], default: [] },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const availabilitySchema = new Schema<IAvailability>(
@@ -76,7 +76,7 @@ const availabilitySchema = new Schema<IAvailability>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 const Availability = model<IAvailability>("Availability", availabilitySchema);

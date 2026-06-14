@@ -203,10 +203,7 @@ const streamEvidenceReportPdf = async (
     }
 
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${filename}"`,
-    );
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     const stream = createReadStream(filePath);
     stream.on("error", (err) => next(err));
     stream.pipe(res);

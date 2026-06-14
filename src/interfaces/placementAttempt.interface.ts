@@ -11,15 +11,15 @@ import { EsolLevel, SkillDomain } from "./placementQuestion.interface";
  */
 export interface AnsweredQuestion {
   question_id: string;
-  answer: string;        // option id the learner picked
+  answer: string; // option id the learner picked
   was_correct: boolean;
   answered_at: Date;
 }
 
 export type PlacementAttemptStatus =
-  | "in_progress"        // 0 ≤ answers.length < 20
-  | "submitted"          // answers.length === 20, awaiting Gemini scoring
-  | "scored";            // result populated, attempt closed
+  | "in_progress" // 0 ≤ answers.length < 20
+  | "submitted" // answers.length === 20, awaiting Gemini scoring
+  | "scored"; // result populated, attempt closed
 
 /**
  * Result of the eventual Gemini scoring pass (brief Function 6 To-Do
@@ -32,7 +32,9 @@ export interface PlacementResult {
   /** 0..1 — how confident the scorer is in the level call. */
   placement_confidence: number | null;
   /** Per-domain pass/fail rollup, used by the wizard's confirmation screen. */
-  skill_breakdown: Partial<Record<SkillDomain, { correct: number; total: number }>>;
+  skill_breakdown: Partial<
+    Record<SkillDomain, { correct: number; total: number }>
+  >;
   /** ILR skill codes the scorer flagged as weak (same shape as ForSkills import). */
   weakness_flags: string[];
   /** Plain-English summary the org admin sees verbatim. */
@@ -61,11 +63,7 @@ export interface IPlacementAttempt extends Document {
    *  auditor sees the algorithm DID consider the recalc. */
   recalc_applied_at: Date | null;
   /** "all_correct" | "all_wrong" | "mixed" — what the recalc decided. */
-  recalc_outcome:
-    | "all_correct"
-    | "all_wrong"
-    | "mixed"
-    | null;
+  recalc_outcome: "all_correct" | "all_wrong" | "mixed" | null;
 
   startedAt: Date;
   submittedAt: Date | null;

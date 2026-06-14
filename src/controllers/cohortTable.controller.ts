@@ -14,7 +14,7 @@ import {
 export const getOrgAdminCohortTable: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     // requireOrgContext attaches req.esol_context.org_id; falling back
@@ -29,7 +29,7 @@ export const getOrgAdminCohortTable: ExpressFunction = async (
 
     const result = await getCohortTableService(
       orgId,
-      req.query as unknown as CohortTableQuery
+      req.query as unknown as CohortTableQuery,
     );
     return res.status(result.statusCode).json({
       message: result.message,

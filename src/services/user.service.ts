@@ -93,7 +93,7 @@ export const registerStudentService = async (data: ICreateStudentRequest) => {
   return new ApiResponse(
     201,
     "Student registered successfully. Please verify your email.",
-    student.toJSON()
+    student.toJSON(),
   );
 };
 
@@ -127,7 +127,7 @@ export const registerTutorService = async (data: ICreateTutorRequest) => {
   return new ApiResponse(
     201,
     "Tutor registered successfully. Please verify your email.",
-    tutor.toJSON()
+    tutor.toJSON(),
   );
 };
 
@@ -154,7 +154,7 @@ export const registerAdminService = async (data: ICreateAdminRequest) => {
   return new ApiResponse(
     201,
     "Admin registered successfully. Please verify your email.",
-    admin.toJSON()
+    admin.toJSON(),
   );
 };
 
@@ -179,7 +179,7 @@ export const loginService = async (data: ILoginRequest) => {
   if (!user.isActive) {
     throw new ApiError(
       403,
-      "Your account has been suspended. Please contact support."
+      "Your account has been suspended. Please contact support.",
     );
   }
 
@@ -277,7 +277,7 @@ export const forgotPasswordService = async (data: IForgotPasswordRequest) => {
     // Don't reveal whether user exists
     return new ApiResponse(
       200,
-      "If an account with that email exists, a reset link has been sent."
+      "If an account with that email exists, a reset link has been sent.",
     );
   }
 
@@ -297,7 +297,7 @@ export const forgotPasswordService = async (data: IForgotPasswordRequest) => {
 
   return new ApiResponse(
     200,
-    "If an account with that email exists, a reset link has been sent."
+    "If an account with that email exists, a reset link has been sent.",
   );
 };
 
@@ -305,7 +305,7 @@ export const forgotPasswordService = async (data: IForgotPasswordRequest) => {
 
 export const resetPasswordService = async (
   params: IVerifyParams,
-  data: IResetPasswordRequest
+  data: IResetPasswordRequest,
 ) => {
   const user = await User.findOne({
     _id: params.id,
@@ -339,7 +339,7 @@ export const resetPasswordService = async (
 
 export const updatePasswordService = async (
   userId: string,
-  data: IUpdatePasswordRequest
+  data: IUpdatePasswordRequest,
 ) => {
   const user = await User.findById(userId);
   if (!user) {
@@ -375,7 +375,7 @@ export const getUserByIdService = async (params: IdParam) => {
 
 export const updateUserService = async (
   params: IdParam,
-  data: IUpdateUserRequest
+  data: IUpdateUserRequest,
 ) => {
   const user = await User.findByIdAndUpdate(params.id, data, {
     new: true,
@@ -494,7 +494,7 @@ export const getTutorsService = async (options: TutorQueryOptions) => {
 
 export const updateOnlineStatusService = async (
   userId: string,
-  status: "online" | "offline" | "away"
+  status: "online" | "offline" | "away",
 ) => {
   const updateData: any = { onlineStatus: status };
   if (status === "offline") {
@@ -508,7 +508,7 @@ export const updateOnlineStatusService = async (
 
 export const suspendUserService = async (
   userId: string,
-  data: { reason: string }
+  data: { reason: string },
 ) => {
   const user = await User.findById(userId);
   if (!user) {
@@ -536,7 +536,7 @@ export const suspendUserService = async (
       suspendedAt: user.suspendedAt.toISOString(),
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating suspension notification")
+    logger.error({ err }, "Error creating suspension notification"),
   );
 
   return new ApiResponse(200, "User suspended successfully", user.toJSON());
@@ -571,7 +571,7 @@ export const reactivateUserService = async (userId: string) => {
       reactivatedAt: new Date().toISOString(),
     },
   }).catch((err) =>
-    logger.error({ err }, "Error creating reactivation notification")
+    logger.error({ err }, "Error creating reactivation notification"),
   );
 
   return new ApiResponse(200, "User reactivated successfully", user.toJSON());
@@ -581,7 +581,7 @@ export const reactivateUserService = async (userId: string) => {
 
 export const deleteAccountService = async (
   id: string,
-  data: { reason: string; feedback?: string }
+  data: { reason: string; feedback?: string },
 ) => {
   const user = await User.findById(id);
 

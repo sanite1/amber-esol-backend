@@ -55,13 +55,13 @@ export const sendLearnerNudgeService = async (
   callerRole: string,
   callerOrgId: string | null | undefined,
   callerId: string,
-  body: NudgeLearnerBody
+  body: NudgeLearnerBody,
 ): Promise<ApiResponse> => {
   // ── 1. ACL gate (404/403 disambiguation handled by helper) ───────
   const { learnerObjectId } = await assertLearnerAccess(
     learnerId,
     callerRole,
-    callerOrgId
+    callerOrgId,
   );
 
   if (!callerId || !Types.ObjectId.isValid(callerId)) {
@@ -75,7 +75,7 @@ export const sendLearnerNudgeService = async (
     if (trimmed.length > MAX_CUSTOM_MESSAGE_LENGTH) {
       throw new ApiError(
         400,
-        `custom_message must be ${MAX_CUSTOM_MESSAGE_LENGTH} characters or fewer`
+        `custom_message must be ${MAX_CUSTOM_MESSAGE_LENGTH} characters or fewer`,
       );
     }
     if (trimmed.length > 0) customMessage = trimmed;
@@ -100,7 +100,7 @@ export const sendLearnerNudgeService = async (
   if (isPlaceholderEmail(learner.email)) {
     logger.info(
       { learner_id: learner._id.toString(), org_id: callerOrgId },
-      "sendLearnerNudge: skipped — learner has no real email on file"
+      "sendLearnerNudge: skipped — learner has no real email on file",
     );
 
     // Still audit the intent — the org admin clicked "nudge"; that
@@ -123,16 +123,20 @@ export const sendLearnerNudgeService = async (
     }).catch((err) =>
       logger.error(
         { err: (err as Error).message, learnerId: learner._id.toString() },
-        "sendLearnerNudge: AuditLog write failed"
-      )
+        "sendLearnerNudge: AuditLog write failed",
+      ),
     );
 
-    return new ApiResponse(200, "Nudge skipped — learner has no email on file", {
-      learner_id: learner._id.toString(),
-      email_sent: false,
-      reason: "no_real_email",
-      l1_language_used: l1Language,
-    });
+    return new ApiResponse(
+      200,
+      "Nudge skipped — learner has no email on file",
+      {
+        learner_id: learner._id.toString(),
+        email_sent: false,
+        reason: "no_real_email",
+        l1_language_used: l1Language,
+      },
+    );
   }
 
   // ── 5. Enqueue the L1 email ───────────────────────────────────────
@@ -153,12 +157,12 @@ export const sendLearnerNudgeService = async (
           sent_by_user_id: callerId,
         },
       },
-      { priority: 5 }
+      { priority: 5 },
     );
   } catch (err) {
     logger.error(
       { err: (err as Error).message, learnerId: learner._id.toString() },
-      "sendLearnerNudge: failed to enqueue learner-nudge-email"
+      "sendLearnerNudge: failed to enqueue learner-nudge-email",
     );
     throw new ApiError(502, "Failed to enqueue nudge — please retry");
   }
@@ -182,8 +186,8 @@ export const sendLearnerNudgeService = async (
   }).catch((err) =>
     logger.error(
       { err: (err as Error).message, learnerId: learner._id.toString() },
-      "sendLearnerNudge: AuditLog write failed"
-    )
+      "sendLearnerNudge: AuditLog write failed",
+    ),
   );
 
   return new ApiResponse(200, "Nudge email enqueued", {

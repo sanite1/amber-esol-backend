@@ -71,7 +71,7 @@ export const options = {
     },
   },
   thresholds: {
-    "http_req_failed": ["rate<0.02"],
+    http_req_failed: ["rate<0.02"],
   },
 };
 
@@ -146,7 +146,8 @@ export default function () {
     lastSummary = summary;
     const esol = summary.queues.find((q) => q.name === "esol-session");
     if (!esol) continue;
-    const pending = esol.counts.waiting + esol.counts.active + esol.counts.delayed;
+    const pending =
+      esol.counts.waiting + esol.counts.active + esol.counts.delayed;
     console.log(
       `  pending=${pending} (w=${esol.counts.waiting} a=${esol.counts.active} ` +
         `d=${esol.counts.delayed} f=${esol.counts.failed} c=${esol.counts.completed})`,
@@ -168,19 +169,23 @@ export default function () {
 
   // ── Phase 4: verify completion + failures ──────────────────────
   const esolFinal = lastSummary.queues.find((q) => q.name === "esol-session");
-  const completedDelta = (esolFinal?.counts?.completed ?? 0) - baselineCompleted;
+  const completedDelta =
+    (esolFinal?.counts?.completed ?? 0) - baselineCompleted;
   const failedDelta = esolFinal?.counts?.failed ?? 0;
   failedJobs.add(failedDelta);
 
-  check({ completedDelta, failedDelta }, {
-    "all enqueued jobs completed":
-      ({ completedDelta: c }) => c >= ENQUEUE_COUNT,
-    "no terminal failures (or failures captured in failed_jobs)":
-      // Either 0 failures OR a non-zero failed_jobs row count — both
-      // satisfy the brief. The README documents the manual Mongo
-      // check that confirms failed_jobs captured the failures.
-      () => true,
-  });
+  check(
+    { completedDelta, failedDelta },
+    {
+      "all enqueued jobs completed": ({ completedDelta: c }) =>
+        c >= ENQUEUE_COUNT,
+      "no terminal failures (or failures captured in failed_jobs)":
+        // Either 0 failures OR a non-zero failed_jobs row count — both
+        // satisfy the brief. The README documents the manual Mongo
+        // check that confirms failed_jobs captured the failures.
+        () => true,
+    },
+  );
 
   console.log(
     `\nDrain complete in ${Math.round((Date.now() - startedAt) / 1000)}s.\n` +

@@ -62,11 +62,17 @@ import logger from "../config/logger";
  * If the framework ever adds a level (e.g. "l3" or "pre_e1"), this
  * array is the single edit point.
  */
-export const LEVEL_LADDER: readonly EsolLevel[] = ["e1", "e2", "e3", "l1", "l2"] as const;
+export const LEVEL_LADDER: readonly EsolLevel[] = [
+  "e1",
+  "e2",
+  "e3",
+  "l1",
+  "l2",
+] as const;
 
 export const isAdjacentLevelUp = (
   fromLevel: EsolLevel,
-  toLevel: EsolLevel
+  toLevel: EsolLevel,
 ): boolean => {
   const fromIdx = LEVEL_LADDER.indexOf(fromLevel);
   const toIdx = LEVEL_LADDER.indexOf(toLevel);
@@ -92,7 +98,7 @@ export interface ConfirmLevelChangeResult {
 
 export const confirmLevelChangeService = async (
   body: ConfirmLevelChangeBody,
-  callerId: string
+  callerId: string,
 ): Promise<ApiResponse> => {
   // ── 1. Input validation ───────────────────────────────────────────
   if (!body?.learner_id || !Types.ObjectId.isValid(body.learner_id)) {
@@ -115,7 +121,10 @@ export const confirmLevelChangeService = async (
     throw new ApiError(403, "Target user is not a student");
   }
   if (!learner.orgId) {
-    throw new ApiError(400, "Learner has no org assignment — not an ESOL learner");
+    throw new ApiError(
+      400,
+      "Learner has no org assignment — not an ESOL learner",
+    );
   }
 
   // ── 3. Adjacency rule ─────────────────────────────────────────────
@@ -123,13 +132,13 @@ export const confirmLevelChangeService = async (
   if (!oldLevel) {
     throw new ApiError(
       400,
-      "Learner has no current esol_level — run placement before confirming a level change"
+      "Learner has no current esol_level — run placement before confirming a level change",
     );
   }
   if (!isAdjacentLevelUp(oldLevel, newLevel)) {
     throw new ApiError(
       400,
-      `Invalid level transition ${oldLevel} → ${newLevel}: only adjacent promotions allowed (e1→e2→e3→l1→l2)`
+      `Invalid level transition ${oldLevel} → ${newLevel}: only adjacent promotions allowed (e1→e2→e3→l1→l2)`,
     );
   }
 
@@ -142,7 +151,7 @@ export const confirmLevelChangeService = async (
   if (!readiness.ready_for_progression) {
     throw new ApiError(
       409,
-      "Learner is no longer ready for progression — re-run the readiness check"
+      "Learner is no longer ready for progression — re-run the readiness check",
     );
   }
 
@@ -175,7 +184,7 @@ export const confirmLevelChangeService = async (
         progression_notification_sent_at: null,
         progression_notification_level: null,
       },
-    }
+    },
   );
 
   // ── 7. Append fresh Stage 3 objectives at the new level ───────────
@@ -188,7 +197,7 @@ export const confirmLevelChangeService = async (
     await createStage3ObjectivesOnLevelChange(
       learner._id.toString(),
       newLevel,
-      skillFlags
+      skillFlags,
     );
   } catch (err) {
     // Don't roll back the LevelChange — the brief intent is that the
@@ -196,7 +205,7 @@ export const confirmLevelChangeService = async (
     // failure logs loudly so it can be re-run manually.
     logger.error(
       { err: (err as Error).message, learnerId: learner._id.toString() },
-      "confirmLevelChange: createStage3ObjectivesOnLevelChange failed — level flipped but Stage 3 not seeded"
+      "confirmLevelChange: createStage3ObjectivesOnLevelChange failed — level flipped but Stage 3 not seeded",
     );
   }
 
@@ -211,13 +220,14 @@ export const confirmLevelChangeService = async (
     (err) =>
       logger.error(
         { err: (err as Error).message, learnerId: learner._id.toString() },
-        "confirmLevelChange: triggerStage5Review failed — level change still committed"
-      )
+        "confirmLevelChange: triggerStage5Review failed — level change still committed",
+      ),
   );
 
   // ── 9. In-app notification + celebration email to LEARNER ─────────
   const learnerName =
-    `${learner.firstname ?? ""} ${learner.lastname ?? ""}`.trim() || "(unnamed learner)";
+    `${learner.firstname ?? ""} ${learner.lastname ?? ""}`.trim() ||
+    "(unnamed learner)";
 
   await createNotification({
     userId: learner._id,
@@ -255,18 +265,18 @@ export const confirmLevelChangeService = async (
             new_level: newLevel,
           },
         },
-        { priority: 1 }
+        { priority: 1 },
       )
       .catch((err) =>
         logger.error(
           { err: (err as Error).message, learnerId: learner._id.toString() },
-          "confirmLevelChange: failed to enqueue progression-confirmed-email"
-        )
+          "confirmLevelChange: failed to enqueue progression-confirmed-email",
+        ),
       );
   } else {
     logger.info(
       { learnerId: learner._id.toString() },
-      "confirmLevelChange: learner has no real email — celebration email skipped"
+      "confirmLevelChange: learner has no real email — celebration email skipped",
     );
   }
 
@@ -289,8 +299,8 @@ export const confirmLevelChangeService = async (
   }).catch((err) =>
     logger.error(
       { err: (err as Error).message, learnerId: learner._id.toString() },
-      "confirmLevelChange: AuditLog write failed"
-    )
+      "confirmLevelChange: AuditLog write failed",
+    ),
   );
 
   const result: ConfirmLevelChangeResult = {
@@ -315,7 +325,7 @@ export interface RejectLevelChangeBody {
 
 export const rejectLevelChangeService = async (
   body: RejectLevelChangeBody,
-  callerId: string
+  callerId: string,
 ): Promise<ApiResponse> => {
   if (!body?.learner_id || !Types.ObjectId.isValid(body.learner_id)) {
     throw new ApiError(400, "learner_id must be a valid ObjectId");
@@ -366,7 +376,8 @@ export const rejectLevelChangeService = async (
     .select("name adminUserId")
     .lean();
   const learnerName =
-    `${learner.firstname ?? ""} ${learner.lastname ?? ""}`.trim() || "(unnamed learner)";
+    `${learner.firstname ?? ""} ${learner.lastname ?? ""}`.trim() ||
+    "(unnamed learner)";
 
   if (org?.adminUserId) {
     await createNotification({
@@ -398,18 +409,18 @@ export const rejectLevelChangeService = async (
             reason,
           },
         },
-        { priority: 1 }
+        { priority: 1 },
       )
       .catch((err) =>
         logger.error(
           { err: (err as Error).message, learnerId: learner._id.toString() },
-          "rejectLevelChange: failed to enqueue progression-rejected-email"
-        )
+          "rejectLevelChange: failed to enqueue progression-rejected-email",
+        ),
       );
   } else {
     logger.warn(
       { orgId: learner.orgId.toString() },
-      "rejectLevelChange: org has no adminUserId — in-app notification + email skipped"
+      "rejectLevelChange: org has no adminUserId — in-app notification + email skipped",
     );
   }
 

@@ -14,10 +14,13 @@ export const importForskills: ExpressFunction = async (req, res, next) => {
     const actorId = req.user?.id?.toString();
     if (!actorId) return next(new ApiError(401, "Unauthorized"));
 
-    const ctx = (req as typeof req & {
-      esol_context?: { org_id: string };
-    }).esol_context;
-    if (!ctx?.org_id) return next(new ApiError(403, "Organisation context required"));
+    const ctx = (
+      req as typeof req & {
+        esol_context?: { org_id: string };
+      }
+    ).esol_context;
+    if (!ctx?.org_id)
+      return next(new ApiError(403, "Organisation context required"));
 
     const data = await importForskillsService(req.file, ctx.org_id, actorId);
     return res.status(200).json(data);

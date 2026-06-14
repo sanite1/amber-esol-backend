@@ -63,19 +63,19 @@ export const translateTeacherMessage = async (
     generationConfig: {
       responseMimeType: "application/json",
       temperature: 0,
-      maxOutputTokens: 800,
+      // 2.5-flash thinking tokens share this budget — 800 risked a
+      // truncated JSON translation for longer messages.
+      maxOutputTokens: 1536,
     },
   });
 
   const userPrompt =
-    `Target language: ${targetLanguage}\n` +
-    `Source text (English):\n${text}`;
+    `Target language: ${targetLanguage}\n` + `Source text (English):\n${text}`;
 
   const result = await model.generateContent({
     contents: [{ role: "user", parts: [{ text: userPrompt }] }],
   });
-  const raw =
-    result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const raw = result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   if (!raw) {
     throw new Error("Gemini returned an empty response");
   }

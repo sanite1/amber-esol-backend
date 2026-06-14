@@ -32,7 +32,7 @@ const narrativeCacheSchema = new Schema<INarrativeCache>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // TTL index — Mongo deletes the row 24h (86,400s) after generated_at.
@@ -46,7 +46,7 @@ narrativeCacheSchema.index({ org_id: 1, generated_at: -1 });
 
 const NarrativeCache = model<INarrativeCache>(
   "NarrativeCache",
-  narrativeCacheSchema
+  narrativeCacheSchema,
 );
 
 export default NarrativeCache;

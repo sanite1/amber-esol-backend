@@ -9,6 +9,7 @@ import {
   cronResetDemoEnvironment,
   cronDeltaSync,
   cronReEngagement,
+  cronAcademicYearTransition,
 } from "../controllers/cron.controller";
 import { isCronAuthorized } from "../middlewares/authMiddleWare";
 
@@ -31,7 +32,11 @@ router.get("/priority-queue", isCronAuthorized, cronPriorityQueue);
 router.get("/fala-refresh", isCronAuthorized, cronFalaRefresh);
 
 // GET /api/cron/postcode-refresh-alert — annual reminder (1 Aug) for the new DfE postcode file
-router.get("/postcode-refresh-alert", isCronAuthorized, cronPostcodeRefreshAlert);
+router.get(
+  "/postcode-refresh-alert",
+  isCronAuthorized,
+  cronPostcodeRefreshAlert,
+);
 
 // GET /api/cron/reset-demo-environment — daily 03:00 UTC, demo deployment only.
 // Note: the handler itself enforces both DEMO_MODE and CRON_SECRET, in
@@ -50,5 +55,16 @@ router.get("/delta-sync", isCronAuthorized, cronDeltaSync);
 // "checking in" message on each eligible teacher's behalf; capped
 // at 50 messages per run; honours per-teacher opt-out.
 router.get("/re-engagement", isCronAuthorized, cronReEngagement);
+
+// GET /api/cron/academic-year-transition — annual, 1 Aug 06:00 UTC
+// (Final Addendum §3). Activates pre-created new-year compliance
+// configs, or rolls last year's rules over as v1 with a review flag;
+// alerts the Amber admin either way. Previous-year configs are
+// retained untouched for historical lookups.
+router.get(
+  "/academic-year-transition",
+  isCronAuthorized,
+  cronAcademicYearTransition,
+);
 
 export default router;

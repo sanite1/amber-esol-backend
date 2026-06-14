@@ -10,7 +10,7 @@ import {
 export const listMyTutors = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -27,7 +27,7 @@ export const listMyTutors = async (
 export const getMyTutorDetail = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -44,14 +44,14 @@ export const getMyTutorDetail = async (
 export const toggleFavourite = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const response = await toggleFavouriteTutorService(
       userId,
-      req.params.tutorId
+      req.params.tutorId,
     );
     return res.status(response.statusCode).json(response);
   } catch (error) {

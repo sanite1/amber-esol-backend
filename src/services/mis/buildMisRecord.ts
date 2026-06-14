@@ -69,7 +69,8 @@ const aiHoursForLearner = async (
     .select("duration_mins")
     .lean();
   const totalMins = sessions.reduce<number>(
-    (acc, s) => acc + ((s as { duration_mins?: number | null }).duration_mins ?? 0),
+    (acc, s) =>
+      acc + ((s as { duration_mins?: number | null }).duration_mins ?? 0),
     0,
   );
   return Math.round((totalMins / 60) * 10) / 10;
@@ -89,7 +90,11 @@ const aiHoursForLearner = async (
  */
 const deriveOutcomeAndCompStatus = async (
   learnerId: Types.ObjectId,
-): Promise<{ outcome: number; comp_status: number; learn_act_end_date: string | null }> => {
+): Promise<{
+  outcome: number;
+  comp_status: number;
+  learn_act_end_date: string | null;
+}> => {
   const lastConfirmed = await LevelChange.findOne({
     learnerId,
   })
@@ -150,10 +155,7 @@ export const buildMisRecord = async (
   if (!learner) {
     throw new ApiError(404, `No learner found with ULN ${uln}`);
   }
-  if (
-    !learner.orgId ||
-    learner.orgId.toString() !== org_id
-  ) {
+  if (!learner.orgId || learner.orgId.toString() !== org_id) {
     throw new ApiError(
       404,
       `Learner with ULN ${uln} is not in organisation ${org_id}`,
@@ -179,8 +181,7 @@ export const buildMisRecord = async (
     { $match: { learner_id: learner._id } },
     { $group: { _id: null, total: { $sum: "$duration_mins" } } },
   ]);
-  const reviewedHours =
-    (reviewedMins[0]?.total ?? 0) / 60;
+  const reviewedHours = (reviewedMins[0]?.total ?? 0) / 60;
   if (Math.abs(reviewedHours - teacherContactHours) > 0.5) {
     logger.warn(
       {
@@ -204,8 +205,7 @@ export const buildMisRecord = async (
     firstname: learner.firstname ?? "",
     lastname: learner.lastname ?? "",
     date_of_birth:
-      toIsoDate((learner as { dateOfBirth?: Date }).dateOfBirth ?? null) ??
-      "",
+      toIsoDate((learner as { dateOfBirth?: Date }).dateOfBirth ?? null) ?? "",
     esol_level: (
       (learner as { esolLevel?: string }).esolLevel ?? ""
     ).toLowerCase(),
@@ -216,12 +216,13 @@ export const buildMisRecord = async (
     // Planned end = onboarded + 12 months (typical ESOL aim length).
     // TODO(Phase 21): confirm with Joey whether per-org planned-end
     // override should live on Organisation.
-    learn_plan_end_date: toIsoDate(
-      plusMonths(
-        (learner as { esolOnboardedAt?: Date }).esolOnboardedAt ?? null,
-        12,
-      ),
-    ) ?? "",
+    learn_plan_end_date:
+      toIsoDate(
+        plusMonths(
+          (learner as { esolOnboardedAt?: Date }).esolOnboardedAt ?? null,
+          12,
+        ),
+      ) ?? "",
     learn_act_end_date,
     outcome,
     comp_status,
@@ -246,7 +247,10 @@ export const buildMisRecord = async (
 // Date helper
 // ─────────────────────────────────────────────────────────────────────
 
-const plusMonths = (d: Date | null | undefined, months: number): Date | null => {
+const plusMonths = (
+  d: Date | null | undefined,
+  months: number,
+): Date | null => {
   if (!d) return null;
   const out = new Date(d.getTime());
   out.setUTCMonth(out.getUTCMonth() + months);

@@ -36,7 +36,7 @@ const listMyStudentsSchema = {
 export const listMyStudentsValidation = validate(
   listMyStudentsSchema,
   { context: true },
-  { abortEarly: false }
+  { abortEarly: false },
 );
 
 /* ══════════════════════════════════════════════
@@ -54,7 +54,7 @@ const myStudentDetailSchema = {
 export const myStudentDetailValidation = validate(
   myStudentDetailSchema,
   { context: true },
-  { abortEarly: false }
+  { abortEarly: false },
 );
 
 /* ══════════════════════════════════════════════
@@ -78,5 +78,5 @@ const updateStudentNotesSchema = {
 export const updateStudentNotesValidation = validate(
   updateStudentNotesSchema,
   { context: true },
-  { abortEarly: false }
+  { abortEarly: false },
 );

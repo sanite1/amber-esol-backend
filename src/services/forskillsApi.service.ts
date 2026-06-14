@@ -137,9 +137,9 @@ export interface SyncForSkillsResult {
  */
 export const syncForSkillsForOrg = async (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  org_id: string
+  org_id: string,
 ): Promise<SyncForSkillsResult> => {
   throw new NotImplementedError(
-    "ForSkills API integration awaiting NCFE credentials — ETA v1.1"
+    "ForSkills API integration awaiting NCFE credentials — ETA v1.1",
   );
 };

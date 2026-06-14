@@ -26,11 +26,6 @@ router.get("/", isOrgAdmin, listAlertsValidation(), listAlerts);
 router.get("/:alertId", isOrgAdmin, alertIdParamValidation(), getAlert);
 
 // Review alert (admin only)
-router.patch(
-  "/:alertId/review",
-  isAdmin,
-  reviewAlertValidation(),
-  reviewAlert
-);
+router.patch("/:alertId/review", isAdmin, reviewAlertValidation(), reviewAlert);
 
 export default router;

@@ -31,10 +31,7 @@ import {
 } from "../services/ilrGlh.service";
 import type { IlrGlhSessionInput } from "../services/ilrGlh.service";
 
-const session = (
-  source: string,
-  mins: number,
-): IlrGlhSessionInput => ({
+const session = (source: string, mins: number): IlrGlhSessionInput => ({
   session_source: source,
   duration_mins: mins,
 });
@@ -143,17 +140,9 @@ describe("Final Addendum §12 — ILR GLH formula", () => {
 
   // ── F5 ────────────────────────────────────────────────────────
   it("glhTeacherContact null / undefined / negative coerces to 0", () => {
-    const cases: Array<number | null | undefined> = [
-      null,
-      undefined,
-      -5,
-      NaN,
-    ];
+    const cases: Array<number | null | undefined> = [null, undefined, -5, NaN];
     for (const tc of cases) {
-      const result = computeIlrLearnerGlh(
-        [session("ai_tutor", 60)],
-        tc,
-      );
+      const result = computeIlrLearnerGlh([session("ai_tutor", 60)], tc);
       expect(result.teacher_contact_glh).toBe(0);
       expect(result.total_glh).toBeCloseTo(1.0, 6);
     }

@@ -46,9 +46,8 @@ import {
   POSTCODE_NOT_IN_DATASET,
 } from "./fixtures/bulkImportFixture";
 
-const mockedLookup = (
-  PostcodeRouter as unknown as { lookup: jest.Mock }
-).lookup;
+const mockedLookup = (PostcodeRouter as unknown as { lookup: jest.Mock })
+  .lookup;
 const mockedNotify = createNotification as jest.Mock;
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -105,10 +104,7 @@ beforeAll(() => {
   // Drop the fixture on disk so a developer can inspect the exact bytes
   // that drove the test run.
   writeFileSync("/tmp/test-bulk-import.csv", generateOriginalCsv());
-  writeFileSync(
-    "/tmp/test-bulk-import-corrected.csv",
-    generateCorrectedCsv()
-  );
+  writeFileSync("/tmp/test-bulk-import-corrected.csv", generateCorrectedCsv());
 });
 
 beforeEach(() => {
@@ -129,7 +125,7 @@ describe("D2-1 — original mixed CSV", () => {
     const res = await importLearnersService(
       csvToFile(csv),
       org._id.toString(),
-      actor._id.toString()
+      actor._id.toString(),
     );
 
     expect(res.statusCode).toBe(200);
@@ -150,7 +146,7 @@ describe("D2-1 — original mixed CSV", () => {
     expect(summary.failed).toBe(4);
     expect(summary.duplicate).toBe(0);
     expect(summary.imported + summary.failed + summary.duplicate).toBe(
-      summary.total
+      summary.total,
     );
 
     // ── Errors: exact row, field, and message text ───────────────
@@ -207,7 +203,7 @@ describe("D2-1 — original mixed CSV", () => {
     expect((oliver as any).postcode_prior).toBe("E1 6AN");
     expect((oliver as any).esol_aim_type).toMatch(/regulated|non_regulated/);
     expect((oliver as any).employment_status).toMatch(
-      /unemployed|employed|self_employed|not_in_labour_market/
+      /unemployed|employed|self_employed|not_in_labour_market/,
     );
     expect((oliver as any).lldd_health_prob).toBeOneOf([1, 2, 9]);
     expect((oliver as any).esolOnboardedAt).toBeInstanceOf(Date);
@@ -215,7 +211,7 @@ describe("D2-1 — original mixed CSV", () => {
 
     // ── Spot-check the ZZ99 learner (manual_review path) ─────────
     const zz99 = learners.find(
-      (l) => (l as any).postcode_prior === POSTCODE_NOT_IN_DATASET
+      (l) => (l as any).postcode_prior === POSTCODE_NOT_IN_DATASET,
     );
     expect(zz99).toBeTruthy();
     expect((zz99 as any).sof_code).toBeNull();
@@ -284,7 +280,7 @@ describe("D2-2 — corrected re-upload is idempotent against the original 45", (
     await importLearnersService(
       csvToFile(generateOriginalCsv()),
       org._id.toString(),
-      actor._id.toString()
+      actor._id.toString(),
     );
     const afterOriginal = await User.countDocuments({
       orgId: org._id,
@@ -304,7 +300,7 @@ describe("D2-2 — corrected re-upload is idempotent against the original 45", (
     const correctedRes = await importLearnersService(
       csvToFile(generateCorrectedCsv()),
       org._id.toString(),
-      actor._id.toString()
+      actor._id.toString(),
     );
     const correctedSummary = correctedRes.data as {
       total: number;

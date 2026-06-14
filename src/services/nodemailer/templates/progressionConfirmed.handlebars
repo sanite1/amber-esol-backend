@@ -1,25 +1,69 @@
 <html>
   <head>
     <style>
-      body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
-      .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; }
-      .header { background: #0b2343; padding: 32px; text-align: center; }
-      .header .greeting { color: #facc15; font-size: 26px; margin: 0; }
-      .header .congrats { color: #ffffff; font-size: 18px; margin: 8px 0 0; }
-      .body { padding: 30px; }
-      .body p { color: #333; line-height: 1.6; font-size: 16px; }
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .header {
+        background: #0b2343;
+        padding: 32px;
+        text-align: center;
+      }
+      .header .greeting {
+        color: #facc15;
+        font-size: 26px;
+        margin: 0;
+      }
+      .header .congrats {
+        color: #ffffff;
+        font-size: 18px;
+        margin: 8px 0 0;
+      }
+      .body {
+        padding: 30px;
+      }
+      .body p {
+        color: #333;
+        line-height: 1.6;
+        font-size: 16px;
+      }
       .level-badge {
-        display: inline-block; background: #fef3c7; color: #92400e;
-        border-radius: 999px; padding: 6px 18px; font-weight: 700;
-        letter-spacing: 0.4px; margin: 0 4px;
+        display: inline-block;
+        background: #fef3c7;
+        color: #92400e;
+        border-radius: 999px;
+        padding: 6px 18px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        margin: 0 4px;
       }
       .button {
-        display: inline-block; background: #0b2343; color: #ffffff !important;
-        padding: 12px 22px; border-radius: 8px; text-decoration: none;
-        font-weight: 600; margin-top: 16px;
+        display: inline-block;
+        background: #0b2343;
+        color: #ffffff !important;
+        padding: 12px 22px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        margin-top: 16px;
       }
-      .footer { background: #f3f4f6; padding: 18px; text-align: center;
-                color: #6b7280; font-size: 12px; }
+      .footer {
+        background: #f3f4f6;
+        padding: 18px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 12px;
+      }
     </style>
   </head>
   <body>
@@ -35,15 +79,16 @@
           You have moved up from
           <span class="level-badge">{{oldLevel}}</span>
           to
-          <span class="level-badge">{{newLevel}}</span>.
-          This is a real achievement — your tutor and the Amber team are proud
-          of the work you have put in.
+          <span class="level-badge">{{newLevel}}</span>. This is a real
+          achievement — your tutor and the Amber team are proud of the work you
+          have put in.
         </p>
 
         <p>
-          Your next set of learning goals at <strong>{{newLevel}}</strong> is
-          ready in your dashboard. Take a moment to look at them when you sign
-          in — they show what we will focus on next.
+          Your next set of learning goals at
+          <strong>{{newLevel}}</strong>
+          is ready in your dashboard. Take a moment to look at them when you
+          sign in — they show what we will focus on next.
         </p>
 
         <p>
@@ -55,8 +100,9 @@
         </p>
       </div>
       <div class="footer">
-        © {{currentYear}} Amber Training. Automated message — please do not
-        reply directly.
+        ©
+        {{currentYear}}
+        Amber Training. Automated message — please do not reply directly.
       </div>
     </div>
   </body>

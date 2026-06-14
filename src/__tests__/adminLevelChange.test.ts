@@ -24,7 +24,8 @@
  *   A1   LEVEL_LADDER + isAdjacentLevelUp pure helpers
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 // Queues + notification helper mocked so we can inspect dispatch
 const notificationsAdd = jest.fn().mockResolvedValue({ id: "fake" });
@@ -46,12 +47,10 @@ jest.mock("../services/notification.service", () => ({
 // triggerStage5Review.test.ts suite covers its behaviour; here we only
 // care that confirmLevelChangeService delegates to it.
 const checkLevelProgressionMock = jest.fn();
-const triggerStage5ReviewMock = jest
-  .fn()
-  .mockResolvedValue({
-    stage5_review_id: "000000000000000000000000",
-    notification_language_used: "english",
-  });
+const triggerStage5ReviewMock = jest.fn().mockResolvedValue({
+  stage5_review_id: "000000000000000000000000",
+  notification_language_used: "english",
+});
 jest.mock("../services/levelProgression.service", () => ({
   __esModule: true,
   checkLevelProgression: checkLevelProgressionMock,
@@ -148,11 +147,35 @@ const readyResult = (currentLevel: string) => ({
   current_level: currentLevel,
   ready_for_progression: true,
   criteria_met: {
-    scenario_completion: { passed: true, distinct_scenarios_passed: 3, required: 3, scenario_ids: ["s1", "s2", "s3"] },
-    score_threshold: { passed: true, average_score: 0.85, required: 0.75, sample_size: 3 },
-    skill_domain_coverage: { passed: true, domains_covered: 4, required: 3, domains: [] },
-    no_anchor_dominance: { passed: true, recent_session_anchor_ratios: [0, 0], threshold_ratio: 0.5 },
-    minimum_time: { passed: true, days_at_level: 21, required: 14, level_assigned_at: new Date().toISOString() },
+    scenario_completion: {
+      passed: true,
+      distinct_scenarios_passed: 3,
+      required: 3,
+      scenario_ids: ["s1", "s2", "s3"],
+    },
+    score_threshold: {
+      passed: true,
+      average_score: 0.85,
+      required: 0.75,
+      sample_size: 3,
+    },
+    skill_domain_coverage: {
+      passed: true,
+      domains_covered: 4,
+      required: 3,
+      domains: [],
+    },
+    no_anchor_dominance: {
+      passed: true,
+      recent_session_anchor_ratios: [0, 0],
+      threshold_ratio: 0.5,
+    },
+    minimum_time: {
+      passed: true,
+      days_at_level: 21,
+      required: 14,
+      level_assigned_at: new Date().toISOString(),
+    },
   },
   checked_at: new Date().toISOString(),
 });
@@ -162,7 +185,12 @@ const notReadyResult = (currentLevel: string) => ({
   ready_for_progression: false,
   criteria_met: {
     ...readyResult(currentLevel).criteria_met,
-    minimum_time: { passed: false, days_at_level: 3, required: 14, level_assigned_at: new Date().toISOString() },
+    minimum_time: {
+      passed: false,
+      days_at_level: 3,
+      required: 14,
+      level_assigned_at: new Date().toISOString(),
+    },
   },
 });
 
@@ -212,7 +240,7 @@ describe("confirmLevelChangeService", () => {
 
     const res = await confirmLevelChangeService(
       { learner_id: learner._id.toString(), new_level: "e3" },
-      admin._id.toString()
+      admin._id.toString(),
     );
     const data = res.data as {
       learner_id: string;
@@ -252,16 +280,18 @@ describe("confirmLevelChangeService", () => {
     expect(triggerStage5ReviewMock).toHaveBeenCalledWith(
       learner._id.toString(),
       "e2",
-      "e3"
+      "e3",
     );
 
     // In-app notification to learner
     expect(createNotificationMock).toHaveBeenCalledTimes(1);
-    expect(createNotificationMock.mock.calls[0][0].type).toBe("progression_confirmed");
+    expect(createNotificationMock.mock.calls[0][0].type).toBe(
+      "progression_confirmed",
+    );
 
     // Celebration email enqueued
     const email = notificationsAdd.mock.calls.find(
-      (c) => c[0] === "progression-confirmed-email"
+      (c) => c[0] === "progression-confirmed-email",
     );
     expect(email).toBeDefined();
     expect(email![1].payload.l1_language).toBe("arabic");
@@ -273,8 +303,12 @@ describe("confirmLevelChangeService", () => {
       action: "level_change_confirmed",
     }).lean();
     expect(audit).toBeTruthy();
-    expect((audit?.before_state as { esol_level?: string })?.esol_level).toBe("e2");
-    expect((audit?.after_state as { esol_level?: string })?.esol_level).toBe("e3");
+    expect((audit?.before_state as { esol_level?: string })?.esol_level).toBe(
+      "e2",
+    );
+    expect((audit?.after_state as { esol_level?: string })?.esol_level).toBe(
+      "e3",
+    );
   });
 
   it("C2 — non-adjacent jump e1→e3 → 400", async () => {
@@ -285,8 +319,8 @@ describe("confirmLevelChangeService", () => {
     await expect(
       confirmLevelChangeService(
         { learner_id: learner._id.toString(), new_level: "e3" },
-        admin._id.toString()
-      )
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 400 });
 
     // checkLevelProgression should NOT have been called — the adjacency
@@ -302,14 +336,14 @@ describe("confirmLevelChangeService", () => {
     await expect(
       confirmLevelChangeService(
         { learner_id: learner._id.toString(), new_level: "e1" },
-        admin._id.toString()
-      )
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 400 });
     await expect(
       confirmLevelChangeService(
         { learner_id: learner._id.toString(), new_level: "e2" },
-        admin._id.toString()
-      )
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -322,11 +356,13 @@ describe("confirmLevelChangeService", () => {
     await expect(
       confirmLevelChangeService(
         { learner_id: learner._id.toString(), new_level: "e3" },
-        admin._id.toString()
-      )
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 409 });
 
-    expect(await LevelChange.countDocuments({ learnerId: learner._id })).toBe(0);
+    expect(await LevelChange.countDocuments({ learnerId: learner._id })).toBe(
+      0,
+    );
     const after = await User.findById(learner._id).lean();
     expect(after?.esolLevel).toBe("e2");
   });
@@ -336,34 +372,47 @@ describe("confirmLevelChangeService", () => {
     const admin = await createAdmin();
     // A tutor, not a student
     const tutor = await User.create({
-      firstname: "T", lastname: "U", email: `t-${Date.now()}@x.local`,
-      password: "x", phoneNumber: "07000000003",
-      role: "tutor", orgId: org._id, isActive: true, status: "active",
-      verified: true, esolLevel: "e2",
+      firstname: "T",
+      lastname: "U",
+      email: `t-${Date.now()}@x.local`,
+      password: "x",
+      phoneNumber: "07000000003",
+      role: "tutor",
+      orgId: org._id,
+      isActive: true,
+      status: "active",
+      verified: true,
+      esolLevel: "e2",
     });
 
     await expect(
       confirmLevelChangeService(
         { learner_id: tutor._id.toString(), new_level: "e3" },
-        admin._id.toString()
-      )
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 403 });
   });
 
   it("C6 — learner with no orgId → 400", async () => {
     const admin = await createAdmin();
     const learner = await User.create({
-      firstname: "Orphan", lastname: "L", email: `o-${Date.now()}@x.local`,
-      password: "x", phoneNumber: "07000000004",
-      role: "student", isActive: true, status: "active",
-      verified: true, esolLevel: "e2",
+      firstname: "Orphan",
+      lastname: "L",
+      email: `o-${Date.now()}@x.local`,
+      password: "x",
+      phoneNumber: "07000000004",
+      role: "student",
+      isActive: true,
+      status: "active",
+      verified: true,
+      esolLevel: "e2",
     });
 
     await expect(
       confirmLevelChangeService(
         { learner_id: learner._id.toString(), new_level: "e3" },
-        admin._id.toString()
-      )
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -375,8 +424,8 @@ describe("confirmLevelChangeService", () => {
     await expect(
       confirmLevelChangeService(
         { learner_id: learner._id.toString(), new_level: "l3" },
-        admin._id.toString()
-      )
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -393,7 +442,7 @@ describe("confirmLevelChangeService", () => {
 
     await confirmLevelChangeService(
       { learner_id: learner._id.toString(), new_level: "e3" },
-      admin._id.toString()
+      admin._id.toString(),
     );
 
     const after = await User.findById(learner._id).lean();
@@ -413,22 +462,24 @@ describe("confirmLevelChangeService", () => {
 
     await confirmLevelChangeService(
       { learner_id: learner._id.toString(), new_level: "e3" },
-      admin._id.toString()
+      admin._id.toString(),
     );
 
     const emailCalls = notificationsAdd.mock.calls.filter(
-      (c) => c[0] === "progression-confirmed-email"
+      (c) => c[0] === "progression-confirmed-email",
     );
     expect(emailCalls).toHaveLength(0);
 
     // But the LevelChange row, in-app notification, and audit row still happened
-    expect(await LevelChange.countDocuments({ learnerId: learner._id })).toBe(1);
+    expect(await LevelChange.countDocuments({ learnerId: learner._id })).toBe(
+      1,
+    );
     expect(createNotificationMock).toHaveBeenCalledTimes(1);
     expect(
       await AuditLog.countDocuments({
         learner_id: learner._id,
         action: "level_change_confirmed",
-      })
+      }),
     ).toBe(1);
   });
 });
@@ -448,14 +499,16 @@ describe("rejectLevelChangeService", () => {
         learner_id: learner._id.toString(),
         reason: "In-person review still pending; defer 1 week.",
       },
-      amberAdmin._id.toString()
+      amberAdmin._id.toString(),
     );
 
     expect(res.statusCode).toBe(200);
     expect((res.data as { current_level?: string }).current_level).toBe("e2");
 
     // No LevelChange row
-    expect(await LevelChange.countDocuments({ learnerId: learner._id })).toBe(0);
+    expect(await LevelChange.countDocuments({ learnerId: learner._id })).toBe(
+      0,
+    );
 
     // Learner state UNCHANGED
     const after = await User.findById(learner._id).lean();
@@ -468,24 +521,26 @@ describe("rejectLevelChangeService", () => {
     }).lean();
     expect(audit).toBeTruthy();
     expect((audit?.after_state as { reason?: string })?.reason).toBe(
-      "In-person review still pending; defer 1 week."
+      "In-person review still pending; defer 1 week.",
     );
 
     // Org-admin notification fired
     expect(createNotificationMock).toHaveBeenCalledTimes(1);
     expect(createNotificationMock.mock.calls[0][0].userId.toString()).toBe(
-      orgAdminId.toString()
+      orgAdminId.toString(),
     );
-    expect(createNotificationMock.mock.calls[0][0].type).toBe("progression_rejected");
+    expect(createNotificationMock.mock.calls[0][0].type).toBe(
+      "progression_rejected",
+    );
 
     // Email enqueued to org admin
     const email = notificationsAdd.mock.calls.find(
-      (c) => c[0] === "progression-rejected-email"
+      (c) => c[0] === "progression-rejected-email",
     );
     expect(email).toBeDefined();
     expect(email![1].payload.org_admin_user_id).toBe(orgAdminId.toString());
     expect(email![1].payload.reason).toBe(
-      "In-person review still pending; defer 1 week."
+      "In-person review still pending; defer 1 week.",
     );
   });
 
@@ -497,8 +552,8 @@ describe("rejectLevelChangeService", () => {
     await expect(
       rejectLevelChangeService(
         { learner_id: learner._id.toString(), reason: "   " },
-        admin._id.toString()
-      )
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -507,8 +562,8 @@ describe("rejectLevelChangeService", () => {
     await expect(
       rejectLevelChangeService(
         { learner_id: new Types.ObjectId().toString(), reason: "n/a" },
-        admin._id.toString()
-      )
+        admin._id.toString(),
+      ),
     ).rejects.toMatchObject({ statusCode: 404 });
   });
 });

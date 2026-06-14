@@ -27,7 +27,7 @@ const verifyParticipant = async (conversationId: string, userId: string) => {
   }
 
   const isParticipant = conversation.participants.some(
-    (p) => p.toString() === userId
+    (p) => p.toString() === userId,
   );
   if (!isParticipant) {
     throw new ApiError(403, "You are not a participant of this conversation");
@@ -44,7 +44,7 @@ const verifyParticipant = async (conversationId: string, userId: string) => {
 
 export const listConversationsService = async (
   userId: string,
-  query: IConversationQuery
+  query: IConversationQuery,
 ) => {
   const page = parseInt(query.page || "1", 10);
   const limit = parseInt(query.limit || "20", 10);
@@ -81,7 +81,7 @@ export const listConversationsService = async (
     Conversation.find(filter)
       .populate(
         "participants",
-        "firstname lastname profilePicture role onlineStatus lastSeen"
+        "firstname lastname profilePicture role onlineStatus lastSeen",
       )
       .populate("lastMessageSenderId", "firstname lastname")
       .sort({
@@ -111,7 +111,7 @@ export const listConversationsService = async (
         isMuted: conv.muted.get(userId) || false,
         isArchived: conv.archived.get(userId) || false,
       };
-    })
+    }),
   );
 
   return new ApiResponse(200, "Conversations retrieved successfully", {
@@ -129,7 +129,7 @@ export const listConversationsService = async (
 
 export const startConversationService = async (
   userId: string,
-  data: IStartConversationRequest
+  data: IStartConversationRequest,
 ) => {
   const { participantId } = data;
 
@@ -149,14 +149,14 @@ export const startConversationService = async (
     participants: { $all: [userId, participantId], $size: 2 },
   }).populate(
     "participants",
-    "firstname lastname profilePicture role onlineStatus lastSeen"
+    "firstname lastname profilePicture role onlineStatus lastSeen",
   );
 
   if (existing) {
     return new ApiResponse(
       200,
       "Conversation already exists",
-      existing.toJSON()
+      existing.toJSON(),
     );
   }
 
@@ -169,13 +169,13 @@ export const startConversationService = async (
   // Populate for response
   const populated = await Conversation.findById(conversation._id).populate(
     "participants",
-    "firstname lastname profilePicture role onlineStatus lastSeen"
+    "firstname lastname profilePicture role onlineStatus lastSeen",
   );
 
   return new ApiResponse(
     201,
     "Conversation created successfully",
-    populated!.toJSON()
+    populated!.toJSON(),
   );
 };
 
@@ -184,7 +184,7 @@ export const startConversationService = async (
 export const listMessagesService = async (
   conversationId: string,
   userId: string,
-  query: IMessageQuery
+  query: IMessageQuery,
 ) => {
   await verifyParticipant(conversationId, userId);
 
@@ -225,7 +225,7 @@ export const sendMessageService = async (
   conversationId: string,
   userId: string,
   userRole: string,
-  data: ISendMessageRequest
+  data: ISendMessageRequest,
 ) => {
   const conversation = await verifyParticipant(conversationId, userId);
 
@@ -252,12 +252,12 @@ export const sendMessageService = async (
   // Populate for response
   const populated = await Message.findById(message._id).populate(
     "senderId",
-    "firstname lastname profilePicture role"
+    "firstname lastname profilePicture role",
   );
 
   // Send email notification and in-app notification to recipient (non-blocking, respects preferences)
   const recipientId = conversation.participants.find(
-    (p) => p.toString() !== userId
+    (p) => p.toString() !== userId,
   );
   if (recipientId) {
     const isMuted = conversation.muted.get(recipientId.toString()) || false;
@@ -267,9 +267,9 @@ export const sendMessageService = async (
         userId,
         recipientId.toString(),
         preview,
-        conversationId
+        conversationId,
       ).catch((err) =>
-        logger.error({ err }, "Error sending message notification")
+        logger.error({ err }, "Error sending message notification"),
       );
 
       // In-app notification
@@ -277,9 +277,9 @@ export const sendMessageService = async (
         userId,
         recipientId.toString(),
         preview,
-        conversationId
+        conversationId,
       ).catch((err) =>
-        logger.error({ err }, "Error creating message notification")
+        logger.error({ err }, "Error creating message notification"),
       );
     }
   }
@@ -293,7 +293,7 @@ export const sendFileMessageService = async (
   conversationId: string,
   userId: string,
   userRole: string,
-  file: Express.Multer.File
+  file: Express.Multer.File,
 ) => {
   const conversation = await verifyParticipant(conversationId, userId);
 
@@ -309,7 +309,7 @@ export const sendFileMessageService = async (
   const uploaded = await cloudinaryImageUpload(
     file.buffer,
     `amber/messages/${conversationId}`,
-    isImage ? "image" : "raw"
+    isImage ? "image" : "raw",
   );
 
   // Create message
@@ -334,12 +334,12 @@ export const sendFileMessageService = async (
   // Populate for response
   const populated = await Message.findById(message._id).populate(
     "senderId",
-    "firstname lastname profilePicture role"
+    "firstname lastname profilePicture role",
   );
 
   // Notify recipient (non-blocking, respects mute)
   const recipientId = conversation.participants.find(
-    (p) => p.toString() !== userId
+    (p) => p.toString() !== userId,
   );
   if (recipientId) {
     const isMuted = conversation.muted.get(recipientId.toString()) || false;
@@ -349,9 +349,9 @@ export const sendFileMessageService = async (
         userId,
         recipientId.toString(),
         preview,
-        conversationId
+        conversationId,
       ).catch((err) =>
-        logger.error({ err }, "Error sending file message notification")
+        logger.error({ err }, "Error sending file message notification"),
       );
 
       // In-app notification
@@ -359,9 +359,9 @@ export const sendFileMessageService = async (
         userId,
         recipientId.toString(),
         preview,
-        conversationId
+        conversationId,
       ).catch((err) =>
-        logger.error({ err }, "Error creating file message notification")
+        logger.error({ err }, "Error creating file message notification"),
       );
     }
   }
@@ -373,7 +373,7 @@ export const sendFileMessageService = async (
 
 export const markAllReadService = async (
   conversationId: string,
-  userId: string
+  userId: string,
 ) => {
   await verifyParticipant(conversationId, userId);
 
@@ -385,7 +385,7 @@ export const markAllReadService = async (
     },
     {
       $set: { isRead: true, readAt: new Date() },
-    }
+    },
   );
 
   return new ApiResponse(200, "Messages marked as read", {
@@ -397,7 +397,7 @@ export const markAllReadService = async (
 
 export const togglePinService = async (
   conversationId: string,
-  userId: string
+  userId: string,
 ) => {
   const conversation = await verifyParticipant(conversationId, userId);
 
@@ -408,7 +408,7 @@ export const togglePinService = async (
   return new ApiResponse(
     200,
     !current ? "Conversation pinned" : "Conversation unpinned",
-    { isPinned: !current }
+    { isPinned: !current },
   );
 };
 
@@ -416,7 +416,7 @@ export const togglePinService = async (
 
 export const toggleMuteService = async (
   conversationId: string,
-  userId: string
+  userId: string,
 ) => {
   const conversation = await verifyParticipant(conversationId, userId);
 
@@ -427,7 +427,7 @@ export const toggleMuteService = async (
   return new ApiResponse(
     200,
     !current ? "Conversation muted" : "Conversation unmuted",
-    { isMuted: !current }
+    { isMuted: !current },
   );
 };
 
@@ -435,7 +435,7 @@ export const toggleMuteService = async (
 
 export const toggleArchiveService = async (
   conversationId: string,
-  userId: string
+  userId: string,
 ) => {
   const conversation = await verifyParticipant(conversationId, userId);
 
@@ -446,7 +446,7 @@ export const toggleArchiveService = async (
   return new ApiResponse(
     200,
     !current ? "Conversation archived" : "Conversation unarchived",
-    { isArchived: !current }
+    { isArchived: !current },
   );
 };
 
@@ -459,7 +459,7 @@ async function _sendMessageNotification(
   senderId: string,
   recipientId: string,
   messagePreview: string,
-  conversationId: string
+  conversationId: string,
 ) {
   const [sender, recipient] = await Promise.all([
     User.findById(senderId),
@@ -491,7 +491,7 @@ async function _sendMessageInAppNotification(
   senderId: string,
   recipientId: string,
   messagePreview: string,
-  conversationId: string
+  conversationId: string,
 ) {
   const sender = await User.findById(senderId).select("firstname lastname");
   if (!sender) return;

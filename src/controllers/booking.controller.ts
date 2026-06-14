@@ -29,7 +29,7 @@ import {
 export const createBooking: ExpressFunction<ICreateBookingRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const studentId = req.user?.id?.toString();
@@ -48,7 +48,7 @@ export const createBooking: ExpressFunction<ICreateBookingRequest> = async (
 export const listBookings = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -59,7 +59,7 @@ export const listBookings = async (
     const data = await listBookingsService(
       userId,
       role,
-      req.query as unknown as IBookingQuery
+      req.query as unknown as IBookingQuery,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -72,7 +72,7 @@ export const listBookings = async (
 export const getBookingById = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -92,7 +92,7 @@ export const getBookingById = async (
 export const confirmBooking = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const tutorId = (req as any).user?.id?.toString();
@@ -111,7 +111,7 @@ export const confirmBooking = async (
 export const declineBooking: ExpressFunction<IDeclineBookingRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const tutorId = (req as any).user?.id?.toString();
@@ -130,7 +130,7 @@ export const declineBooking: ExpressFunction<IDeclineBookingRequest> = async (
 export const cancelBooking: ExpressFunction<ICancelBookingRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -142,7 +142,7 @@ export const cancelBooking: ExpressFunction<ICancelBookingRequest> = async (
       req.params.id,
       userId,
       role,
-      req.body
+      req.body,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -155,7 +155,7 @@ export const cancelBooking: ExpressFunction<ICancelBookingRequest> = async (
 export const completeBooking = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -175,7 +175,7 @@ export const completeBooking = async (
 export const noShowBooking = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -195,7 +195,7 @@ export const noShowBooking = async (
 export const upcomingBookings = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -206,7 +206,7 @@ export const upcomingBookings = async (
     const data = await upcomingBookingsService(
       userId,
       role,
-      req.query as unknown as IUpcomingQuery
+      req.query as unknown as IUpcomingQuery,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -219,7 +219,7 @@ export const upcomingBookings = async (
 export const bookingStats = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -239,7 +239,7 @@ export const bookingStats = async (
 export const flagBooking: ExpressFunction<IFlagBookingRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const data = await flagBookingService(req.params.id, req.body);
@@ -254,7 +254,7 @@ export const flagBooking: ExpressFunction<IFlagBookingRequest> = async (
 export const adminLessonStats = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const data = await adminLessonStatsService();
@@ -269,7 +269,7 @@ export const adminLessonStats = async (
 export const updateMeetingUrl = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id;
@@ -278,7 +278,7 @@ export const updateMeetingUrl = async (
     const data = await updateMeetingUrlService(
       req.params.id,
       userId.toString(),
-      req.body.meetingUrl
+      req.body.meetingUrl,
     );
     return res.status(data.statusCode).json(data);
   } catch (error) {

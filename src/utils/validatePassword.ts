@@ -8,14 +8,14 @@ export const validatePassword = (password: string): void => {
   if (!/[A-Z]/.test(password)) {
     throw new ApiError(
       400,
-      "Password must contain at least one uppercase letter"
+      "Password must contain at least one uppercase letter",
     );
   }
 
   if (!/[a-z]/.test(password)) {
     throw new ApiError(
       400,
-      "Password must contain at least one lowercase letter"
+      "Password must contain at least one lowercase letter",
     );
   }
 
@@ -26,7 +26,7 @@ export const validatePassword = (password: string): void => {
   if (!/[^A-Za-z0-9]/.test(password)) {
     throw new ApiError(
       400,
-      "Password must contain at least one special character"
+      "Password must contain at least one special character",
     );
   }
 };

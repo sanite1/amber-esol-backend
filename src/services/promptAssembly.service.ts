@@ -69,7 +69,7 @@ const loadLayers = (): LayerCache => {
       layer6Chars: _cache.layer6.length,
       layer3Entries: _cache.layer3.size,
     },
-    "Prompt layers loaded from disk"
+    "Prompt layers loaded from disk",
   );
   return _cache;
 };
@@ -150,7 +150,9 @@ export interface AssembledPrompt {
 // Layer 4 — scenario (built from the live document, not the MD tree)
 // ─────────────────────────────────────────────────────────────────────
 
-const buildLayer4Scenario = (scenario: ScenarioForPrompt | undefined): string => {
+const buildLayer4Scenario = (
+  scenario: ScenarioForPrompt | undefined,
+): string => {
   if (!scenario) {
     return `# Layer 4 — Scenario
 
@@ -183,7 +185,7 @@ PASS THRESHOLD: turn_score average must reach ${scenario.passThreshold} for sess
 // ─────────────────────────────────────────────────────────────────────
 
 const buildLayer5LearnerProfile = (
-  learner: LearnerProfileForPrompt
+  learner: LearnerProfileForPrompt,
 ): string => {
   const vocab = learner.vocabularyToReinforce.length
     ? learner.vocabularyToReinforce.join(", ")
@@ -229,7 +231,7 @@ const SEPARATOR = "\n\n---\n\n";
  */
 export const assemblePrompt = (
   learner: LearnerProfileForPrompt,
-  scenario?: ScenarioForPrompt
+  scenario?: ScenarioForPrompt,
 ): AssembledPrompt => {
   const layers = loadLayers();
 
@@ -237,7 +239,7 @@ export const assemblePrompt = (
   if (!layer3) {
     throw new ApiError(
       500,
-      `No Layer 3 calibration file for level "${learner.esolLevel}" — expected one of e1, e2, e3, l1, l2`
+      `No Layer 3 calibration file for level "${learner.esolLevel}" — expected one of e1, e2, e3, l1, l2`,
     );
   }
 
@@ -255,9 +257,7 @@ export const assemblePrompt = (
 
   const systemPrompt = `${cacheableLayers}${SEPARATOR}${layer5}`;
 
-  const cacheKey = createHash("sha256")
-    .update(cacheableLayers)
-    .digest("hex");
+  const cacheKey = createHash("sha256").update(cacheableLayers).digest("hex");
 
   return {
     systemPrompt,

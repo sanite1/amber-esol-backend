@@ -118,7 +118,7 @@ export const getAdminDashboardService = async (query: IAdminDashboardQuery) => {
 
     // 13. Pending payouts
     Payout.find({ status: { $in: ["pending", "processing"] } }).select(
-      "amount status"
+      "amount status",
     ),
 
     // 14. Reported reviews
@@ -134,15 +134,15 @@ export const getAdminDashboardService = async (query: IAdminDashboardQuery) => {
   /* ── Compute revenue stats ── */
   const revenueThisMonth = thisMonthTransactions.reduce(
     (sum, t) => sum + t.amount,
-    0
+    0,
   );
   const commissionEarnedThisMonth = thisMonthTransactions.reduce(
     (sum, t) => sum + t.platformCommission,
-    0
+    0,
   );
   const revenueLastMonth = lastMonthTransactions.reduce(
     (sum, t) => sum + t.amount,
-    0
+    0,
   );
   const totalRevenue = allTransactions.reduce((sum, t) => sum + t.amount, 0);
 
@@ -170,7 +170,7 @@ export const getAdminDashboardService = async (query: IAdminDashboardQuery) => {
   const pendingPayoutsCount = pendingPayouts.length;
   const pendingPayoutsAmount = pendingPayouts.reduce(
     (sum, p) => sum + p.amount,
-    0
+    0,
   );
 
   /* ── Build stats object ── */
@@ -464,7 +464,7 @@ export const getAdminDashboardService = async (query: IAdminDashboardQuery) => {
         ? (rev.tutorId as any)
         : { firstname: "Unknown", lastname: "" };
     const pendingCount = rev.reports.filter(
-      (r) => r.status === "pending"
+      (r) => r.status === "pending",
     ).length;
 
     flaggedItems.push({
@@ -537,7 +537,7 @@ export const getAdminDashboardService = async (query: IAdminDashboardQuery) => {
   flaggedItems.sort(
     (a, b) =>
       severityOrder[a.severity] - severityOrder[b.severity] ||
-      new Date(b.date).getTime() - new Date(a.date).getTime()
+      new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 
   /* ══════════════════════════════════════════════

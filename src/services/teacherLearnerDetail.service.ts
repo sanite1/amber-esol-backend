@@ -194,7 +194,10 @@ const flattenTurns = (
     if (typeof t.originalInput === "string" && t.originalInput.length > 0) {
       out.push({ role: "learner", text: t.originalInput });
     }
-    if (typeof t.deepSeekResponse === "string" && t.deepSeekResponse.length > 0) {
+    if (
+      typeof t.deepSeekResponse === "string" &&
+      t.deepSeekResponse.length > 0
+    ) {
       out.push({ role: "tutor", text: t.deepSeekResponse });
     }
   }
@@ -242,10 +245,7 @@ export const getTeacherLearnerDetailService = async (
     assignmentCheck as { assigned_teacher_id?: Types.ObjectId | null }
   ).assigned_teacher_id;
   if (!assignedTo || assignedTo.toString() !== teacher_id) {
-    throw new ApiError(
-      403,
-      "Forbidden — this learner is not assigned to you.",
-    );
+    throw new ApiError(403, "Forbidden — this learner is not assigned to you.");
   }
 
   // ── 2. Fan-out — every read in parallel ───────────────────────
@@ -298,7 +298,9 @@ export const getTeacherLearnerDetailService = async (
     // Vocab — every row, projected to the fields the summary +
     // per-objective progress need.
     VocabLedger.find({ learnerId: learnerObjectId })
-      .select("word retained times_encountered stage3_objective_id last_seen_at")
+      .select(
+        "word retained times_encountered stage3_objective_id last_seen_at",
+      )
       .lean(),
 
     // Per-objective session-touching count. Aggregates over the
@@ -381,15 +383,18 @@ export const getTeacherLearnerDetailService = async (
   const recent_sessions: RecentSession[] = recentSessionsRaw.map((s) => {
     const sid = (s._id as Types.ObjectId).toString();
     const flattened = flattenTurns(
-      (s as { turns?: Array<{ originalInput?: string; deepSeekResponse?: string }> })
-        .turns ?? [],
+      (
+        s as {
+          turns?: Array<{ originalInput?: string; deepSeekResponse?: string }>;
+        }
+      ).turns ?? [],
     );
     const fullTurnCount = turnCountById.get(sid) ?? flattened.length / 2;
     return {
       _id: sid,
       scenario_id:
         typeof (s as { scenario_id?: unknown }).scenario_id === "string"
-          ? ((s as { scenario_id: string }).scenario_id)
+          ? (s as { scenario_id: string }).scenario_id
           : null,
       session_source:
         (s as { session_source?: string }).session_source ?? "platform",
@@ -400,7 +405,7 @@ export const getTeacherLearnerDetailService = async (
       completed_at: toIso(
         (s as { completedAt?: Date | null }).completedAt ?? null,
       ),
-      created_at: ((s as { createdAt: Date }).createdAt).toISOString(),
+      created_at: (s as { createdAt: Date }).createdAt.toISOString(),
       stage3_objective_ids:
         (s as { stage3_objective_ids?: string[] }).stage3_objective_ids ?? [],
       turns: flattened,
@@ -427,10 +432,7 @@ export const getTeacherLearnerDetailService = async (
   for (const row of objectiveTouchAgg) {
     sessionTouchByObjective.set(row._id, row.sessions_touching);
   }
-  const objectiveVocab = new Map<
-    string,
-    { total: number; retained: number }
-  >();
+  const objectiveVocab = new Map<string, { total: number; retained: number }>();
   for (const v of vocabRows) {
     const objId = (v as { stage3_objective_id?: string | null })
       .stage3_objective_id;
@@ -443,16 +445,19 @@ export const getTeacherLearnerDetailService = async (
     if ((v as { retained?: boolean }).retained === true) slot.retained += 1;
   }
 
-  const rawObjectives = (learner as {
-    stage3_objectives?: Array<{
-      id: string;
-      skill_domain: string;
-      description: string;
-      target_level?: string | null;
-      set_from?: string | null;
-      set_at?: Date | null;
-    }>;
-  }).stage3_objectives ?? [];
+  const rawObjectives =
+    (
+      learner as {
+        stage3_objectives?: Array<{
+          id: string;
+          skill_domain: string;
+          description: string;
+          target_level?: string | null;
+          set_from?: string | null;
+          set_at?: Date | null;
+        }>;
+      }
+    ).stage3_objectives ?? [];
 
   const stage3_objectives: AnnotatedStage3Objective[] = rawObjectives.map(
     (obj) => {
@@ -480,9 +485,11 @@ export const getTeacherLearnerDetailService = async (
   );
 
   // ── 6. Compose ────────────────────────────────────────────────
-  const populatedOrg = (learner as unknown as {
-    orgId?: { _id: Types.ObjectId; name?: string } | Types.ObjectId | null;
-  }).orgId;
+  const populatedOrg = (
+    learner as unknown as {
+      orgId?: { _id: Types.ObjectId; name?: string } | Types.ObjectId | null;
+    }
+  ).orgId;
   const orgIdStr =
     populatedOrg && typeof populatedOrg === "object" && "_id" in populatedOrg
       ? (populatedOrg._id as Types.ObjectId).toString()
@@ -491,7 +498,7 @@ export const getTeacherLearnerDetailService = async (
         : "";
   const orgName =
     populatedOrg && typeof populatedOrg === "object" && "name" in populatedOrg
-      ? (populatedOrg as { name?: string }).name ?? "(unnamed org)"
+      ? ((populatedOrg as { name?: string }).name ?? "(unnamed org)")
       : "(unnamed org)";
 
   const starting_level =
@@ -508,8 +515,7 @@ export const getTeacherLearnerDetailService = async (
       l1_language:
         (learner as { l1Language?: string | null }).l1Language ?? null,
       uln: (learner as { uln?: string | null }).uln ?? null,
-      esol_level:
-        (learner as { esolLevel?: string | null }).esolLevel ?? null,
+      esol_level: (learner as { esolLevel?: string | null }).esolLevel ?? null,
       starting_level,
       cohort_status:
         (learner as { cohort_status?: string | null }).cohort_status ?? null,
@@ -532,12 +538,12 @@ export const getTeacherLearnerDetailService = async (
         (r as { ai_recommendation_acted_on?: boolean })
           .ai_recommendation_acted_on,
       ),
-      created_at: ((r as { created_at: Date }).created_at).toISOString(),
+      created_at: (r as { created_at: Date }).created_at.toISOString(),
     })),
     priority_recommendation: {
       teacher_priority_level:
-        ((learner as { teacher_priority_level?: "p1" | "p2" | "p3" | "p4" })
-          .teacher_priority_level ?? "p4"),
+        (learner as { teacher_priority_level?: "p1" | "p2" | "p3" | "p4" })
+          .teacher_priority_level ?? "p4",
       teacher_recommended_action:
         (learner as { teacher_recommended_action?: string | null })
           .teacher_recommended_action ?? null,

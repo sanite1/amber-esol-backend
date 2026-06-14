@@ -18,7 +18,7 @@ import ApiError from "../errors/apiError";
 const isTutor = (
   req: Request & { user?: IUserDecoded },
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   if (req.user?.role !== "tutor") {
     return next(new ApiError(403, "Tutor access required"));
@@ -38,7 +38,7 @@ router.post(
   "/:sessionId/learner",
   requireEsolLearner,
   submitLearnerFeedbackValidation(),
-  submitLearnerFeedback
+  submitLearnerFeedback,
 );
 
 // Submit teacher feedback
@@ -46,7 +46,7 @@ router.post(
   "/:sessionId/teacher",
   isTutor,
   submitTeacherFeedbackValidation(),
-  submitTeacherFeedback
+  submitTeacherFeedback,
 );
 
 export default router;

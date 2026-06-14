@@ -10,11 +10,7 @@ import { Joi, validate } from "express-validation";
 
 const schema = {
   body: Joi.object({
-    waiting_list_size: Joi.number()
-      .integer()
-      .min(1)
-      .max(10_000)
-      .required(),
+    waiting_list_size: Joi.number().integer().min(1).max(10_000).required(),
     avg_asf_rate: Joi.number().min(100).max(2_000).required(),
     org_name: Joi.string().trim().max(120).allow("").optional(),
     org_type: Joi.string()

@@ -36,7 +36,7 @@ router.get(
   "/:invoiceId/pdf",
   isOrgAdmin,
   invoiceIdParamValidation(),
-  downloadInvoicePdf
+  downloadInvoicePdf,
 );
 
 // Mark paid (admin only)
@@ -44,7 +44,7 @@ router.patch(
   "/:invoiceId/mark-paid",
   isAdmin,
   markPaidValidation(),
-  markInvoicePaid
+  markInvoicePaid,
 );
 
 export default router;

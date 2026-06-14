@@ -74,27 +74,27 @@ export interface IlrRow {
   ULN: string | null;
   FamilyName: string;
   GivenNames: string;
-  DateOfBirth: string | null;        // YYYY-MM-DD
-  Sex: number | null;                // 1 = M, 2 = F per ILR enum
+  DateOfBirth: string | null; // YYYY-MM-DD
+  Sex: number | null; // 1 = M, 2 = F per ILR enum
   Ethnicity: string | null;
-  LLDDHealthProb: number | null;     // remapped via llddt_remapping
-  LearnerEntryDate: string | null;   // YYYY-MM-DD
+  LLDDHealthProb: number | null; // remapped via llddt_remapping
+  LearnerEntryDate: string | null; // YYYY-MM-DD
   PostcodePrior: string | null;
-  NINumber: string;                  // always blank for MVP per brief
+  NINumber: string; // always blank for MVP per brief
   // ── Learning-aim fields ────────────────────────────────────────
   LearnAimRef: string | null;
   AimType: number;
   AimSeqNumber: number;
-  LearnStartDate: string | null;     // YYYY-MM-DD
-  LearnPlanEndDate: string | null;   // YYYY-MM-DD
-  LearnActEndDate: string | null;    // YYYY-MM-DD — set only at terminal state
-  Outcome: number | null;            // 1 achieved, 3 withdrawn
-  CompStatus: number;                // 1 continuing, 2 completed
-  FundModel: number;                 // from config.rules.fund_model
-  SOF: string | null;                // validated against valid_sof_codes
-  AddHours: number | null;           // null when suppressed
-  EnglishProgType: string | null;    // per breaking-change rules — string because 2025/26 codes may be alphanumeric
-  LearnDelFAM: Array<{ Type: string; Code: string }>;  // DAM list
+  LearnStartDate: string | null; // YYYY-MM-DD
+  LearnPlanEndDate: string | null; // YYYY-MM-DD
+  LearnActEndDate: string | null; // YYYY-MM-DD — set only at terminal state
+  Outcome: number | null; // 1 achieved, 3 withdrawn
+  CompStatus: number; // 1 continuing, 2 completed
+  FundModel: number; // from config.rules.fund_model
+  SOF: string | null; // validated against valid_sof_codes
+  AddHours: number | null; // null when suppressed
+  EnglishProgType: string | null; // per breaking-change rules — string because 2025/26 codes may be alphanumeric
+  LearnDelFAM: Array<{ Type: string; Code: string }>; // DAM list
 
   // ── Internal metadata (not serialised to ILR; carried for the
   //     orchestrator's green-light validation in Function 14) ──
@@ -148,7 +148,9 @@ export type IlrRowWarning =
  * picks UTC midnight, which differs from BST by ≤ 1 hour and never
  * crosses the date boundary in practice (we're never that close).
  */
-export const formatIlrDate = (v: Date | string | null | undefined): string | null => {
+export const formatIlrDate = (
+  v: Date | string | null | undefined,
+): string | null => {
   if (!v) return null;
   const d = v instanceof Date ? v : new Date(v);
   if (Number.isNaN(d.getTime())) return null;
@@ -554,7 +556,8 @@ const buildRowForSession = (args: BuildRowArgs): IlrRow => {
     rules.english_prog_type_default as string | undefined,
   );
   const englishProgType = englishProgTypeResult.value;
-  if (englishProgTypeResult.warning) rowWarnings.push(englishProgTypeResult.warning);
+  if (englishProgTypeResult.warning)
+    rowWarnings.push(englishProgTypeResult.warning);
 
   // ── Lifecycle fields ───────────────────────────────────────────
   const startDate =
@@ -717,7 +720,12 @@ export const buildIlrRows = async (
       { orgId, academicYear },
       "buildIlrRows: no active ILR compliance config — refusing to produce rows",
     );
-    return { rows: [], config_version: null, config_missing: true, aim_invalid_rows: [] };
+    return {
+      rows: [],
+      config_version: null,
+      config_missing: true,
+      aim_invalid_rows: [],
+    };
   }
 
   // ── 2. Pull learners + their sessions ─────────────────────────────
@@ -737,7 +745,12 @@ export const buildIlrRows = async (
     )
     .lean();
   if (learners.length === 0) {
-    return { rows: [], config_version: config.version, config_missing: false, aim_invalid_rows: [] };
+    return {
+      rows: [],
+      config_version: config.version,
+      config_missing: false,
+      aim_invalid_rows: [],
+    };
   }
 
   const learnerIds = learners.map((l) => l._id as Types.ObjectId);
@@ -762,7 +775,8 @@ export const buildIlrRows = async (
   // ── 3. Compose rows ──────────────────────────────────────────────
   const rows: IlrRow[] = [];
   for (const learner of learners) {
-    const learnerSessions = sessionsByLearner.get((learner._id as Types.ObjectId).toString()) ?? [];
+    const learnerSessions =
+      sessionsByLearner.get((learner._id as Types.ObjectId).toString()) ?? [];
     // AimSeqNumber resets per learner — the brief requires it to be
     // monotonically increasing across each learner's aim records.
     let seq = 1;
@@ -939,9 +953,7 @@ export const validateUln = (raw: string | null | undefined): boolean => {
  */
 const VALID_LLDD_CODES: ReadonlySet<number> = new Set([1, 2, 9]);
 
-export const validateLlddCode = (
-  raw: number | null | undefined,
-): boolean => {
+export const validateLlddCode = (raw: number | null | undefined): boolean => {
   if (raw === null || raw === undefined) return false;
   return VALID_LLDD_CODES.has(raw);
 };
@@ -971,9 +983,11 @@ export const validateRows = async (
   // produced under THIS config. If config is missing now, the
   // upstream mapper would have produced zero rows; we still validate
   // the empty set without crashing.
-  const validSofCodes = (config?.rules
-    ? (config.rules as Record<string, unknown>).valid_sof_codes
-    : []) as ReadonlyArray<string>;
+  const validSofCodes = (
+    config?.rules
+      ? (config.rules as Record<string, unknown>).valid_sof_codes
+      : []
+  ) as ReadonlyArray<string>;
 
   // ── Postcode deduplication — one lookup per distinct postcode ──
   // The row carries `PostcodePrior` (canonical name). Postcode router
@@ -1036,8 +1050,7 @@ export const validateRows = async (
     // can route it to manual review.
     if (!row.SOF) {
       const fromBreakingChange = row._warnings.some(
-        (w) =>
-          w.type === "sof_code_invalid" || w.type === "sof_code_missing",
+        (w) => w.type === "sof_code_invalid" || w.type === "sof_code_missing",
       );
       const detail = fromBreakingChange
         ? row._warnings.find(
@@ -1101,7 +1114,10 @@ export const validateRows = async (
     }
 
     // ── W2: postcode not in DfE dataset ─────────────────────────
-    if (row.PostcodePrior && postcodeValidity.get(row.PostcodePrior) === false) {
+    if (
+      row.PostcodePrior &&
+      postcodeValidity.get(row.PostcodePrior) === false
+    ) {
       rowWarnings.push({
         rule: "postcode_not_in_dfe_dataset",
         severity: "warning",

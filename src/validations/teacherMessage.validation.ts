@@ -28,17 +28,12 @@ const schema = {
       }),
   }),
   body: Joi.object({
-    message_text: Joi.string()
-      .trim()
-      .min(1)
-      .max(300)
-      .required()
-      .messages({
-        "string.empty": "message_text is required",
-        "string.min": "message_text must contain at least one character",
-        "string.max":
-          "message_text must be 300 characters or fewer (long-form notes belong in a contact session)",
-      }),
+    message_text: Joi.string().trim().min(1).max(300).required().messages({
+      "string.empty": "message_text is required",
+      "string.min": "message_text must contain at least one character",
+      "string.max":
+        "message_text must be 300 characters or fewer (long-form notes belong in a contact session)",
+    }),
     translate_to_l1: Joi.boolean().required().messages({
       "any.required":
         "translate_to_l1 is required — choose true (auto-translate to learner's L1) or false (send as English)",

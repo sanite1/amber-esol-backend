@@ -288,9 +288,9 @@ describe("MaytasAdapter — CSV transform (U2)", () => {
     await expect(adapter.pushLearner(baseRecord())).rejects.toBeInstanceOf(
       NotImplementedError,
     );
-    await expect(
-      adapter.pushBatch([baseRecord()]),
-    ).rejects.toBeInstanceOf(NotImplementedError);
+    await expect(adapter.pushBatch([baseRecord()])).rejects.toBeInstanceOf(
+      NotImplementedError,
+    );
     await expect(
       adapter.pullLearnerStatus("1234567890"),
     ).rejects.toBeInstanceOf(NotImplementedError);
@@ -441,7 +441,9 @@ describe("Validation gating (V1, V2)", () => {
 
     expect(result.valid).toBe(false);
     expect(result.reasons).toEqual(
-      expect.arrayContaining([expect.stringContaining("Source-of-funding code")]),
+      expect.arrayContaining([
+        expect.stringContaining("Source-of-funding code"),
+      ]),
     );
     // The processMisPush worker's `buildAndValidate` partition is
     // what stops the adapter being called. We verify the validator's
@@ -491,8 +493,8 @@ describe("Credential encryption at rest (C1, C2)", () => {
     });
     // Re-read raw via the Mongo driver — bypassing the model's
     // toJSON transform that would strip the field.
-    const raw = await mongoose.connection.db!
-      .collection(Organisation.collection.name)
+    const raw = await mongoose.connection
+      .db!.collection(Organisation.collection.name)
       .findOne({ _id: org._id as Types.ObjectId });
     expect(raw?.misApiCredentials).toBeTruthy();
     expect(raw?.misApiCredentials).not.toBe(plaintext);

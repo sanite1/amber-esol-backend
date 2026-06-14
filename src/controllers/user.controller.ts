@@ -38,7 +38,7 @@ import { Types } from "mongoose";
 export const registerStudent: ExpressFunction<ICreateStudentRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const files = req.files as
@@ -50,7 +50,7 @@ export const registerStudent: ExpressFunction<ICreateStudentRequest> = async (
       if (profilePicture) {
         const result = await cloudinaryImageUpload(
           profilePicture.buffer,
-          "Amber_Users"
+          "Amber_Users",
         );
         req.body.profilePicture = result.secure_url;
       }
@@ -68,7 +68,7 @@ export const registerStudent: ExpressFunction<ICreateStudentRequest> = async (
 export const registerTutor: ExpressFunction<ICreateTutorRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const files = req.files as
@@ -80,7 +80,7 @@ export const registerTutor: ExpressFunction<ICreateTutorRequest> = async (
       if (profilePicture) {
         const result = await cloudinaryImageUpload(
           profilePicture.buffer,
-          "Amber_Users"
+          "Amber_Users",
         );
         req.body.profilePicture = result.secure_url;
       }
@@ -98,7 +98,7 @@ export const registerTutor: ExpressFunction<ICreateTutorRequest> = async (
 export const registerAdmin: ExpressFunction<ICreateAdminRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const files = req.files as
@@ -110,7 +110,7 @@ export const registerAdmin: ExpressFunction<ICreateAdminRequest> = async (
       if (profilePicture) {
         const result = await cloudinaryImageUpload(
           profilePicture.buffer,
-          "Amber_Users"
+          "Amber_Users",
         );
         req.body.profilePicture = result.secure_url;
       }
@@ -139,7 +139,7 @@ export const login: ExpressFunction<ILoginRequest> = async (req, res, next) => {
 export const refresh: ExpressFunction<IRefreshTokenRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const data = await refreshService(req.body);
@@ -167,7 +167,7 @@ export const verifyEmail: ExpressFunction = async (req, res, next) => {
 export const forgotPassword: ExpressFunction<IForgotPasswordRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const data = await forgotPasswordService(req.body);
@@ -182,7 +182,7 @@ export const forgotPassword: ExpressFunction<IForgotPasswordRequest> = async (
 export const resetPassword: ExpressFunction<IResetPasswordRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const { id, token } = req.params as { id: string; token: string };
@@ -199,12 +199,12 @@ export const resetPassword: ExpressFunction<IResetPasswordRequest> = async (
 export const updatePassword: ExpressFunction<IUpdatePasswordRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const response = await updatePasswordService(
       (req as any).user!.id,
-      req.body
+      req.body,
     );
     return res.status(200).json(response);
   } catch (error) {
@@ -228,7 +228,7 @@ export const getUserById: ExpressFunction = async (req, res, next) => {
 export const updateUser: ExpressFunction<IUpdateUserRequest> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const files = req.files as
@@ -240,7 +240,7 @@ export const updateUser: ExpressFunction<IUpdateUserRequest> = async (
       if (profilePicture) {
         const result = await cloudinaryImageUpload(
           profilePicture.buffer,
-          "Amber_Users"
+          "Amber_Users",
         );
         req.body.profilePicture = result.secure_url;
       }
@@ -258,7 +258,7 @@ export const updateUser: ExpressFunction<IUpdateUserRequest> = async (
 export const getTutors = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const data = await getTutorsService(req.query as TutorQueryOptions);
@@ -271,12 +271,12 @@ export const getTutors = async (
 export const deleteAccount = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const result = await deleteAccountService(
       req.params.id as string,
-      req.body
+      req.body,
     );
     res.status(200).json(result);
   } catch (error) {

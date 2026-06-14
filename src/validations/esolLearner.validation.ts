@@ -29,14 +29,14 @@ export const listLearnersValidation = () =>
       }),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const learnerIdParamValidation = () =>
   validate(
     { params: Joi.object({ learnerId: objectId.required() }) },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );
 
 export const updateLearnerValidation = () =>
@@ -56,5 +56,5 @@ export const updateLearnerValidation = () =>
       }).min(1),
     },
     { context: true },
-    { abortEarly: false }
+    { abortEarly: false },
   );

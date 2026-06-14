@@ -38,9 +38,11 @@ export interface LearnerMatchIssue {
 
 export interface LearnerMatchPlan {
   matchByUln: string | null;
-  matchByIdentity:
-    | { firstname: string; lastname: string; date_of_birth: string }
-    | null;
+  matchByIdentity: {
+    firstname: string;
+    lastname: string;
+    date_of_birth: string;
+  } | null;
   errors: LearnerMatchIssue[];
 }
 
@@ -50,7 +52,7 @@ export interface LearnerMatchPlan {
  * a missing `learner_ref` lands in the importer's `errors[]` channel.
  */
 export const resolveLearnerMatch = (
-  raw: LearnerMatchInput
+  raw: LearnerMatchInput,
 ): LearnerMatchPlan => {
   if (isBlank(raw.learner_ref)) {
     return {
@@ -71,8 +73,7 @@ export const resolveLearnerMatch = (
   if (isBlank(raw.firstname))
     missing.push({
       field: "firstname",
-      message:
-        "firstname is required when learner_ref is not a 10-digit ULN",
+      message: "firstname is required when learner_ref is not a 10-digit ULN",
     });
   if (isBlank(raw.lastname))
     missing.push({
@@ -114,7 +115,7 @@ export const resolveLearnerMatch = (
  */
 export const findLearnerInOrg = async (
   plan: LearnerMatchPlan,
-  orgId: string
+  orgId: string,
 ): Promise<HydratedDocument<IUser> | null> => {
   if (plan.matchByUln) {
     return User.findOne({

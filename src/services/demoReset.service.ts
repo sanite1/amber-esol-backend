@@ -30,7 +30,10 @@ import mongoose from "mongoose";
 import transporter from "./nodemailer/nodemailer";
 import logger from "../config/logger";
 import { IS_DEMO_MODE } from "../config/demoMode";
-import { seedDemoEnvironment, DemoSeedResult } from "../scripts/seedDemoEnvironment";
+import {
+  seedDemoEnvironment,
+  DemoSeedResult,
+} from "../scripts/seedDemoEnvironment";
 
 export interface DemoResetResult {
   ok: boolean;
@@ -109,7 +112,9 @@ const buildEmailHtml = (result: DemoResetResult): string => {
     <p><strong>Dropped collections (${result.dropped.length}):</strong></p>
     <p>${result.dropped.length === 0 ? "(none)" : result.dropped.join(", ")}</p>
     ${
-      result.seed && result.seed.counts && Object.keys(result.seed.counts).length > 0
+      result.seed &&
+      result.seed.counts &&
+      Object.keys(result.seed.counts).length > 0
         ? `<p><strong>Seeded:</strong></p><ul>${seedLines}</ul>`
         : ""
     }
@@ -189,7 +194,10 @@ export const runDemoReset = async (): Promise<DemoResetResult> => {
   let dropped: string[] = [];
   try {
     dropped = await dropAllCollections();
-    logger.info({ count: dropped.length, dropped }, "demoReset: collections dropped");
+    logger.info(
+      { count: dropped.length, dropped },
+      "demoReset: collections dropped",
+    );
   } catch (err) {
     const result: DemoResetResult = {
       ok: false,

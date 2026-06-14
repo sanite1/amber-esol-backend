@@ -101,7 +101,7 @@ export const initSocketIO = (server: HttpServer) => {
             senderId: { $ne: userId },
             isRead: false,
           },
-          { $set: { isRead: true, readAt: new Date() } }
+          { $set: { isRead: true, readAt: new Date() } },
         );
 
         socket.to(`conversation:${data.conversationId}`).emit("message:read", {
@@ -125,7 +125,7 @@ export const initSocketIO = (server: HttpServer) => {
         if (typeof callback === "function") {
           callback(statuses);
         }
-      }
+      },
     );
 
     /* ── Disconnect ── */
@@ -175,7 +175,7 @@ export const emitNewMessage = (conversationId: string, message: any) => {
 
 export const emitConversationUpdated = (
   participantIds: string[],
-  conversation: any
+  conversation: any,
 ) => {
   if (!io) return;
   // Emit to each participant's personal room (they join by their userId)

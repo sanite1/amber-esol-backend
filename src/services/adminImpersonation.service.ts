@@ -128,8 +128,8 @@ export const startImpersonationService = async (
     orgId: orgIdStr,
     esolLevel: esolLevelStr,
     esolTeacherApproved:
-      (target as { esolTeacherApproved?: boolean | null }).esolTeacherApproved ??
-      null,
+      (target as { esolTeacherApproved?: boolean | null })
+        .esolTeacherApproved ?? null,
     org_id: orgIdStr,
     esol_level: esolLevelStr,
     impersonated_by: adminUserId,

@@ -40,7 +40,7 @@ const messageSchema = new Schema<IMessage>(
         delete ret.__v;
       },
     },
-  }
+  },
 );
 
 // Index for fetching messages in a conversation (paginated, descending)

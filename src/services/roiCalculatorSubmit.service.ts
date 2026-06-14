@@ -114,9 +114,7 @@ const hashIp = (ip: string): string => {
       "IP_HASH_SALT is not configured. Refusing to write an unsalted IP hash.",
     );
   }
-  return createHash("sha256")
-    .update(`${ip}|${salt}`)
-    .digest("hex");
+  return createHash("sha256").update(`${ip}|${salt}`).digest("hex");
 };
 
 /**
@@ -136,7 +134,9 @@ const recomputeSnapshot = (
     waitingListSize * PRICING.monthly_per_learner * 12;
   const weeklyIncome = unclaimed / 52;
   const paybackRaw =
-    weeklyIncome > 0 ? projectSilkCost / weeklyIncome : Number.POSITIVE_INFINITY;
+    weeklyIncome > 0
+      ? projectSilkCost / weeklyIncome
+      : Number.POSITIVE_INFINITY;
   return {
     unclaimed_income_annual: Math.round(unclaimed),
     payback_weeks: Number.isFinite(paybackRaw) ? Math.round(paybackRaw) : null,
@@ -153,7 +153,10 @@ export const submitRoiCalculatorService = async (
   const body = input.body;
 
   // ── Defensive validation (Joi at route already covers shape) ──
-  if (typeof body?.waiting_list_size !== "number" || body.waiting_list_size <= 0) {
+  if (
+    typeof body?.waiting_list_size !== "number" ||
+    body.waiting_list_size <= 0
+  ) {
     throw new ApiError(400, "waiting_list_size must be a positive number");
   }
   if (typeof body.avg_asf_rate !== "number" || body.avg_asf_rate <= 0) {
@@ -161,10 +164,7 @@ export const submitRoiCalculatorService = async (
   }
 
   // ── Server-side recompute (never trust client maths) ──────────
-  const snapshot = recomputeSnapshot(
-    body.waiting_list_size,
-    body.avg_asf_rate,
-  );
+  const snapshot = recomputeSnapshot(body.waiting_list_size, body.avg_asf_rate);
 
   // ── Persist ───────────────────────────────────────────────────
   let submission;
@@ -195,7 +195,10 @@ export const submitRoiCalculatorService = async (
       },
       "submitRoiCalculator: Mongo create failed",
     );
-    throw new ApiError(500, "Could not save your submission. Please try again.");
+    throw new ApiError(
+      500,
+      "Could not save your submission. Please try again.",
+    );
   }
 
   // ── Email-to-Joey (best-effort) ──────────────────────────────

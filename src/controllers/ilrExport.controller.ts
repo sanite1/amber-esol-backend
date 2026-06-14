@@ -32,7 +32,9 @@ export const triggerIlrExport: ExpressFunction = async (req, res, next) => {
   try {
     const orgId =
       (req as typeof req & { esol_context?: { org_id?: string } }).esol_context
-        ?.org_id ?? (req.user?.orgId as string) ?? "";
+        ?.org_id ??
+      (req.user?.orgId as string) ??
+      "";
     const callerId = req.user!.id.toString();
     const body = (req.body ?? {}) as {
       academic_year?: string;
@@ -69,7 +71,9 @@ export const getIlrExportStatus: ExpressFunction = async (req, res, next) => {
   try {
     const orgId =
       (req as typeof req & { esol_context?: { org_id?: string } }).esol_context
-        ?.org_id ?? (req.user?.orgId as string) ?? "";
+        ?.org_id ??
+      (req.user?.orgId as string) ??
+      "";
     const { jobId } = req.params as { jobId: string };
     const result = await getIlrExportStatusService(jobId, orgId);
     return res.status(result.statusCode).json({
@@ -92,13 +96,18 @@ export const getIlrExportStatus: ExpressFunction = async (req, res, next) => {
  * the header (HTTP-injection class of bugs).
  */
 const safeOrgNameForFilename = (raw: string): string =>
-  raw.replace(/[^A-Za-z0-9\-_]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
+  raw
+    .replace(/[^A-Za-z0-9\-_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
 
 export const downloadIlrExport: ExpressFunction = async (req, res, next) => {
   try {
     const orgId =
       (req as typeof req & { esol_context?: { org_id?: string } }).esol_context
-        ?.org_id ?? (req.user?.orgId as string) ?? "";
+        ?.org_id ??
+      (req.user?.orgId as string) ??
+      "";
     const { exportId } = req.params as { exportId: string };
     const format = (req.query as Record<string, unknown>).format;
     const wantJson = format === "json";
@@ -110,11 +119,13 @@ export const downloadIlrExport: ExpressFunction = async (req, res, next) => {
     // Slashes in the academic year ("2025/26") are stripped — they're
     // valid in attachment filenames per RFC 6266 but break in Windows.
     const ay = auth.academic_year.replace("/", "-");
-    const baseName =
-      `ILR_${safeOrgNameForFilename(auth.org_name)}_${ay}_${auth.period_start}_to_${auth.period_end}`;
+    const baseName = `ILR_${safeOrgNameForFilename(auth.org_name)}_${ay}_${auth.period_start}_to_${auth.period_end}`;
     const filename = wantJson ? `${baseName}.json` : `${baseName}.csv`;
 
-    const filePath = resolve(EXPORT_DIR, `${exportId}.${wantJson ? "json" : "csv"}`);
+    const filePath = resolve(
+      EXPORT_DIR,
+      `${exportId}.${wantJson ? "json" : "csv"}`,
+    );
     // Stat first — if the file is missing the export was never
     // persisted (worker crashed mid-flight, or the disk was cleaned).
     // Surface a clear error rather than a silent stream-not-found.
@@ -131,10 +142,7 @@ export const downloadIlrExport: ExpressFunction = async (req, res, next) => {
       "Content-Type",
       wantJson ? "application/json" : "text/csv; charset=utf-8",
     );
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${filename}"`,
-    );
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     // Stream the file rather than buffering — keeps the controller
     // O(1) memory regardless of cohort size.
     const stream = createReadStream(filePath);

@@ -38,19 +38,21 @@ export interface DormantLearnersDigestEmailResult {
 const DOMAIN_NAME = process.env.DOMAIN_NAME ?? "";
 
 export const sendDormantLearnersDigestEmail = async (
-  job: DormantLearnersDigestEmailJob
+  job: DormantLearnersDigestEmailJob,
 ): Promise<DormantLearnersDigestEmailResult> => {
   const startedAt = Date.now();
 
   let recipient: string | null = null;
   if (Types.ObjectId.isValid(job.org_admin_user_id)) {
-    const admin = await User.findById(job.org_admin_user_id).select("email").lean();
+    const admin = await User.findById(job.org_admin_user_id)
+      .select("email")
+      .lean();
     if (admin?.email) recipient = admin.email;
   }
   if (!recipient) {
     logger.warn(
       { org_admin_user_id: job.org_admin_user_id, org_id: job.org_id },
-      "dormant-learners-digest-email: admin email not resolvable — skipping"
+      "dormant-learners-digest-email: admin email not resolvable — skipping",
     );
     return {
       sent: false,
@@ -90,7 +92,7 @@ export const sendDormantLearnersDigestEmail = async (
   } catch (err) {
     logger.error(
       { err: (err as Error).message, recipient, org_id: job.org_id },
-      "dormant-learners-digest-email: SMTP send failed"
+      "dormant-learners-digest-email: SMTP send failed",
     );
     throw err; // BullMQ retry
   }
@@ -104,7 +106,7 @@ export const sendDormantLearnersDigestEmail = async (
       message_id: messageId,
       dispatch_latency_ms: dispatchLatencyMs,
     },
-    "dormant-learners-digest-email sent"
+    "dormant-learners-digest-email sent",
   );
 
   return {

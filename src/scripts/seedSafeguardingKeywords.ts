@@ -55,11 +55,17 @@ const main = async () => {
     inserted++;
   }
 
-  logger.info({ inserted, skipped, total: seeds.length }, "SafeguardingKeyword seed complete");
+  logger.info(
+    { inserted, skipped, total: seeds.length },
+    "SafeguardingKeyword seed complete",
+  );
   process.exit(0);
 };
 
 main().catch((err) => {
-  logger.fatal({ err: (err as Error).message }, "SafeguardingKeyword seed failed");
+  logger.fatal(
+    { err: (err as Error).message },
+    "SafeguardingKeyword seed failed",
+  );
   process.exit(1);
 });

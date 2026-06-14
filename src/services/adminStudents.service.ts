@@ -123,7 +123,7 @@ export const getAdminStudentsService = async (query: IAdminStudentsQuery) => {
     const allStudents = await User.find(filter)
       .select(
         "firstname lastname email profilePicture address learningPreferences " +
-          "createdAt lastLogin isActive status totalLessonsTaken"
+          "createdAt lastLogin isActive status totalLessonsTaken",
       )
       .lean();
 
@@ -173,7 +173,7 @@ export const getAdminStudentsService = async (query: IAdminStudentsQuery) => {
             : undefined,
           trialUsed: !!hasTrialBooking,
         };
-      })
+      }),
     );
 
     enriched.sort((a, b) => b.totalSpent - a.totalSpent);
@@ -185,7 +185,7 @@ export const getAdminStudentsService = async (query: IAdminStudentsQuery) => {
       User.find(filter)
         .select(
           "firstname lastname email profilePicture address learningPreferences " +
-            "createdAt lastLogin isActive status totalLessonsTaken"
+            "createdAt lastLogin isActive status totalLessonsTaken",
         )
         .sort(sortOption)
         .skip(skip)
@@ -242,7 +242,7 @@ export const getAdminStudentsService = async (query: IAdminStudentsQuery) => {
             : undefined,
           trialUsed: !!hasTrialBooking,
         };
-      })
+      }),
     );
   }
 
@@ -264,7 +264,7 @@ export const getAdminStudentsService = async (query: IAdminStudentsQuery) => {
 
 export const adminUpdateStudentStatusService = async (
   studentId: string,
-  data: IAdminUpdateStudentStatusRequest
+  data: IAdminUpdateStudentStatusRequest,
 ) => {
   const user = await User.findById(studentId);
   if (!user) {
@@ -289,7 +289,7 @@ export const adminUpdateStudentStatusService = async (
           "Your account has been reactivated. Welcome back! You can now access all features.",
         data: { reactivatedAt: new Date().toISOString() },
       }).catch((err) =>
-        logger.error({ err }, "Error creating reactivation notification")
+        logger.error({ err }, "Error creating reactivation notification"),
       );
       break;
     }
@@ -321,7 +321,7 @@ export const adminUpdateStudentStatusService = async (
           suspendedAt: user.suspendedAt.toISOString(),
         },
       }).catch((err) =>
-        logger.error({ err }, "Error creating suspension notification")
+        logger.error({ err }, "Error creating suspension notification"),
       );
       break;
     }

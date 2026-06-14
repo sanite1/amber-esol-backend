@@ -8,7 +8,7 @@ import {
 export const getPlacementQuestions: ExpressFunction = async (
   _req,
   res,
-  next
+  next,
 ) => {
   try {
     const data = getPlacementQuestionsService();
@@ -26,7 +26,7 @@ export const getPlacementQuestions: ExpressFunction = async (
 export const completeOnboarding = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const file = (req as any).file as Express.Multer.File | undefined;

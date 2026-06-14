@@ -57,16 +57,14 @@ export const generateInvoiceService = async (data: {
   if (bookings.length === 0) {
     throw new ApiError(
       400,
-      "No invoiceable bookings found for this organisation in the selected period"
+      "No invoiceable bookings found for this organisation in the selected period",
     );
   }
 
   const lineItems: IOrgInvoiceLineItem[] = bookings.map((b: any) => {
     const tutor = b.tutorId as any;
     const learner = b.studentId as any;
-    const tutorName = tutor
-      ? `${tutor.firstname} ${tutor.lastname}`
-      : "Tutor";
+    const tutorName = tutor ? `${tutor.firstname} ${tutor.lastname}` : "Tutor";
     const learnerName = learner
       ? `${learner.firstname} ${learner.lastname}`
       : "Learner";
@@ -118,11 +116,15 @@ export const generateInvoiceService = async (data: {
   if (!invoice) {
     throw new ApiError(
       500,
-      `Could not generate invoice number after retries: ${lastErr?.message ?? "unknown"}`
+      `Could not generate invoice number after retries: ${lastErr?.message ?? "unknown"}`,
     );
   }
 
-  return new ApiResponse(201, "Invoice generated successfully", invoice.toJSON());
+  return new ApiResponse(
+    201,
+    "Invoice generated successfully",
+    invoice.toJSON(),
+  );
 };
 
 /* ── List invoices ── */
@@ -134,7 +136,7 @@ export const listInvoicesService = async (
     status?: string;
     orgId?: string;
   },
-  caller: CallerContext
+  caller: CallerContext,
 ) => {
   const page = parseInt(options.page || "1", 10);
   const limit = parseInt(options.limit || "20", 10);
@@ -172,11 +174,11 @@ export const listInvoicesService = async (
 
 export const getInvoiceService = async (
   invoiceId: string,
-  caller: CallerContext
+  caller: CallerContext,
 ) => {
   const invoice = await OrgInvoice.findById(invoiceId).populate(
     "orgId",
-    "name slug contactEmail contactName address ilrProviderRef"
+    "name slug contactEmail contactName address ilrProviderRef",
   );
 
   if (!invoice) {
@@ -190,14 +192,18 @@ export const getInvoiceService = async (
     throw new ApiError(403, "Access denied to this invoice");
   }
 
-  return new ApiResponse(200, "Invoice retrieved successfully", invoice.toJSON());
+  return new ApiResponse(
+    200,
+    "Invoice retrieved successfully",
+    invoice.toJSON(),
+  );
 };
 
 /* ── Mark invoice paid ── */
 
 export const markInvoicePaidService = async (
   invoiceId: string,
-  data: { paidAt?: string; notes?: string }
+  data: { paidAt?: string; notes?: string },
 ) => {
   const invoice = await OrgInvoice.findById(invoiceId);
   if (!invoice) {
@@ -234,7 +240,7 @@ export const autoGenerateInvoicesCronService = async () => {
     1,
     0,
     0,
-    0
+    0,
   );
 
   const orgs = await Organisation.find({
@@ -258,7 +264,7 @@ export const autoGenerateInvoicesCronService = async () => {
       });
       logger.info(
         { orgId: org._id, invoiceNumber: (result.data as any).invoiceNumber },
-        "Auto-generated invoice"
+        "Auto-generated invoice",
       );
     } catch (err: any) {
       const reason = err?.message || "unknown error";
@@ -267,7 +273,10 @@ export const autoGenerateInvoicesCronService = async () => {
         orgName: org.name,
         status: `skipped: ${reason}`,
       });
-      logger.warn({ orgId: org._id, err: reason }, "Skipped invoice generation");
+      logger.warn(
+        { orgId: org._id, err: reason },
+        "Skipped invoice generation",
+      );
     }
   }
 
@@ -283,11 +292,11 @@ export const autoGenerateInvoicesCronService = async () => {
 
 export const loadInvoiceForPdf = async (
   invoiceId: string,
-  caller: CallerContext
+  caller: CallerContext,
 ) => {
   const invoice = await OrgInvoice.findById(invoiceId).populate(
     "orgId",
-    "name slug contactEmail contactName address ilrProviderRef phoneNumber"
+    "name slug contactEmail contactName address ilrProviderRef phoneNumber",
   );
 
   if (!invoice) {

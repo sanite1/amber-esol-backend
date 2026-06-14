@@ -28,7 +28,7 @@ router.get(
   "/count",
   isOrgAdmin,
   orgAdminSafeguardingCountValidation(),
-  getOrgAdminSafeguardingCount
+  getOrgAdminSafeguardingCount,
 );
 
 export default router;

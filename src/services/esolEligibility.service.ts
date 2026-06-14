@@ -84,8 +84,8 @@ export const declareEligibilityService = async (userId: string) => {
   }).catch((err) =>
     logger.error(
       { err, learnerId: user._id, orgId: user.orgId },
-      "AuditLog write failed for eligibility_declared"
-    )
+      "AuditLog write failed for eligibility_declared",
+    ),
   );
 
   return new ApiResponse(200, "Eligibility declared", {

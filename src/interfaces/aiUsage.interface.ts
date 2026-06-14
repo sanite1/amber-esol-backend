@@ -16,7 +16,7 @@ import { Types, Document } from "mongoose";
  */
 export interface IAIUsage extends Document {
   _id: Types.ObjectId;
-  org_id: Types.ObjectId | null;        // null for system probes (e.g. health check)
+  org_id: Types.ObjectId | null; // null for system probes (e.g. health check)
   learner_id: Types.ObjectId | null;
   session_id: Types.ObjectId | string | null;
   /** Input tokens (prompt + system instruction + history). */
@@ -30,7 +30,7 @@ export interface IAIUsage extends Document {
   // overrides it as a string property — TypeScript rejects the
   // collision. On-disk concept is identical; aggregation queries
   // reference `model_name`.
-  model_name: string;                    // e.g. "gemini-2.5-flash"
+  model_name: string; // e.g. "gemini-2.5-flash"
   /** Wall-clock latency in milliseconds, including retries. */
   latency_ms: number;
   /** Whether at least one retry fired for this call. */

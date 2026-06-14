@@ -6,12 +6,15 @@ import {
   listReferralsValidation,
   validateTokenParamValidation,
   registerViaReferralValidation,
+  referralIdParamValidation,
 } from "../validations/esolReferral.validation";
 import {
   createReferralToken,
   listReferralTokens,
   validateReferralToken,
   registerViaReferral,
+  revokeReferralToken,
+  remindReferralToken,
 } from "../controllers/esolReferral.controller";
 
 const router = Router();
@@ -22,7 +25,7 @@ router.get(
   "/validate/:token",
   authLimiter,
   validateTokenParamValidation(),
-  validateReferralToken
+  validateReferralToken,
 );
 
 // Public: register learner via referral token (rate-limited)
@@ -30,7 +33,7 @@ router.post(
   "/register",
   authLimiter,
   registerViaReferralValidation(),
-  registerViaReferral
+  registerViaReferral,
 );
 
 // Authenticated routes below
@@ -41,5 +44,23 @@ router.post("/", isOrgAdmin, createReferralValidation(), createReferralToken);
 
 // List referral tokens for org (org_admin | admin)
 router.get("/", isOrgAdmin, listReferralsValidation(), listReferralTokens);
+
+// Revoke a pending invitation (org_admin | admin). Only pending —
+// accepted invites are immutable history; double-revoke 409s.
+router.patch(
+  "/:id/revoke",
+  isOrgAdmin,
+  referralIdParamValidation(),
+  revokeReferralToken,
+);
+
+// Re-send the invite email for a pending per-email invitation
+// (org_admin | admin). Same link, same expiry — just a nudge.
+router.post(
+  "/:id/remind",
+  isOrgAdmin,
+  referralIdParamValidation(),
+  remindReferralToken,
+);
 
 export default router;

@@ -45,9 +45,7 @@ const csvUpload = multer({
     }
     if (!ACCEPTED_MIME.has(file.mimetype)) {
       cb(
-        new Error(
-          `Unexpected MIME type ${file.mimetype} — expected text/csv`
-        )
+        new Error(`Unexpected MIME type ${file.mimetype} — expected text/csv`),
       );
       return;
     }
@@ -63,7 +61,7 @@ router.post(
   isOrgAdmin,
   requireOrgContext,
   csvUpload.single("file"),
-  importLearners
+  importLearners,
 );
 
 /**
@@ -80,7 +78,7 @@ router.post(
   isOrgAdmin,
   requireOrgContext,
   csvUpload.single("file"),
-  importForskills
+  importForskills,
 );
 
 /**
@@ -97,7 +95,7 @@ router.post(
   isOrgAdmin,
   requireOrgContext,
   csvUpload.single("file"),
-  importSessions
+  importSessions,
 );
 
 export default router;

@@ -107,7 +107,7 @@ export const __resetPlacementBankCache = () => {
  */
 export const selectAdaptiveQuestions = (
   answeredSoFar: AnsweredQuestion[],
-  bank: PlacementQuestion[]
+  bank: PlacementQuestion[],
 ): PlacementQuestion[] => {
   // ── 1. Group + sort the bank by level ────────────────────────────
   const byLevel = new Map<EsolLevel, PlacementQuestion[]>();
@@ -116,7 +116,7 @@ export const selectAdaptiveQuestions = (
       level,
       bank
         .filter((q) => q.level === level)
-        .sort((a, b) => a.id.localeCompare(b.id))
+        .sort((a, b) => a.id.localeCompare(b.id)),
     );
   }
 
@@ -127,7 +127,7 @@ export const selectAdaptiveQuestions = (
       throw new ApiError(
         500,
         `Placement bank has ${count} ${level} question(s); ` +
-          `needs ≥ ${PER_LEVEL_INITIAL} to run an attempt`
+          `needs ≥ ${PER_LEVEL_INITIAL} to run an attempt`,
       );
     }
   }
@@ -165,7 +165,7 @@ export const selectAdaptiveQuestions = (
       throw new ApiError(
         500,
         `Answered question ${a.question_id} is not in the current bank — ` +
-          `bank version may have shifted mid-attempt`
+          `bank version may have shifted mid-attempt`,
       );
     }
     firstFiveOut.push(q);
@@ -179,46 +179,75 @@ export const selectAdaptiveQuestions = (
 
   const correctCount = firstFive.filter((a) => a.was_correct).length;
 
+  // Drop-and-replace policy. Both the all-wrong and all-correct
+  // branches want to bias the trailing 15 toward easier / harder
+  // questions. The old implementation dropped trailing entries
+  // unconditionally, then tried to top up from the bank — but with a
+  // minimum-sized bank (4 per level, the runtime floor) the top-up
+  // pool can come back empty, leaving us with fewer than 15 trailing
+  // and a runtime "Bank does not contain queued question undefined"
+  // when the attempt walks off the end.
+  //
+  // Safer rule: compute the available top-up FIRST, then drop at most
+  // as many trailing entries as we have replacements for. This
+  // guarantees trailing.length === 15 regardless of bank size, while
+  // still applying the adaptive bias up to whatever the bank can
+  // support. With a fuller bank the behaviour is identical to before.
   if (correctCount === 0) {
-    // All wrong → keep only e1/e2 in the trailing, top up from bank.
-    trailing = trailing.filter((q) => EASIER_LEVELS.includes(q.level));
-    const usedIds = new Set<string>([
-      ...firstFiveIds,
-      ...trailing.map((q) => q.id),
-    ]);
-    const topup: PlacementQuestion[] = [];
+    // All wrong → bias trailing toward e1/e2.
+    const trailingIds = new Set(trailing.map((q) => q.id));
+    const easierTopup: PlacementQuestion[] = [];
     for (const level of EASIER_LEVELS) {
       for (const q of byLevel.get(level)!) {
-        if (!usedIds.has(q.id)) topup.push(q);
+        if (!firstFiveIds.has(q.id) && !trailingIds.has(q.id)) {
+          easierTopup.push(q);
+        }
       }
     }
-    trailing = topup.length
-      ? padTrailing(trailing, topup, TOTAL_QUESTIONS - ADAPTIVE_TRIGGER)
-      : trailing;
-  } else if (correctCount === ADAPTIVE_TRIGGER) {
-    // All correct → drop 5 e1 from trailing, top up from l2/l1 (l2 first).
-    let dropped = 0;
+    // Each top-up replaces ONE harder-trailing slot. We can drop only
+    // as many harder entries as we have easier replacements queued.
+    let maxToSwap = easierTopup.length;
     trailing = trailing.filter((q) => {
-      if (q.level === "e1" && dropped < ADAPTIVE_TRIGGER) {
-        dropped += 1;
+      if (!EASIER_LEVELS.includes(q.level) && maxToSwap > 0) {
+        maxToSwap -= 1;
         return false;
       }
       return true;
     });
-    const usedIds = new Set<string>([
-      ...firstFiveIds,
-      ...trailing.map((q) => q.id),
-    ]);
-    const topup: PlacementQuestion[] = [];
+    trailing = padTrailing(
+      trailing,
+      easierTopup,
+      TOTAL_QUESTIONS - ADAPTIVE_TRIGGER,
+    );
+  } else if (correctCount === ADAPTIVE_TRIGGER) {
+    // All correct → bias trailing toward l1/l2.
+    const trailingIds = new Set(trailing.map((q) => q.id));
+    const harderTopup: PlacementQuestion[] = [];
     for (const level of HARDER_LEVELS_DESC) {
       for (const q of byLevel.get(level)!) {
-        if (!usedIds.has(q.id)) topup.push(q);
+        if (!firstFiveIds.has(q.id) && !trailingIds.has(q.id)) {
+          harderTopup.push(q);
+        }
       }
     }
-    trailing = padTrailing(trailing, topup, TOTAL_QUESTIONS - ADAPTIVE_TRIGGER);
+    // Drop at most ADAPTIVE_TRIGGER e1 entries, and only as many as we
+    // have harder replacements queued.
+    let maxToSwap = Math.min(ADAPTIVE_TRIGGER, harderTopup.length);
+    trailing = trailing.filter((q) => {
+      if (q.level === "e1" && maxToSwap > 0) {
+        maxToSwap -= 1;
+        return false;
+      }
+      return true;
+    });
+    trailing = padTrailing(
+      trailing,
+      harderTopup,
+      TOTAL_QUESTIONS - ADAPTIVE_TRIGGER,
+    );
   }
   // correctCount in [1, ADAPTIVE_TRIGGER - 1] — no reshape, trailing
-  // is exactly what the initial selection placed there.
+  // is exactly what the initial selection placed there (15 entries).
 
   // ── 8. Guarantee exactly TOTAL_QUESTIONS out ────────────────────
   return [
@@ -230,7 +259,7 @@ export const selectAdaptiveQuestions = (
 const padTrailing = (
   current: PlacementQuestion[],
   topup: PlacementQuestion[],
-  targetLength: number
+  targetLength: number,
 ): PlacementQuestion[] => {
   const out = [...current];
   let i = 0;
@@ -247,7 +276,7 @@ const padTrailing = (
 
 const findBankQuestion = (
   bank: PlacementBank,
-  id: string
+  id: string,
 ): PlacementQuestion | null => bank.questions.find((q) => q.id === id) ?? null;
 
 const renderQuestionForLearner = (q: PlacementQuestion) => ({
@@ -276,7 +305,7 @@ const renderQuestionForLearner = (q: PlacementQuestion) => ({
  */
 export const getOrStartAttempt = async (
   learnerId: string,
-  orgId: string | null
+  orgId: string | null,
 ) => {
   if (!orgId) {
     throw new ApiError(403, "Learner must belong to an organisation");
@@ -289,6 +318,38 @@ export const getOrStartAttempt = async (
   }).sort({ startedAt: -1 });
 
   const bank = loadPlacementBank();
+
+  // Self-heal: an in-progress attempt is only valid if its plan is
+  // intact. Two ways an attempt can be corrupt:
+  //   (a) bank version changed since the attempt started — the stored
+  //       ids may no longer exist in the current bank.
+  //   (b) the plan stored fewer than TOTAL_QUESTIONS ids. This happened
+  //       to learners who started an attempt under the pre-fix
+  //       adaptive algorithm, where minimum-bank scenarios produced a
+  //       17-question plan instead of 20. On resume the next-question
+  //       lookup would yield `undefined` and throw "Bank does not
+  //       contain queued question undefined".
+  //
+  // In either case, mark the broken attempt as abandoned and start
+  // a fresh one with the current algorithm + current bank. The
+  // learner doesn't lose anything they can keep — their answers were
+  // against questions whose validity we can no longer guarantee.
+  if (attempt) {
+    const planTooShort = attempt.selected_question_ids.length < TOTAL_QUESTIONS;
+    const planHasUnknownIds = attempt.selected_question_ids.some(
+      (id) => !findBankQuestion(bank, id),
+    );
+    if (planTooShort || planHasUnknownIds) {
+      // The PlacementAttempt status enum is in_progress | submitted |
+      // scored — no "abandoned" state. Hard-delete the corrupt row
+      // rather than introduce a new lifecycle status just for this
+      // recovery path. We're not losing useful signal: the answers
+      // were against questions whose validity we can no longer
+      // guarantee, so they can't contribute to scoring or audit.
+      await PlacementAttempt.deleteOne({ _id: attempt._id });
+      attempt = null;
+    }
+  }
 
   if (!attempt) {
     const plan = selectAdaptiveQuestions([], bank.questions);
@@ -311,14 +372,11 @@ export const getOrStartAttempt = async (
       done: true,
     });
   }
-  const nextQ = findBankQuestion(
-    bank,
-    attempt.selected_question_ids[nextIdx]
-  );
+  const nextQ = findBankQuestion(bank, attempt.selected_question_ids[nextIdx]);
   if (!nextQ) {
     throw new ApiError(
       500,
-      `Bank does not contain queued question ${attempt.selected_question_ids[nextIdx]}`
+      `Bank does not contain queued question ${attempt.selected_question_ids[nextIdx]}`,
     );
   }
 
@@ -342,7 +400,7 @@ interface SubmitAnswerBody {
  */
 export const submitAnswer = async (
   learnerId: string,
-  body: SubmitAnswerBody
+  body: SubmitAnswerBody,
 ) => {
   if (!body.question_id || !body.answer) {
     throw new ApiError(400, "question_id and answer are required");
@@ -355,7 +413,7 @@ export const submitAnswer = async (
   if (!attempt) {
     throw new ApiError(
       404,
-      "No in-progress placement attempt — call /placement/start first"
+      "No in-progress placement attempt — call /placement/start first",
     );
   }
 
@@ -371,7 +429,7 @@ export const submitAnswer = async (
     throw new ApiError(
       409,
       `Out-of-order answer: expected ${expectedId}, got ${body.question_id}. ` +
-        `Learners cannot go back or skip ahead.`
+        `Learners cannot go back or skip ahead.`,
     );
   }
 
@@ -380,14 +438,14 @@ export const submitAnswer = async (
   if (!question) {
     throw new ApiError(
       500,
-      `Queued question ${body.question_id} is not in the bank — bank version may have shifted`
+      `Queued question ${body.question_id} is not in the bank — bank version may have shifted`,
     );
   }
   const validOptionIds = new Set(question.options.map((o) => o.id));
   if (!validOptionIds.has(body.answer)) {
     throw new ApiError(
       400,
-      `answer "${body.answer}" is not one of the option ids for this question`
+      `answer "${body.answer}" is not one of the option ids for this question`,
     );
   }
 
@@ -434,7 +492,7 @@ export const submitAnswer = async (
   if (!nextQ) {
     throw new ApiError(
       500,
-      `Bank does not contain queued question ${attempt.selected_question_ids[nextIdx]}`
+      `Bank does not contain queued question ${attempt.selected_question_ids[nextIdx]}`,
     );
   }
   return new ApiResponse(200, "Answer recorded", {
@@ -449,8 +507,13 @@ export const submitAnswer = async (
 // Gemini scoring (brief Function 6 To-Do 3)
 // ─────────────────────────────────────────────────────────────────────
 
-const SCORING_TEMPERATURE = 0.2;     // structured-output call — low temp
-const SCORING_MAX_TOKENS = 1024;
+const SCORING_TEMPERATURE = 0.2; // structured-output call — low temp
+// 1024 was too tight: a confident-high-level scoring response includes
+// a 2–3 sentence rationale + the full 9-element weakness array + JSON
+// structural overhead, which routinely truncated the body mid-stream
+// and produced an unparseable JSON parse failure. 4096 leaves a wide
+// safety margin (typical actual usage is ~200 tokens).
+const SCORING_MAX_TOKENS = 4096;
 const CONFIDENCE_CONSERVATIVE_FLOOR = 0.7;
 const LEVEL_FALLBACK: EsolLevel = "e1";
 
@@ -530,7 +593,7 @@ const oneLevelLower = (level: EsolLevel): EsolLevel => {
  */
 const buildScoringPayload = (
   bank: PlacementBank,
-  answers: AnsweredQuestion[]
+  answers: AnsweredQuestion[],
 ): string => {
   const rows = answers.map((a, idx) => {
     const q = bank.questions.find((b) => b.id === a.question_id);
@@ -538,7 +601,7 @@ const buildScoringPayload = (
       // Caller has already validated this — guard remains as defence.
       throw new ApiError(
         500,
-        `Bank does not contain answered question ${a.question_id}`
+        `Bank does not contain answered question ${a.question_id}`,
       );
     }
     const optionLines = q.options
@@ -600,9 +663,10 @@ const parseScoringResponse = (raw: string): GeminiScoringResponse => {
 };
 
 /** Single Gemini call. Throws if the response is empty / malformed —
- *  the caller decides whether to retry. */
+ *  the caller decides whether to retry. On parse failure logs the raw
+ *  response body so you can diagnose schema drift without re-running. */
 const callGeminiOnce = async (
-  prompt: string
+  prompt: string,
 ): Promise<GeminiScoringResponse> => {
   const model = geminiClient.preview.getGenerativeModel({
     model: MODEL_NAME,
@@ -627,7 +691,21 @@ const callGeminiOnce = async (
   if (!text) {
     throw new Error("Empty response from Gemini");
   }
-  return parseScoringResponse(text);
+  try {
+    return parseScoringResponse(text);
+  } catch (err) {
+    // Surface the raw body in the log so we can tell whether Gemini
+    // returned junk vs returned valid-shaped JSON that failed our
+    // stricter post-parse checks (e.g. confidence as a string,
+    // weakness flag outside the ALL_ILR_CODES set). Truncate hard —
+    // the placement-scoring response is small but the model could in
+    // principle blow it up.
+    logger.error(
+      { rawSnippet: text.slice(0, 500), parseErr: (err as Error).message },
+      "Gemini placement scoring — parse/validate failed",
+    );
+    throw err;
+  }
 };
 
 /**
@@ -644,12 +722,12 @@ const callGeminiOnce = async (
  */
 export const scorePlacement = async (
   learnerId: string,
-  body: { answers: { question_id: string; answer: string }[] }
+  body: { answers: { question_id: string; answer: string }[] },
 ): Promise<ApiResponse> => {
   if (!Array.isArray(body.answers) || body.answers.length !== TOTAL_QUESTIONS) {
     throw new ApiError(
       400,
-      `Body must contain exactly ${TOTAL_QUESTIONS} answers, got ${body.answers?.length ?? 0}`
+      `Body must contain exactly ${TOTAL_QUESTIONS} answers, got ${body.answers?.length ?? 0}`,
     );
   }
 
@@ -660,13 +738,13 @@ export const scorePlacement = async (
   if (!attempt) {
     throw new ApiError(
       404,
-      "No active placement attempt for this learner — call /placement/start first"
+      "No active placement attempt for this learner — call /placement/start first",
     );
   }
   if (attempt.answers.length !== TOTAL_QUESTIONS) {
     throw new ApiError(
       409,
-      `Attempt has ${attempt.answers.length}/${TOTAL_QUESTIONS} answers; complete them via /answer first`
+      `Attempt has ${attempt.answers.length}/${TOTAL_QUESTIONS} answers; complete them via /answer first`,
     );
   }
 
@@ -684,7 +762,7 @@ export const scorePlacement = async (
       throw new ApiError(
         409,
         `Body answer #${i + 1} does not match the persisted attempt — ` +
-          `the wizard's view of the attempt is out of date. Refresh and resubmit.`
+          `the wizard's view of the attempt is out of date. Refresh and resubmit.`,
       );
     }
   }
@@ -713,7 +791,7 @@ export const scorePlacement = async (
           lastError = err as Error;
           logger.warn(
             { err, learnerId, attemptId: attempt._id.toString(), attemptNum },
-            "Gemini placement scoring call failed — will retry"
+            "Gemini placement scoring call failed — will retry",
           );
         }
       }
@@ -724,7 +802,7 @@ export const scorePlacement = async (
       if (!scored) {
         logger.error(
           { err: lastError, learnerId, attemptId: attempt._id.toString() },
-          "Gemini scoring failed twice — falling back to e1"
+          "Gemini scoring failed twice — falling back to e1",
         );
         fellBackToE1 = true;
         suggested = {
@@ -764,10 +842,15 @@ export const scorePlacement = async (
       const beforeLevel = learner?.esolLevel ?? null;
       if (learner) {
         learner.esolLevel = finalLevel;
+        // Keep the learner-facing placement explanation in sync with
+        // the latest scored attempt (welcome modal + teacher review
+        // both read these from the user record).
+        learner.placement_confidence = suggested.confidence;
+        learner.placement_rationale = suggested.rationale;
         const existing = new Set<string>(learner.skillWeaknessFlags ?? []);
         for (const f of suggested.skill_weakness_flags) existing.add(f);
         learner.skillWeaknessFlags = ALL_ILR_CODES.filter((c) =>
-          existing.has(c)
+          existing.has(c),
         );
         await learner.save();
       }
@@ -796,8 +879,8 @@ export const scorePlacement = async (
       }).catch((err) =>
         logger.error(
           { err, attemptId: attempt._id.toString() },
-          "AuditLog write failed for placement_completed"
-        )
+          "AuditLog write failed for placement_completed",
+        ),
       );
 
       // ── 7. Stage 3 objectives (brief Function 6 To-Do 4) ──────────
@@ -810,7 +893,7 @@ export const scorePlacement = async (
         stage3_objectives = await createStage3ObjectivesFromPlacement(
           attempt.learnerId.toString(),
           finalLevel,
-          suggested.skill_weakness_flags
+          suggested.skill_weakness_flags,
         );
       } catch (err) {
         // Don't fail the scoring response on a Stage-3 hiccup — the
@@ -818,24 +901,45 @@ export const scorePlacement = async (
         // The teacher can re-derive objectives via the Stage 3 view.
         logger.error(
           { err, learnerId: attempt.learnerId.toString() },
-          "Stage 3 objective creation failed after placement scoring"
+          "Stage 3 objective creation failed after placement scoring",
         );
       }
+
+      // Surface the underlying failure reason in dev so it's visible
+      // in DevTools without grepping pino output. Production hides
+      // it — the e1 fallback rationale is the user-facing message
+      // there.
+      const debugInfo =
+        fellBackToE1 && process.env.NODE_ENV !== "production"
+          ? {
+              fell_back_to_e1: true,
+              gemini_error: lastError?.message ?? "unknown error",
+              hint:
+                "Both Gemini calls failed. Check the backend log for " +
+                "'Gemini placement scoring — parse/validate failed' or " +
+                "'Gemini placement scoring call failed' to see the raw " +
+                "model output / underlying SDK error.",
+            }
+          : undefined;
 
       return {
         esol_level: finalLevel,
         confidence: suggested.confidence,
         rationale: suggested.rationale,
         stage3_objectives,
+        ...(debugInfo ? { _debug: debugInfo } : {}),
       };
     },
-    { org_id: attempt.orgId.toString(), learner_id: attempt.learnerId.toString() }
+    {
+      org_id: attempt.orgId.toString(),
+      learner_id: attempt.learnerId.toString(),
+    },
   );
 
   return new ApiResponse(
     200,
     outcome.hit ? "Placement already scored" : "Placement scored",
-    outcome.result
+    outcome.result,
   );
 };
 

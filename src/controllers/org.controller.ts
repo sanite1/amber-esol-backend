@@ -61,7 +61,11 @@ export const updateOrg: ExpressFunction = async (req, res, next) => {
 
 /* ── POST /api/orgs/:id/referral-link ────────────────────────────── */
 
-export const createOrgReferralLink: ExpressFunction = async (req, res, next) => {
+export const createOrgReferralLink: ExpressFunction = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const callerId = req.user?.id?.toString();
     if (!callerId) return next(new ApiError(401, "Unauthorized"));
@@ -69,7 +73,7 @@ export const createOrgReferralLink: ExpressFunction = async (req, res, next) => 
     const data = await createOrgReferralLinkService(
       params.id,
       (req.body || {}) as { expires_at?: string },
-      callerId
+      callerId,
     );
     return res.status(201).json(data);
   } catch (err) {
@@ -84,7 +88,7 @@ export const listOrgReferralLinks: ExpressFunction = async (req, res, next) => {
     const params = req.params as Record<string, string>;
     const data = await listOrgReferralLinksService(
       params.id,
-      req.query as { page?: string; limit?: string }
+      req.query as { page?: string; limit?: string },
     );
     return res.status(200).json(data);
   } catch (err) {
@@ -97,13 +101,13 @@ export const listOrgReferralLinks: ExpressFunction = async (req, res, next) => {
 export const deactivateOrgReferralLink: ExpressFunction = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const params = req.params as Record<string, string>;
     const data = await deactivateOrgReferralLinkService(
       params.id,
-      params.tokenId
+      params.tokenId,
     );
     return res.status(200).json(data);
   } catch (err) {

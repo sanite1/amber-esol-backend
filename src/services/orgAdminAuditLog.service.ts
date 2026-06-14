@@ -152,14 +152,18 @@ const parseDateFilter = (
 // Pipeline build
 // ─────────────────────────────────────────────────────────────────────
 
-export const buildAuditLogPipeline = (
-  orgId: Types.ObjectId,
+/**
+ * Apply the common query filters (learner_id, action, from/to date
+ * range) to an existing match clause. Mutates and returns `match`.
+ *
+ * Extracted in the Phase 1 refactor so the new learner-self and
+ * teacher-scoped audit-log services can reuse the same validation
+ * semantics without duplicating the rules.
+ */
+export const applyAuditLogQueryFilters = (
+  match: Record<string, unknown>,
   query: OrgAdminAuditLogQuery,
-  pagination: { skip: number; limit: number },
-): PipelineStage[] => {
-  // ── 1. Pre-lookup $match — hits the (org_id, timestamp -1) index ──
-  const match: Record<string, unknown> = { org_id: orgId };
-
+): Record<string, unknown> => {
   if (query.learner_id) {
     if (!Types.ObjectId.isValid(query.learner_id)) {
       throw new ApiError(400, "learner_id must be a valid ObjectId");
@@ -169,7 +173,10 @@ export const buildAuditLogPipeline = (
 
   if (query.action) {
     if (!VALID_ACTIONS.has(query.action as AuditAction)) {
-      throw new ApiError(400, `action "${query.action}" is not a known audit action`);
+      throw new ApiError(
+        400,
+        `action "${query.action}" is not a known audit action`,
+      );
     }
     match.action = query.action;
   }
@@ -184,7 +191,20 @@ export const buildAuditLogPipeline = (
     match.timestamp = range;
   }
 
-  // ── 2. Name lookups ──────────────────────────────────────────────
+  return match;
+};
+
+/**
+ * Build the facet stage of the audit-log pipeline. Returns the
+ * `$facet` that does sort, skip, limit, actor/learner $lookups, and
+ * the final projection. Extracted in the Phase 1 refactor so the new
+ * per-learner services can share the expensive lookup logic — only
+ * the upstream `$match` varies between services.
+ */
+export const buildAuditLogFacet = (pagination: {
+  skip: number;
+  limit: number;
+}): PipelineStage.Facet => {
   // Both lookups project minimal fields — firstname + lastname only.
   // The actor lookup is conditional on actor_id being non-null
   // (system actions have actor_id null and don't need a join).
@@ -230,8 +250,8 @@ export const buildAuditLogPipeline = (
     },
   };
 
-  // ── 3. $facet for rows + total in one round-trip ─────────────────
-  const facet: PipelineStage.Facet = {
+  // ── $facet for rows + total in one round-trip ───────────────────
+  return {
     $facet: {
       rows: [
         { $sort: { timestamp: -1 } },
@@ -291,21 +311,61 @@ export const buildAuditLogPipeline = (
             before_state: 1,
             after_state: 1,
             compliance_config_version: 1,
+            // Pass-through for the Amber-admin cross-org search
+            // (adminAuditLog.service.ts) — org-scoped callers already
+            // know their org and simply ignore it.
+            org_id: 1,
           },
         },
       ],
       total: [{ $count: "value" }],
     },
   };
-
-  return [{ $match: match }, facet];
 };
+
+// ─────────────────────────────────────────────────────────────────────
+// Top-level pipeline composition (org-admin scope)
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Build the full org-admin audit-log pipeline. Thin composition of
+ * the shared helpers: { $match: org_id + filters } → shared facet.
+ * The Phase 1 refactor extracted the filter + facet logic so this
+ * file no longer holds them inline.
+ */
+export const buildAuditLogPipeline = (
+  orgId: Types.ObjectId,
+  query: OrgAdminAuditLogQuery,
+  pagination: { skip: number; limit: number },
+): PipelineStage[] => {
+  // Pre-lookup $match — hits the (org_id, timestamp -1) compound index.
+  const match: Record<string, unknown> = { org_id: orgId };
+  applyAuditLogQueryFilters(match, query);
+
+  return [{ $match: match }, buildAuditLogFacet(pagination)];
+};
+
+// ─────────────────────────────────────────────────────────────────────
+// (Old inline pipeline body removed in the Phase 1 refactor — the
+// logic now lives in `buildAuditLogFacet` and is shared with the new
+// per-learner services.)
+// ─────────────────────────────────────────────────────────────────────
+const _DEAD_FACET_END_MARKER = (): void => {
+  // Intentionally empty marker. The original `buildAuditLogPipeline`
+  // ended here with `return [{ $match: match }, facet];`. New version
+  // is above.
+};
+void _DEAD_FACET_END_MARKER;
 
 // ─────────────────────────────────────────────────────────────────────
 // Response shaping
 // ─────────────────────────────────────────────────────────────────────
 
-const normaliseRow = (row: Record<string, unknown>): OrgAdminAuditLogRow => ({
+// Exported in the Phase 1 refactor so the new per-learner services
+// can reuse the same row-shape normalisation.
+export const normaliseAuditLogRow = (
+  row: Record<string, unknown>,
+): OrgAdminAuditLogRow => ({
   _id: String(row._id),
   timestamp:
     row.timestamp instanceof Date
@@ -386,9 +446,9 @@ export const listOrgAdminAuditLogService = async (
   );
 
   const [facetResult] = await AuditLog.aggregate(pipeline);
-  const rows = ((facetResult?.rows ?? []) as Array<Record<string, unknown>>).map(
-    (r) => normaliseRow(r),
-  );
+  const rows = (
+    (facetResult?.rows ?? []) as Array<Record<string, unknown>>
+  ).map((r) => normaliseAuditLogRow(r));
   const total = (facetResult?.total?.[0]?.value as number | undefined) ?? 0;
 
   return new ApiResponse(200, "Audit log retrieved", {
@@ -408,5 +468,5 @@ export const __internals__ = {
   MIN_PAGE_SIZE,
   MAX_PAGE_SIZE,
   parseDateFilter,
-  normaliseRow,
+  normaliseRow: normaliseAuditLogRow, // alias kept for back-compat with existing tests
 };

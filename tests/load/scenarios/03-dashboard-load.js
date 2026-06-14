@@ -52,9 +52,9 @@ export const options = {
     },
   },
   thresholds: {
-    "dashboard_load_ms":               ["p(95)<2000"],
+    dashboard_load_ms: ["p(95)<2000"],
     "dashboard_load_ms{call:filtered}": ["p(95)<2000"],
-    "http_req_failed":                  ["rate<0.005"],
+    http_req_failed: ["rate<0.005"],
   },
 };
 
@@ -65,11 +65,11 @@ export default function () {
   const headers = authHeaders(token);
 
   // Call 1 — unfiltered, page 1.
-  const r1 = http.get(
-    `${BASE_URL}/api/org-admin/learners?page=1&limit=50`,
-    { headers, tags: { name: "GET /api/org-admin/learners", call: "unfiltered" } },
-  );
-  check(r1, { "200": (r) => r.status === 200 });
+  const r1 = http.get(`${BASE_URL}/api/org-admin/learners?page=1&limit=50`, {
+    headers,
+    tags: { name: "GET /api/org-admin/learners", call: "unfiltered" },
+  });
+  check(r1, { 200: (r) => r.status === 200 });
   dashboardLoad.add(r1.timings.duration, { call: "unfiltered" });
 
   // Pause — real admins don't fire two requests in the same tick.
@@ -78,9 +78,12 @@ export default function () {
   // Call 2 — filtered by status + level.
   const r2 = http.get(
     `${BASE_URL}/api/org-admin/learners?status=active&level=e2&page=1&limit=50`,
-    { headers, tags: { name: "GET /api/org-admin/learners", call: "filtered" } },
+    {
+      headers,
+      tags: { name: "GET /api/org-admin/learners", call: "filtered" },
+    },
   );
-  check(r2, { "200": (r) => r.status === 200 });
+  check(r2, { 200: (r) => r.status === 200 });
   dashboardLoad.add(r2.timings.duration, { call: "filtered" });
 
   // Short think time before this VU's next iteration.

@@ -51,9 +51,7 @@ const FLUENCY_RANK: Record<string, number> = {
 
 export type LanguageMatchStrength = "native" | "fluent" | "partial" | "none";
 
-const fluencyToStrength = (
-  fluency?: string | null
-): LanguageMatchStrength => {
+const fluencyToStrength = (fluency?: string | null): LanguageMatchStrength => {
   if (!fluency) return "none";
   if (fluency === "native") return "native";
   if (fluency === "fluent") return "fluent";
@@ -84,9 +82,9 @@ interface TeacherCandidate {
 }
 
 export interface MatchSlot {
-  date: string;       // YYYY-MM-DD
-  startTime: string;  // HH:mm
-  endTime: string;    // HH:mm
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
 }
 
 export interface MatchResult {
@@ -108,11 +106,11 @@ export interface MatchResult {
  * `l1Language` — the matching algorithm fundamentally needs the L1.
  */
 export const getEsolTeacherMatchesService = async (
-  learnerId: string
+  learnerId: string,
 ): Promise<ApiResponse> => {
   // 1. Resolve and validate the learner.
   const learner = await User.findById(learnerId).select(
-    "role l1Language esolLevel orgId firstname lastname"
+    "role l1Language esolLevel orgId firstname lastname",
   );
   if (!learner || learner.role !== "student") {
     throw new ApiError(404, "Learner not found");
@@ -120,19 +118,19 @@ export const getEsolTeacherMatchesService = async (
   if (!learner.orgId) {
     throw new ApiError(
       400,
-      "Learner is not assigned to an organisation — matching is only available to org-managed ESOL learners"
+      "Learner is not assigned to an organisation — matching is only available to org-managed ESOL learners",
     );
   }
   if (!learner.l1Language) {
     throw new ApiError(
       400,
-      "Learner's L1 language is not set — complete the onboarding wizard first"
+      "Learner's L1 language is not set — complete the onboarding wizard first",
     );
   }
 
   const l1Lower = learner.l1Language.toLowerCase();
   const mappedLevel = learner.esolLevel
-    ? ESOL_TO_MARKETPLACE_LEVEL[learner.esolLevel.toLowerCase()] ?? null
+    ? (ESOL_TO_MARKETPLACE_LEVEL[learner.esolLevel.toLowerCase()] ?? null)
     : null;
 
   // 2. Coarse filter: approved ESOL teachers, active, DBS cleared.
@@ -146,7 +144,7 @@ export const getEsolTeacherMatchesService = async (
     dbsCheckStatus: { $in: ["cleared", "clear"] },
   })
     .select(
-      "firstname lastname profilePicture languages teachingPreferences averageRating"
+      "firstname lastname profilePicture languages teachingPreferences averageRating",
     )
     .lean();
 
@@ -211,7 +209,7 @@ export const getEsolTeacherMatchesService = async (
   const availableIdSet = new Set(availableIds.map((a) => a.tutorId.toString()));
 
   const withAvailability = scored.filter((c) =>
-    availableIdSet.has(c.doc._id.toString())
+    availableIdSet.has(c.doc._id.toString()),
   );
 
   // 5. Sort by composite score and take the top N (slightly more than
@@ -230,7 +228,7 @@ export const getEsolTeacherMatchesService = async (
     try {
       const slots = await collectSlotsForNextDays(
         candidate.doc._id.toString(),
-        SLOT_LOOKAHEAD_DAYS
+        SLOT_LOOKAHEAD_DAYS,
       );
       if (slots.length === 0) continue;
 
@@ -245,7 +243,7 @@ export const getEsolTeacherMatchesService = async (
     } catch (err) {
       logger.warn(
         { err, tutorId: candidate.doc._id, learnerId },
-        "Slot pre-fetch failed for ESOL match candidate — skipping"
+        "Slot pre-fetch failed for ESOL match candidate — skipping",
       );
     }
   }
@@ -260,7 +258,7 @@ export const getEsolTeacherMatchesService = async (
  */
 const collectSlotsForNextDays = async (
   tutorId: string,
-  days: number
+  days: number,
 ): Promise<MatchSlot[]> => {
   const out: MatchSlot[] = [];
   const today = new Date();
@@ -280,8 +278,11 @@ const collectSlotsForNextDays = async (
 
     // Service returns an ApiResponse — dig out the slots safely.
     const slots =
-      (resp as ApiResponse & { data?: { slots?: Array<{ startTime: string; endTime: string }> } })
-        .data?.slots ?? [];
+      (
+        resp as ApiResponse & {
+          data?: { slots?: Array<{ startTime: string; endTime: string }> };
+        }
+      ).data?.slots ?? [];
 
     for (const s of slots) {
       if (out.length >= MAX_SLOTS_PER_TEACHER) break;

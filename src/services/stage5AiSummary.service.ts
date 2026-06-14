@@ -94,7 +94,10 @@ const LEVEL_LABELS: Record<string, string> = {
 
 const GEMINI_TIMEOUT_MS = 30_000;
 const TEMPERATURE = 0.6;
-const MAX_OUTPUT_TOKENS = 600;
+// 2.5-flash thinking tokens share this budget — 600 risked truncated
+// JSON (same failure mode as the placement scorer). See
+// geminiAI.service.ts placement notes.
+const MAX_OUTPUT_TOKENS = 2048;
 
 // ─────────────────────────────────────────────────────────────────────
 // Helpers
@@ -160,9 +163,7 @@ const aggregateSessions = async (
     learnerId,
     nqf_level_at_start: levelCompleted,
   })
-    .select(
-      "duration_mins passed completedAt scenario_id skill_weakness_flags",
-    )
+    .select("duration_mins passed completedAt scenario_id skill_weakness_flags")
     .lean();
 
   let total_mins = 0;
@@ -173,7 +174,8 @@ const aggregateSessions = async (
     total_mins += s.duration_mins ?? 0;
     if (s.completedAt) scenarios_attempted += 1;
     if (s.passed === true) scenarios_passed += 1;
-    const flags = (s as { skill_weakness_flags?: string[] }).skill_weakness_flags;
+    const flags = (s as { skill_weakness_flags?: string[] })
+      .skill_weakness_flags;
     if (Array.isArray(flags)) flags.forEach((f) => weakDomainCodes.add(f));
   }
 
@@ -197,9 +199,7 @@ const aggregateSessions = async (
     .map((v) => (v as { word: string }).word);
 
   const vocab_retention_pct =
-    vocab.length > 0
-      ? Math.round((retained.length / vocab.length) * 100)
-      : 0;
+    vocab.length > 0 ? Math.round((retained.length / vocab.length) * 100) : 0;
 
   return {
     total_sessions: sessions.length,
@@ -220,10 +220,7 @@ const aggregateSessions = async (
  * model uses to ground its narrative. Carries firstname only; never
  * surname, email, ULN, or other PII.
  */
-const buildUserPrompt = (
-  firstName: string,
-  agg: SessionAggregates,
-): string => {
+const buildUserPrompt = (firstName: string, agg: SessionAggregates): string => {
   const lines: string[] = [];
   lines.push(`Learner first name: ${firstName}`);
   lines.push(`Level completed: ${agg.level_label}`);
@@ -241,9 +238,7 @@ const buildUserPrompt = (
     );
   }
   if (agg.weak_domains.length > 0) {
-    lines.push(
-      `Skills still developing: ${agg.weak_domains.join(", ")}`,
-    );
+    lines.push(`Skills still developing: ${agg.weak_domains.join(", ")}`);
   }
   lines.push("");
   lines.push(

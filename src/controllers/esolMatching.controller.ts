@@ -10,7 +10,11 @@ import { getEsolTeacherMatchesService } from "../services/esolMatching.service";
  * this endpoint is strictly "what are MY matches", never "what are someone
  * else's matches".
  */
-export const getEsolTeacherMatches: ExpressFunction = async (req, res, next) => {
+export const getEsolTeacherMatches: ExpressFunction = async (
+  req,
+  res,
+  next,
+) => {
   try {
     const learnerId = req.user?.id?.toString();
     if (!learnerId) {

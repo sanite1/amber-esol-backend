@@ -7,10 +7,9 @@ import {
 } from "./nodemailer/mail.service";
 import logger from "../config/logger";
 
-const DASHBOARD_URL =
-  process.env.DOMAIN_NAME
-    ? `${process.env.DOMAIN_NAME}/tutor/esol`
-    : "https://app.ambertraining.co.uk/tutor/esol";
+const DASHBOARD_URL = process.env.DOMAIN_NAME
+  ? `${process.env.DOMAIN_NAME}/tutor/esol`
+  : "https://app.ambertraining.co.uk/tutor/esol";
 
 /* ── List ESOL Teachers ── */
 
@@ -24,8 +23,7 @@ export const listEsolTeachersService = async (options: {
   const limit = parseInt(options.limit || "20", 10);
   const skip = (page - 1) * limit;
 
-  const escapeRegex = (s: string) =>
-    s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
   const conditions: any[] = [{ role: "tutor" }, { isActive: true }];
 
@@ -48,12 +46,13 @@ export const listEsolTeachersService = async (options: {
     });
   }
 
-  const query: any = conditions.length > 1 ? { $and: conditions } : conditions[0];
+  const query: any =
+    conditions.length > 1 ? { $and: conditions } : conditions[0];
 
   const [teachers, total] = await Promise.all([
     User.find(query)
       .select(
-        "firstname lastname email esolTeacherApproved esolQualificationType esolQualificationUrl dbsCheckStatus esolTeacherNotes averageRating totalLessons verified createdAt"
+        "firstname lastname email esolTeacherApproved esolQualificationType esolQualificationUrl dbsCheckStatus esolTeacherNotes averageRating totalLessons verified createdAt",
       )
       .sort({ esolTeacherApproved: -1, averageRating: -1 })
       .skip(skip)
@@ -81,7 +80,7 @@ export const applyEsolTeacherService = async (
     qualification_document_url: string;
     dbs_check_reference: string;
     esol_experience_description: string;
-  }
+  },
 ) => {
   const tutor = await User.findOne({ _id: tutorId, role: "tutor" });
   if (!tutor) {
@@ -91,7 +90,7 @@ export const applyEsolTeacherService = async (
   if (tutor.esolTeacherApproved === true) {
     throw new ApiError(
       400,
-      "You are already approved as an ESOL teacher. Update your qualifications via the dashboard instead."
+      "You are already approved as an ESOL teacher. Update your qualifications via the dashboard instead.",
     );
   }
 
@@ -108,15 +107,15 @@ export const applyEsolTeacherService = async (
       esol_rejection_reason: null,
       esol_rejected_at: null,
     },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   ).select(
-    "firstname lastname email esolQualificationType esolQualificationUrl dbsCheckStatus esol_experience_description esol_application_submitted_at"
+    "firstname lastname email esolQualificationType esolQualificationUrl dbsCheckStatus esol_experience_description esol_application_submitted_at",
   );
 
   return new ApiResponse(
     201,
     "ESOL teacher application submitted — Amber admin will review and email you the outcome",
-    updated!.toJSON()
+    updated!.toJSON(),
   );
 };
 
@@ -137,7 +136,7 @@ export const approveTeacherService = async (
     esolQualificationUrl?: string;
     dbsCheckStatus?: string;
     esolTeacherNotes?: string;
-  } = {}
+  } = {},
 ) => {
   const tutor = await User.findOne({ _id: tutorId, role: "tutor" });
   if (!tutor) {
@@ -155,7 +154,7 @@ export const approveTeacherService = async (
   if (!qualificationType) {
     throw new ApiError(
       400,
-      "Tutor has not submitted an ESOL application yet — qualification type unknown. Ask them to apply via /api/esol/teachers/apply first."
+      "Tutor has not submitted an ESOL application yet — qualification type unknown. Ask them to apply via /api/esol/teachers/apply first.",
     );
   }
 
@@ -175,9 +174,9 @@ export const approveTeacherService = async (
       esol_rejection_reason: null,
       esol_rejected_at: null,
     },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   ).select(
-    "firstname lastname email esolTeacherApproved esolQualificationType esolQualificationUrl dbsCheckStatus esolTeacherNotes"
+    "firstname lastname email esolTeacherApproved esolQualificationType esolQualificationUrl dbsCheckStatus esolTeacherNotes",
   );
 
   // Fire-and-forget email. Failure to email must not roll back the approval.
@@ -188,10 +187,14 @@ export const approveTeacherService = async (
     dashboardUrl: DASHBOARD_URL,
     notes: data.esolTeacherNotes ?? null,
   }).catch((err) =>
-    logger.error({ err, tutorId }, "ESOL approval email failed")
+    logger.error({ err, tutorId }, "ESOL approval email failed"),
   );
 
-  return new ApiResponse(200, "Teacher approved for ESOL successfully", updated!.toJSON());
+  return new ApiResponse(
+    200,
+    "Teacher approved for ESOL successfully",
+    updated!.toJSON(),
+  );
 };
 
 /* ── Reject ESOL Teacher application (brief §2 Change 2) ────────────
@@ -203,7 +206,7 @@ export const approveTeacherService = async (
 
 export const rejectEsolTeacherService = async (
   tutorId: string,
-  reason: string
+  reason: string,
 ) => {
   const tutor = await User.findOne({ _id: tutorId, role: "tutor" });
   if (!tutor) {
@@ -213,7 +216,7 @@ export const rejectEsolTeacherService = async (
   if (tutor.esolTeacherApproved === true) {
     throw new ApiError(
       400,
-      "This tutor is already approved. Use revokeTeacherApproval to remove ESOL access."
+      "This tutor is already approved. Use revokeTeacherApproval to remove ESOL access.",
     );
   }
 
@@ -224,9 +227,9 @@ export const rejectEsolTeacherService = async (
       esol_rejection_reason: reason,
       esol_rejected_at: new Date(),
     },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   ).select(
-    "firstname lastname email esolTeacherApproved esol_rejection_reason esol_rejected_at"
+    "firstname lastname email esolTeacherApproved esol_rejection_reason esol_rejected_at",
   );
 
   sendEsolTeacherRejectionMail({
@@ -234,10 +237,14 @@ export const rejectEsolTeacherService = async (
     teacherName: `${tutor.firstname} ${tutor.lastname}`,
     reason,
   }).catch((err) =>
-    logger.error({ err, tutorId }, "ESOL rejection email failed")
+    logger.error({ err, tutorId }, "ESOL rejection email failed"),
   );
 
-  return new ApiResponse(200, "ESOL teacher application rejected", updated!.toJSON());
+  return new ApiResponse(
+    200,
+    "ESOL teacher application rejected",
+    updated!.toJSON(),
+  );
 };
 
 /* ── Update Teacher Qualifications ── */
@@ -251,7 +258,7 @@ export const updateTeacherQualificationsService = async (
     esolQualificationUrl?: string;
     dbsCheckStatus?: string;
     esolTeacherNotes?: string;
-  }
+  },
 ) => {
   // Tutors can only update their own qualifications
   if (callerRole === "tutor" && callerId !== tutorId) {
@@ -267,10 +274,14 @@ export const updateTeacherQualificationsService = async (
     new: true,
     runValidators: true,
   }).select(
-    "firstname lastname email esolTeacherApproved esolQualificationType esolQualificationUrl dbsCheckStatus esolTeacherNotes"
+    "firstname lastname email esolTeacherApproved esolQualificationType esolQualificationUrl dbsCheckStatus esolTeacherNotes",
   );
 
-  return new ApiResponse(200, "Qualifications updated successfully", updated!.toJSON());
+  return new ApiResponse(
+    200,
+    "Qualifications updated successfully",
+    updated!.toJSON(),
+  );
 };
 
 /* ── Revoke ESOL Approval ── */
@@ -288,8 +299,12 @@ export const revokeTeacherApprovalService = async (tutorId: string) => {
   const updated = await User.findByIdAndUpdate(
     tutorId,
     { esolTeacherApproved: false },
-    { new: true }
+    { new: true },
   ).select("firstname lastname email esolTeacherApproved");
 
-  return new ApiResponse(200, "ESOL approval revoked successfully", updated!.toJSON());
+  return new ApiResponse(
+    200,
+    "ESOL approval revoked successfully",
+    updated!.toJSON(),
+  );
 };

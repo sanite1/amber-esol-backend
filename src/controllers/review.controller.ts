@@ -38,7 +38,7 @@ import {
 export const createReview: ExpressFunction<ICreateReviewRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const studentId = (req as any).user?.id?.toString();
@@ -61,8 +61,8 @@ export const createReview: ExpressFunction<ICreateReviewRequest> = async (
         return next(
           new ApiError(
             403,
-            "Public reviews are not enabled for ESOL consolidation sessions"
-          )
+            "Public reviews are not enabled for ESOL consolidation sessions",
+          ),
         );
       }
     }
@@ -79,12 +79,12 @@ export const createReview: ExpressFunction<ICreateReviewRequest> = async (
 export const getTutorReviews = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const data = await getTutorReviewsService(
       req.params.tutorId,
-      req.query as unknown as IReviewQuery
+      req.query as unknown as IReviewQuery,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -97,14 +97,14 @@ export const getTutorReviews = async (
 export const getMyReviews = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const studentId = (req as any).user?.id?.toString();
     if (!studentId) return res.status(401).json({ message: "Unauthorized" });
     const data = await getMyReviewsService(
       studentId,
-      req.query as unknown as IReviewQuery
+      req.query as unknown as IReviewQuery,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -117,7 +117,7 @@ export const getMyReviews = async (
 export const updateReview: ExpressFunction<IUpdateReviewRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const studentId = (req as any).user?.id?.toString();
@@ -134,7 +134,7 @@ export const updateReview: ExpressFunction<IUpdateReviewRequest> = async (
 export const deleteReview = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const studentId = (req as any).user?.id?.toString();
@@ -151,7 +151,7 @@ export const deleteReview = async (
 export const addReply: ExpressFunction<IReplyRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const tutorId = (req as any).user?.id?.toString();
@@ -168,7 +168,7 @@ export const addReply: ExpressFunction<IReplyRequest> = async (
 export const updateReply: ExpressFunction<IReplyRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const tutorId = (req as any).user?.id?.toString();
@@ -185,7 +185,7 @@ export const updateReply: ExpressFunction<IReplyRequest> = async (
 export const deleteReply = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const tutorId = (req as any).user?.id?.toString();
@@ -202,7 +202,7 @@ export const deleteReply = async (
 export const reportReview: ExpressFunction<IReportRequest> = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -219,7 +219,7 @@ export const reportReview: ExpressFunction<IReportRequest> = async (
 export const toggleHelpful = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id?.toString();
@@ -236,7 +236,7 @@ export const toggleHelpful = async (
 export const getReviewStats = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const data = await reviewStatsService(req.params.tutorId);
@@ -255,11 +255,11 @@ export const getReviewStats = async (
 export const adminListReviews = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const data = await adminListReviewsService(
-      req.query as unknown as IAdminReviewQuery
+      req.query as unknown as IAdminReviewQuery,
     );
     return res.status(200).json(data);
   } catch (error) {
@@ -328,7 +328,7 @@ export const adminHandleReport: ExpressFunction<
     const data = await adminHandleReportService(
       req.params.id,
       req.params.reportId,
-      req.body
+      req.body,
     );
     return res.status(data.statusCode).json(data);
   } catch (error) {
@@ -341,7 +341,7 @@ export const adminHandleReport: ExpressFunction<
 export const adminReviewStats = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const data = await adminReviewStatsService();

@@ -15,11 +15,11 @@ Three pre-seeded accounts are available. **Credentials are in 1Password
 only — never committed to the repo, never pasted into Slack, never
 shared by email.**
 
-| Role | 1Password entry | Lands on |
-|---|---|---|
-| Org admin (Sarah Chen) | `Project Silk Demo - Org Admin` | `/org-admin/dashboard` |
-| Amber admin (platform super-admin) | `Project Silk Demo - Amber Admin` | `/admin/overview` |
-| Learner | `Project Silk Demo - Learner` | `/esol/home` |
+| Role                               | 1Password entry                   | Lands on               |
+| ---------------------------------- | --------------------------------- | ---------------------- |
+| Org admin (Sarah Chen)             | `Project Silk Demo - Org Admin`   | `/org-admin/dashboard` |
+| Amber admin (platform super-admin) | `Project Silk Demo - Amber Admin` | `/admin/overview`      |
+| Learner                            | `Project Silk Demo - Learner`     | `/esol/home`           |
 
 If a credential is missing or rotated, the only authoritative
 recovery path is the 1Password vault. There is no "reset password via
@@ -73,7 +73,7 @@ A Vercel cron job hits `/api/cron/reset-demo-environment` every day
 at **03:00 UTC**. The handler:
 
 1. Verifies `DEMO_MODE=true` on the running process. **Refuses with
-   403 otherwise.** This guard sits *before* the cron-secret check so
+   403 otherwise.** This guard sits _before_ the cron-secret check so
    even a misconfigured production deployment with a valid
    `CRON_SECRET` can't trigger it.
 2. Drops every non-system collection on the demo Mongo cluster
@@ -232,15 +232,15 @@ you write.
 
 ## Environment variables
 
-| Variable | Value on demo Vercel | Notes |
-|---|---|---|
-| `DEMO_MODE` | `true` | Flips the entire demo wiring on. Restart-required to change. |
-| `DEMO_MONGODB_URI` | (1Password: *Project Silk Demo - Mongo URI*) | Separate cluster — never share credentials with production. |
-| `MONGODB_URI` | (intentionally unset) | If set, completely ignored when `DEMO_MODE=true`. Leave it unset to make the configuration truthful. |
-| `CRON_SECRET` | (1Password) | Same value as production by convention, but the demo-mode guard means a leak doesn't grant prod access. |
-| `JOEY_EMAIL` | `joey@ambertraining.co.uk` | Recipient of the daily-reset outcome email. |
-| `BULL_BOARD_TOKEN` | (1Password) | Bull Board access on the demo deployment is gated identically to prod. |
-| `MIS_CREDENTIALS_KEY` | (1Password) | Any MIS credentials saved on a demo org would be encrypted with this key. The MIS UI is hidden in demo mode, so in practice no credentials are ever stored. |
+| Variable              | Value on demo Vercel                         | Notes                                                                                                                                                       |
+| --------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DEMO_MODE`           | `true`                                       | Flips the entire demo wiring on. Restart-required to change.                                                                                                |
+| `DEMO_MONGODB_URI`    | (1Password: _Project Silk Demo - Mongo URI_) | Separate cluster — never share credentials with production.                                                                                                 |
+| `MONGODB_URI`         | (intentionally unset)                        | If set, completely ignored when `DEMO_MODE=true`. Leave it unset to make the configuration truthful.                                                        |
+| `CRON_SECRET`         | (1Password)                                  | Same value as production by convention, but the demo-mode guard means a leak doesn't grant prod access.                                                     |
+| `JOEY_EMAIL`          | `joey@ambertraining.co.uk`                   | Recipient of the daily-reset outcome email.                                                                                                                 |
+| `BULL_BOARD_TOKEN`    | (1Password)                                  | Bull Board access on the demo deployment is gated identically to prod.                                                                                      |
+| `MIS_CREDENTIALS_KEY` | (1Password)                                  | Any MIS credentials saved on a demo org would be encrypted with this key. The MIS UI is hidden in demo mode, so in practice no credentials are ever stored. |
 
 The full set of env vars (including prod-only ones not listed here)
 lives in the 1Password vault `Project Silk - Vercel Env` with one
@@ -259,7 +259,7 @@ The banner is driven by the `X-Demo-Mode` response header. Check:
 2. The browser DevTools Network tab shows `X-Demo-Mode: true` on a
    recent response (e.g. `/me`).
 3. The CORS config exposes the header — `exposedHeaders:
-   ["X-Demo-Mode"]` in `src/index.ts`. A missing entry means the
+["X-Demo-Mode"]` in `src/index.ts`. A missing entry means the
    browser strips the header before fetch/axios can read it.
 
 ### "The seed ran but the dashboard is empty"

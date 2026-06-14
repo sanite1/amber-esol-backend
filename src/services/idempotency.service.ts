@@ -1,8 +1,6 @@
 import { Types } from "mongoose";
 import IdempotencyKey from "../models/IdempotencyKey";
-import {
-  IdempotencyOperation,
-} from "../interfaces/idempotencyKey.interface";
+import { IdempotencyOperation } from "../interfaces/idempotencyKey.interface";
 import logger from "../config/logger";
 
 /**
@@ -136,7 +134,7 @@ const IdempotencyService = {
     scope: {
       org_id?: string | Types.ObjectId | null;
       learner_id?: string | Types.ObjectId | null;
-    } = {}
+    } = {},
   ): Promise<IdempotencyResult<T>> => {
     // 1. Try to claim the lock.
     let lockRow;
@@ -157,7 +155,7 @@ const IdempotencyService = {
         (await waitForCompletion(key));
       if (!existing) {
         throw new Error(
-          `Idempotency conflict on key ${key} — racing caller didn't finish in time`
+          `Idempotency conflict on key ${key} — racing caller didn't finish in time`,
         );
       }
       if (existing.status === "failed") {
@@ -171,17 +169,18 @@ const IdempotencyService = {
       const result = await fn();
       lockRow.status = "completed";
       lockRow.result = result;
-      await lockRow.save().catch((err) =>
-        logger.warn(
-          { err, key },
-          "Idempotency row commit failed (work succeeded — replay safe)"
-        )
-      );
+      await lockRow
+        .save()
+        .catch((err) =>
+          logger.warn(
+            { err, key },
+            "Idempotency row commit failed (work succeeded — replay safe)",
+          ),
+        );
       return { hit: false, result };
     } catch (err) {
       lockRow.status = "failed";
-      lockRow.error =
-        err instanceof Error ? err.message : "Unknown error";
+      lockRow.error = err instanceof Error ? err.message : "Unknown error";
       await lockRow.save().catch(() => {
         /* swallow — the original error matters more */
       });

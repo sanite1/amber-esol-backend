@@ -20,6 +20,7 @@ import {
   addTeacherToOrg,
   removeTeacherFromOrg,
 } from "../controllers/teacherAssignment.controller";
+import { autoAssignUnassigned } from "../controllers/teacherMatching.controller";
 
 const router = Router();
 
@@ -27,6 +28,12 @@ router.use(isAuthenticated, isOrgAdmin, requireOrgContext);
 
 /* ── GET /api/org-admin/teachers ─────────────────────────────────── */
 router.get("/", listOrgTeachers);
+
+/* ── POST /api/org-admin/teachers/auto-assign ────────────────────────
+ * Bulk best-match assignment for every unassigned learner in the org.
+ * MUST stay above the :teacherId param routes — Express would
+ * otherwise read "auto-assign" as a teacher id. */
+router.post("/auto-assign", autoAssignUnassigned);
 
 /* ── POST /api/org-admin/teachers/:teacherId ─────────────────────── */
 router.post("/:teacherId", teacherIdParamValidation(), addTeacherToOrg);

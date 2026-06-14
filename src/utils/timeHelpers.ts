@@ -1,6 +1,6 @@
 export function lessonDurationHours(
   startTime?: string,
-  endTime?: string
+  endTime?: string,
 ): number {
   if (!startTime || !endTime) return 1;
   const [sh, sm] = startTime.split(":").map(Number);

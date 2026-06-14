@@ -11,7 +11,7 @@ import {
 export const esolRegister: ExpressFunction<EsolRegisterPayload> = async (
   req,
   res,
-  next
+  next,
 ) => {
   try {
     const data = await esolRegisterService(req.body as EsolRegisterPayload);

@@ -71,6 +71,14 @@ import { signOffStage5ReviewValidation } from "../validations/teacherRarpaSignof
 import { sendTeacherMessageValidation } from "../validations/teacherMessage.validation";
 import { previewTranslationValidation } from "../validations/teacherMessagePreview.validation";
 import { updateAutoReEngagementValidation } from "../validations/teacherPreferences.validation";
+import {
+  getTeachingProfile,
+  updateTeachingProfile,
+} from "../controllers/teacherTeachingProfile.controller";
+import { updateTeachingProfileValidation } from "../validations/teacherTeachingProfile.validation";
+// Phase 1 / Final Addendum §6 (BE-C) — teacher-scoped audit log.
+import { teacherAuditLogValidation } from "../validations/teacherAuditLog.validation";
+import { listTeacherAuditLog } from "../controllers/teacherAuditLog.controller";
 import logger from "../config/logger";
 
 const router = Router();
@@ -91,18 +99,16 @@ router.use(isAuthenticated, requireTeacherRole, requireTeacherContext);
 // for `todo_reference` to find unbuilt routes hit prematurely.
 // ─────────────────────────────────────────────────────────────────────
 
-const notYetImplemented = (
-  todoRef: string,
-  description: string,
-) => {
+const notYetImplemented = (todoRef: string, description: string) => {
   return (req: Request, res: Response) => {
     logger.info(
       {
         route: req.path,
         method: req.method,
         todo_reference: todoRef,
-        teacher_id: (req as Request & { teacher_context?: { teacher_id: string } })
-          .teacher_context?.teacher_id,
+        teacher_id: (
+          req as Request & { teacher_context?: { teacher_id: string } }
+        ).teacher_context?.teacher_id,
       },
       "teacher route hit before its controller landed",
     );
@@ -130,6 +136,16 @@ router.get("/learners", listTeacherLearners);
 // review history, current priority recommendation, and a
 // safeguarding alert count (no detail — DSL-only).
 router.get("/learners/:id", getTeacherLearnerDetail);
+
+// Phase 1 / Final Addendum §6 (BE-C) — teacher-scoped audit log for
+// one of their assigned learners. The service enforces the same
+// assignment gate as /learners/:id (404 then 403) before returning
+// any rows.
+router.get(
+  "/learners/:id/audit-log",
+  teacherAuditLogValidation(),
+  listTeacherAuditLog,
+);
 
 // Todo 22.5 — log a teacher review. Body:
 //   { review_type, duration_mins, notes?, ai_recommendation_acted_on }
@@ -221,6 +237,21 @@ router.patch(
   "/preferences/auto-re-engagement",
   updateAutoReEngagementValidation(),
   updateAutoReEngagement,
+);
+
+// Teaching profile — the matching foundation (teacherMatching
+// .service.ts). Self-served: the teacher declares levels taught,
+// languages spoken and specialisms; org admins see the profile as
+// chips on the Teacher Assignment page and matching uses it to rank
+// suggestions.
+//
+//   GET   /api/teacher/teaching-profile
+//   PATCH /api/teacher/teaching-profile
+router.get("/teaching-profile", getTeachingProfile);
+router.patch(
+  "/teaching-profile",
+  updateTeachingProfileValidation(),
+  updateTeachingProfile,
 );
 
 export default router;

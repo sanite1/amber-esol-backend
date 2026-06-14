@@ -13,7 +13,8 @@
  *   N8   L1 language passed through to the email payload
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 const notificationsAdd = jest.fn().mockResolvedValue({ id: "fake" });
 jest.mock("../queues", () => ({
@@ -97,7 +98,7 @@ describe("sendLearnerNudgeService", () => {
       "org_admin",
       org._id.toString(),
       admin._id.toString(),
-      {}
+      {},
     );
 
     const data = res.data as { email_sent: boolean; l1_language_used: string };
@@ -118,8 +119,10 @@ describe("sendLearnerNudgeService", () => {
       action: "learner_nudge_sent",
     }).lean();
     expect(audit).toBeTruthy();
-    expect((audit?.after_state as { email_sent?: boolean })?.email_sent).toBe(true);
-    expect((audit?.actor_id?.toString())).toBe(admin._id.toString());
+    expect((audit?.after_state as { email_sent?: boolean })?.email_sent).toBe(
+      true,
+    );
+    expect(audit?.actor_id?.toString()).toBe(admin._id.toString());
   });
 
   it("N2 — CSV-placeholder email → skipped, no queue, audit explains why", async () => {
@@ -135,7 +138,7 @@ describe("sendLearnerNudgeService", () => {
       "org_admin",
       org._id.toString(),
       admin._id.toString(),
-      {}
+      {},
     );
 
     const data = res.data as { email_sent: boolean; reason: string };
@@ -148,7 +151,9 @@ describe("sendLearnerNudgeService", () => {
       action: "learner_nudge_sent",
     }).lean();
     expect(audit).toBeTruthy();
-    expect((audit?.after_state as { reason?: string })?.reason).toBe("no_real_email");
+    expect((audit?.after_state as { reason?: string })?.reason).toBe(
+      "no_real_email",
+    );
   });
 
   it("N3 — empty email → skipped same way", async () => {
@@ -158,7 +163,7 @@ describe("sendLearnerNudgeService", () => {
     const learner = await createLearner({ orgId: org._id });
     await User.collection.updateOne(
       { _id: learner._id as unknown as never },
-      { $set: { email: "" } }
+      { $set: { email: "" } },
     );
 
     const res = await sendLearnerNudgeService(
@@ -166,7 +171,7 @@ describe("sendLearnerNudgeService", () => {
       "org_admin",
       org._id.toString(),
       admin._id.toString(),
-      {}
+      {},
     );
     const data = res.data as { email_sent: boolean; reason: string };
     expect(data.email_sent).toBe(false);
@@ -183,11 +188,13 @@ describe("sendLearnerNudgeService", () => {
       "org_admin",
       org._id.toString(),
       admin._id.toString(),
-      { custom_message: "   Your tutor is asking after you.   " }
+      { custom_message: "   Your tutor is asking after you.   " },
     );
 
     const [, payload] = notificationsAdd.mock.calls[0];
-    expect(payload.payload.custom_message).toBe("Your tutor is asking after you.");
+    expect(payload.payload.custom_message).toBe(
+      "Your tutor is asking after you.",
+    );
   });
 
   it("N5 — custom_message over 1000 chars → 400", async () => {
@@ -201,8 +208,8 @@ describe("sendLearnerNudgeService", () => {
         "org_admin",
         org._id.toString(),
         admin._id.toString(),
-        { custom_message: "x".repeat(1_001) }
-      )
+        { custom_message: "x".repeat(1_001) },
+      ),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -218,8 +225,8 @@ describe("sendLearnerNudgeService", () => {
         "org_admin",
         orgMine._id.toString(), // caller's org
         admin._id.toString(),
-        {}
-      )
+        {},
+      ),
     ).rejects.toMatchObject({ statusCode: 403 });
 
     expect(notificationsAdd).not.toHaveBeenCalled();
@@ -235,8 +242,8 @@ describe("sendLearnerNudgeService", () => {
         "org_admin",
         org._id.toString(),
         admin._id.toString(),
-        {}
-      )
+        {},
+      ),
     ).rejects.toMatchObject({ statusCode: 404 });
 
     await expect(
@@ -245,8 +252,8 @@ describe("sendLearnerNudgeService", () => {
         "org_admin",
         org._id.toString(),
         admin._id.toString(),
-        {}
-      )
+        {},
+      ),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
@@ -260,7 +267,7 @@ describe("sendLearnerNudgeService", () => {
       "org_admin",
       org._id.toString(),
       admin._id.toString(),
-      {}
+      {},
     );
 
     const [, payload] = notificationsAdd.mock.calls[0];

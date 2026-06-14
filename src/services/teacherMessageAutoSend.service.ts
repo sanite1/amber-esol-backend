@@ -69,10 +69,7 @@ export interface AutoSendInput {
   learner_l1_language: string | null;
 }
 
-export type AutoSendStatus =
-  | "ok"
-  | "translation_failed"
-  | "create_failed";
+export type AutoSendStatus = "ok" | "translation_failed" | "create_failed";
 
 export interface AutoSendResult {
   status: AutoSendStatus;
@@ -113,10 +110,7 @@ export const autoSendTeacherMessage = async (
     !Types.ObjectId.isValid(input.org_id) ||
     input.message_text.trim().length === 0
   ) {
-    logger.warn(
-      { input },
-      "autoSendTeacherMessage: invalid input — skipping",
-    );
+    logger.warn({ input }, "autoSendTeacherMessage: invalid input — skipping");
     return { status: "create_failed", message_id: null, translated: false };
   }
 

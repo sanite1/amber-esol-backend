@@ -57,7 +57,7 @@ const notificationsAddMock = jest.fn().mockResolvedValue(undefined);
 const priorityAddMock = jest.fn().mockResolvedValue(undefined);
 jest.mock("../queues", () => ({
   __esModule: true,
-  esolSessionQueue:   { add: esolSessionAddMock },
+  esolSessionQueue: { add: esolSessionAddMock },
   notificationsQueue: { add: notificationsAddMock },
   priorityQueueQueue: { add: priorityAddMock },
 }));
@@ -67,7 +67,8 @@ jest.mock("../services/ComplianceConfigService", () => ({
   default: { getCurrent: jest.fn().mockReturnValue({ version: 1 }) },
 }));
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 
 import { createHash } from "crypto";
 import mongoose, { Types } from "mongoose";
@@ -98,7 +99,14 @@ const MESSAGE = `${CANARY} — ${TRIGGER_PHRASE}`;
 // ─────────────────────────────────────────────────────────────────────
 
 type LoggerLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
-const LEVELS: LoggerLevel[] = ["trace", "debug", "info", "warn", "error", "fatal"];
+const LEVELS: LoggerLevel[] = [
+  "trace",
+  "debug",
+  "info",
+  "warn",
+  "error",
+  "fatal",
+];
 
 const loggerSpies: Record<LoggerLevel, jest.SpyInstance> = {} as never;
 
@@ -208,7 +216,9 @@ describe("Function 10 privacy audit — no raw message anywhere except TurnLog",
     });
 
     // Sanity — safeguarding path was actually taken
-    expect((res.data as { safeguarding_served?: boolean }).safeguarding_served).toBe(true);
+    expect(
+      (res.data as { safeguarding_served?: boolean }).safeguarding_served,
+    ).toBe(true);
 
     // ── P1: SafeguardingAlert stores hash only ──────────────────────
     const alerts = await SafeguardingAlert.find({ learnerId: learner._id });
@@ -221,8 +231,9 @@ describe("Function 10 privacy audit — no raw message anywhere except TurnLog",
     // Raw collection scan — catches future schema additions that
     // Mongoose's typed projection would hide. Stringify the whole
     // document and grep for the canary.
-    const alertsRawColl = mongoose.connection
-      .collection(SafeguardingAlert.collection.name);
+    const alertsRawColl = mongoose.connection.collection(
+      SafeguardingAlert.collection.name,
+    );
     const alertDocs = await alertsRawColl.find({}).toArray();
     for (const doc of alertDocs) {
       expect(JSON.stringify(doc)).not.toContain(CANARY);
@@ -233,8 +244,9 @@ describe("Function 10 privacy audit — no raw message anywhere except TurnLog",
     // session.turns.push(...originalInput: input.message...). A
     // regression that removes the early return would leak via
     // session.turns[].originalInput; this assertion catches it.
-    const sessionsRawColl = mongoose.connection
-      .collection(AISession.collection.name);
+    const sessionsRawColl = mongoose.connection.collection(
+      AISession.collection.name,
+    );
     const sessionDocs = await sessionsRawColl.find({}).toArray();
     for (const doc of sessionDocs) {
       expect(JSON.stringify(doc)).not.toContain(CANARY);
@@ -281,7 +293,7 @@ describe("Function 10 privacy audit — no raw message anywhere except TurnLog",
       // eslint-disable-next-line no-console
       console.error(
         "Canary leaked into logger calls:",
-        JSON.stringify(leakedLogCalls, null, 2)
+        JSON.stringify(leakedLogCalls, null, 2),
       );
     }
     expect(leakedLogCalls).toHaveLength(0);

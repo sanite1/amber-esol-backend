@@ -32,12 +32,12 @@ router
 router.get(
   "/:learnerId/vocab-ledger",
   learnerIdParamValidation(),
-  getLearnerVocabLedger
+  getLearnerVocabLedger,
 );
 router.get(
   "/:learnerId/sessions",
   learnerIdParamValidation(),
-  getLearnerSessions
+  getLearnerSessions,
 );
 
 export default router;

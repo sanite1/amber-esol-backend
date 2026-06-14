@@ -25,7 +25,7 @@ router.post(
   isAuthenticated,
   requireEsolLearner,
   declareUlnValidation(),
-  declareUln
+  declareUln,
 );
 
 export default router;

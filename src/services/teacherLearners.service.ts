@@ -218,9 +218,11 @@ export const listTeacherLearnersService = async (
 
   // ── Project to the public row shape ──────────────────────────
   const rows: TeacherLearnerRow[] = docs.map((d) => {
-    const populatedOrg = (d as unknown as {
-      orgId?: { _id: Types.ObjectId; name?: string } | Types.ObjectId | null;
-    }).orgId;
+    const populatedOrg = (
+      d as unknown as {
+        orgId?: { _id: Types.ObjectId; name?: string } | Types.ObjectId | null;
+      }
+    ).orgId;
     const orgIdStr =
       populatedOrg && typeof populatedOrg === "object" && "_id" in populatedOrg
         ? (populatedOrg._id as Types.ObjectId).toString()
@@ -229,7 +231,7 @@ export const listTeacherLearnersService = async (
           : "";
     const orgName =
       populatedOrg && typeof populatedOrg === "object" && "name" in populatedOrg
-        ? (populatedOrg as { name?: string }).name ?? "(unnamed org)"
+        ? ((populatedOrg as { name?: string }).name ?? "(unnamed org)")
         : "(unnamed org)";
 
     return {
@@ -239,9 +241,8 @@ export const listTeacherLearnersService = async (
       org_id: orgIdStr,
       org_name: orgName,
       esol_level: (d as { esolLevel?: string | null }).esolLevel ?? null,
-      teacher_priority_level:
-        ((d as { teacher_priority_level?: Priority }).teacher_priority_level ??
-          "p4") as Priority,
+      teacher_priority_level: ((d as { teacher_priority_level?: Priority })
+        .teacher_priority_level ?? "p4") as Priority,
       teacher_recommended_action:
         (d as { teacher_recommended_action?: string | null })
           .teacher_recommended_action ?? null,
@@ -249,14 +250,17 @@ export const listTeacherLearnersService = async (
         (d as { teacher_priority_trigger_key?: string | null })
           .teacher_priority_trigger_key ?? null,
       teacher_priority_updated_at:
-        (d as { teacher_priority_updated_at?: Date | null })
-          .teacher_priority_updated_at?.toISOString() ?? null,
+        (
+          d as { teacher_priority_updated_at?: Date | null }
+        ).teacher_priority_updated_at?.toISOString() ?? null,
       last_session_at:
-        (d as { last_session_at?: Date | null }).last_session_at?.toISOString() ??
-        null,
+        (
+          d as { last_session_at?: Date | null }
+        ).last_session_at?.toISOString() ?? null,
       teacher_last_reviewed_at:
-        (d as { teacher_last_reviewed_at?: Date | null })
-          .teacher_last_reviewed_at?.toISOString() ?? null,
+        (
+          d as { teacher_last_reviewed_at?: Date | null }
+        ).teacher_last_reviewed_at?.toISOString() ?? null,
     };
   });
 

@@ -14,7 +14,8 @@
  *        invalid payloads
  */
 
-process.env.REFERRAL_JWT_SECRET = process.env.REFERRAL_JWT_SECRET ?? "test-secret";
+process.env.REFERRAL_JWT_SECRET =
+  process.env.REFERRAL_JWT_SECRET ?? "test-secret";
 process.env.SAFEGUARDING_EMAIL = "safeguarding-test@ambertraining.local";
 process.env.AUTH_EMAIL = "amber-bot@ambertraining.local";
 
@@ -109,7 +110,7 @@ describe("buildSafeguardingEmailBody", () => {
         "Log in to the Amber admin console to review.",
         "",
         "Do NOT reply to this email. This is an automated alert.",
-      ].join("\n")
+      ].join("\n"),
     );
 
     // Belt-and-braces: privacy assertions phrased the way a reviewer
@@ -212,9 +213,7 @@ describe("dispatch latency metric", () => {
     });
 
     const warnHit = warnSpy.mock.calls.find((args) =>
-      typeof args[1] === "string"
-        ? /exceeded 5000ms SLA/.test(args[1])
-        : false
+      typeof args[1] === "string" ? /exceeded 5000ms SLA/.test(args[1]) : false,
     );
     expect(warnHit).toBeDefined();
     const meta = warnHit?.[0] as { dispatch_latency_ms: number };
@@ -237,7 +236,7 @@ describe("dispatch latency metric", () => {
     const infoHit = infoSpy.mock.calls.find((args) =>
       typeof args[1] === "string"
         ? args[1] === "Safeguarding alert email sent"
-        : false
+        : false,
     );
     expect(infoHit).toBeDefined();
     const meta = infoHit?.[0] as {
@@ -287,7 +286,7 @@ describe("processNotifications dispatcher", () => {
     } as never;
 
     await expect(processNotifications(fakeJob)).rejects.toThrow(
-      "Invalid safeguarding-alert payload"
+      "Invalid safeguarding-alert payload",
     );
     expect(sendMailMock).not.toHaveBeenCalled();
   });
@@ -296,7 +295,12 @@ describe("processNotifications dispatcher", () => {
     const fakeJob = {
       id: "test-job-3",
       name: "teacher_message",
-      data: { channel: "email", recipientId: "x", type: "teacher_message", payload: {} },
+      data: {
+        channel: "email",
+        recipientId: "x",
+        type: "teacher_message",
+        payload: {},
+      },
     } as never;
 
     const result = await processNotifications(fakeJob);
