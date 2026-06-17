@@ -9,6 +9,9 @@ import {
   processTurn,
   startSession,
   endSession,
+  synthesizeTts,
+  transcribeStt,
+  getVoiceCapabilities,
 } from "../controllers/aiSession.controller";
 
 /**
@@ -68,6 +71,40 @@ router.post(
   requireEsolLearner,
   requireOrgContext,
   endSession,
+);
+
+/**
+ * Voice (F28). All learner-scoped + org-scoped, same chain as /turn.
+ *
+ *   GET  /voice-capabilities — what controls to render (tts/stt flags)
+ *   POST /tts                — synthesise a line (TTS OUT, universal)
+ *   POST /stt                — transcribe an utterance (STT IN, opt-in)
+ *
+ * The aiTurnLimiter is reused on /tts + /stt — they fire at roughly
+ * turn frequency and the same per-IP ceiling is the right guard.
+ */
+router.get(
+  "/voice-capabilities",
+  isAuthenticated,
+  requireEsolLearner,
+  requireOrgContext,
+  getVoiceCapabilities,
+);
+router.post(
+  "/tts",
+  isAuthenticated,
+  requireEsolLearner,
+  requireOrgContext,
+  aiTurnLimiter,
+  synthesizeTts,
+);
+router.post(
+  "/stt",
+  isAuthenticated,
+  requireEsolLearner,
+  requireOrgContext,
+  aiTurnLimiter,
+  transcribeStt,
 );
 
 export default router;
