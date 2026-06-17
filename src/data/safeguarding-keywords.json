@@ -147,5 +147,92 @@
     "pattern": "/\\bbreak(?:ing)?\\s+down\\b/i",
     "category": "mental_health_crisis",
     "severity": "low"
+  },
+
+  {
+    "language": "ar",
+    "pattern": "أريد أن أموت",
+    "category": "self_harm",
+    "severity": "high",
+    "notes": "STARTER — direct ideation 'I want to die'. REQUIRES safeguarding-lead + native Arabic review before pilot; not an exhaustive bank."
+  },
+  {
+    "language": "ar",
+    "pattern": "سأقتل نفسي",
+    "category": "self_harm",
+    "severity": "high",
+    "notes": "STARTER — 'I will kill myself'. REQUIRES safeguarding-lead + native review."
+  },
+  {
+    "language": "ar",
+    "pattern": "أؤذي نفسي",
+    "category": "self_harm",
+    "severity": "high",
+    "notes": "STARTER — 'I hurt myself'. REQUIRES review."
+  },
+  {
+    "language": "ar",
+    "pattern": "يضربني",
+    "category": "domestic_abuse",
+    "severity": "high",
+    "notes": "STARTER — 'he hits me'. REQUIRES review."
+  },
+
+  {
+    "language": "tr",
+    "pattern": "ölmek istiyorum",
+    "category": "self_harm",
+    "severity": "high",
+    "notes": "STARTER — direct ideation 'I want to die'. REQUIRES safeguarding-lead + native Turkish review before pilot; not an exhaustive bank."
+  },
+  {
+    "language": "tr",
+    "pattern": "kendimi öldüreceğim",
+    "category": "self_harm",
+    "severity": "high",
+    "notes": "STARTER — 'I will kill myself'. REQUIRES review."
+  },
+  {
+    "language": "tr",
+    "pattern": "kendime zarar veriyorum",
+    "category": "self_harm",
+    "severity": "high",
+    "notes": "STARTER — 'I am harming myself'. REQUIRES review."
+  },
+  {
+    "language": "tr",
+    "pattern": "beni dövüyor",
+    "category": "domestic_abuse",
+    "severity": "high",
+    "notes": "STARTER — 'he beats me'. REQUIRES review."
+  },
+
+  {
+    "language": "yue",
+    "pattern": "我想死",
+    "category": "self_harm",
+    "severity": "high",
+    "notes": "STARTER — direct ideation 'I want to die'. REQUIRES safeguarding-lead + native Cantonese review before pilot; not an exhaustive bank."
+  },
+  {
+    "language": "yue",
+    "pattern": "我想自殺",
+    "category": "self_harm",
+    "severity": "high",
+    "notes": "STARTER — 'I want to commit suicide'. REQUIRES review."
+  },
+  {
+    "language": "yue",
+    "pattern": "傷害自己",
+    "category": "self_harm",
+    "severity": "high",
+    "notes": "STARTER — 'harm myself'. REQUIRES review."
+  },
+  {
+    "language": "yue",
+    "pattern": "佢打我",
+    "category": "domestic_abuse",
+    "severity": "high",
+    "notes": "STARTER — Cantonese 'he hits me'. REQUIRES review."
   }
 ]

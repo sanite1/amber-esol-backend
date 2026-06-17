@@ -46,7 +46,15 @@ export type SafeguardingBankCategory =
   | "exploitation"
   | "mental_health_crisis";
 
-export type SafeguardingBankLanguage = "en" | "ar" | "so" | "fa" | "zh";
+export type SafeguardingBankLanguage =
+  | "en"
+  | "ar"
+  | "yue"
+  | "tr"
+  // deferred banks (kept; fall back to en when empty)
+  | "so"
+  | "fa"
+  | "zh";
 
 type Bank = Record<
   SafeguardingBankCategory,
@@ -106,26 +114,34 @@ export const reloadSafeguardingBankFromDb = async (): Promise<void> => {
   try {
     let rows = await SafeguardingMessage.find({}).lean();
 
-    if (rows.length === 0) {
-      const fileBank = loadBank();
-      if (fileBank) {
-        const seed: Array<{
-          category: string;
-          language: string;
-          text: string;
-        }> = [];
-        for (const [category, langs] of Object.entries(fileBank)) {
-          for (const [language, text] of Object.entries(langs)) {
-            seed.push({ category, language, text: text ?? "" });
+    // Additive reconcile: insert any (category, language) pair present
+    // in the JSON file but missing from Mongo. Never overwrites an
+    // existing row, so admin CMS edits are preserved AND newly-added
+    // languages (e.g. tr/yue) propagate into an already-seeded DB on
+    // next boot without a manual migration.
+    const fileBank = loadBank();
+    if (fileBank) {
+      const existing = new Set(rows.map((r) => `${r.category}|${r.language}`));
+      const toInsert: Array<{
+        category: string;
+        language: string;
+        text: string;
+      }> = [];
+      for (const [category, langs] of Object.entries(fileBank)) {
+        for (const [language, text] of Object.entries(langs)) {
+          if (!existing.has(`${category}|${language}`)) {
+            toInsert.push({ category, language, text: text ?? "" });
           }
         }
-        await SafeguardingMessage.insertMany(seed, { ordered: false }).catch(
-          () => undefined, // unique-index races on parallel boots are fine
-        );
+      }
+      if (toInsert.length > 0) {
+        await SafeguardingMessage.insertMany(toInsert, {
+          ordered: false,
+        }).catch(() => undefined); // unique-index races on parallel boots are fine
         rows = await SafeguardingMessage.find({}).lean();
         logger.info(
-          { seeded: seed.length },
-          "Safeguarding messages seeded into Mongo from JSON file",
+          { seeded: toInsert.length },
+          "Safeguarding messages: inserted missing (category,language) pairs from JSON",
         );
       }
     }
@@ -161,11 +177,12 @@ export const getSafeguardingBankSnapshot = (): Bank | null => bank;
 // ─────────────────────────────────────────────────────────────────────
 
 /**
- * Map the wizard's free-text L1 (User.l1Language) onto the 5 codes the
- * pre-cache bank ships with. Pashto degrades to Farsi script (`fa`) —
- * Pashto speakers in the UK are typically literate in Dari/Farsi; the
- * brief flags this as an MVP-acceptable degradation. English is the
- * universal fall-back when L1 is missing or unrecognised.
+ * Map the learner's free-text L1 (User.l1Language) onto a bank code.
+ *
+ * MVP banks: en, ar, yue (Cantonese — its own bank now), tr (Turkish).
+ * Deferred banks kept for existing learners: so, fa, zh. Pashto degrades
+ * to Farsi script (`fa`); generic/Mandarin Chinese stays `zh`. English
+ * is the universal fall-back when L1 is missing or unrecognised.
  *
  * Case-insensitive, whitespace-tolerant.
  */
@@ -182,10 +199,18 @@ export const mapL1ToLanguageCode = (
     case "ar":
     case "arabic":
       return "ar";
+    case "yue":
+    case "yue-hk":
+    case "cantonese":
+      return "yue";
+    case "tr":
+    case "turkish":
+      return "tr";
     case "so":
     case "somali":
       return "so";
     case "fa":
+    case "fa-af":
     case "dari":
     case "farsi":
     case "persian":
@@ -197,7 +222,6 @@ export const mapL1ToLanguageCode = (
     case "zh":
     case "zh-hk":
     case "chinese":
-    case "cantonese":
     case "mandarin":
       return "zh";
     default:

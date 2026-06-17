@@ -2,6 +2,7 @@ import SafeguardingKeyword, {
   SafeguardingCategory,
   SafeguardingSeverity,
 } from "../models/SafeguardingKeyword";
+import { toSilkLanguage } from "../config/languages";
 import logger from "../config/logger";
 
 /**
@@ -117,14 +118,29 @@ const NO_MATCH: ScanResult = {
  * Synchronously scan a learner message. Returns the first match (highest
  * severity first), or NO_MATCH if nothing fired.
  *
- * If `lang` has no patterns, falls back to English — better to over-trigger
- * than miss a disclosure because we don't have L1 keywords yet.
+ * `lang` is the learner's raw L1 (e.g. "turkish", "Cantonese", "fa-AF");
+ * it's normalised to a canonical Silk code (tr, yue, …) so the L1
+ * pattern bank is actually consulted — without this, every non-English
+ * learner silently fell back to the English bank.
+ *
+ * If the normalised language has no patterns, falls back to English —
+ * better to over-trigger than miss a disclosure for want of L1 keywords.
  */
 const scan = (message: string, lang: string): ScanResult => {
   if (!message || message.length === 0) return NO_MATCH;
 
   const haystackLower = message.toLowerCase();
-  const candidates = cache.get(lang) ?? cache.get("en") ?? [];
+  const code = toSilkLanguage(lang);
+  // Scan the learner's L1 bank AND the English bank, always. Learners
+  // practise IN English, so a disclosure is just as likely to arrive in
+  // English as in their L1 — checking only the L1 bank would miss it.
+  // Merge both and re-sort by severity so the most serious match across
+  // either language wins.
+  const l1Patterns = cache.get(code) ?? [];
+  const enPatterns = code === "en" ? [] : (cache.get("en") ?? []);
+  const candidates = [...l1Patterns, ...enPatterns].sort(
+    (a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity],
+  );
 
   for (const k of candidates) {
     if (k.matcher.kind === "literal") {

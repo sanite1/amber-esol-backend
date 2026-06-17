@@ -1,14 +1,18 @@
 {
   "self_harm": {
     "en": "Thank you for telling me — that took courage. You don't have to face this alone. Samaritans is open 24 hours a day on 116 123 (free from any UK phone), or you can text SHOUT to 85258 if you prefer not to talk out loud. I'm here when you're ready to keep practising English.",
-    "ar": "",
+    "ar": "شكراً لإخباري — هذا تطلّب شجاعة. لست وحدك. منظمة Samaritans متاحة على مدار 24 ساعة على الرقم 116 123 (مجاني من أي هاتف في المملكة المتحدة)، أو يمكنك إرسال كلمة SHOUT إلى 85258 إذا كنت تفضّل عدم التحدث. أنا هنا عندما تكون مستعداً لمواصلة ممارسة الإنجليزية.",
+    "yue": "多謝你話我知 — 呢樣需要勇氣。你唔係一個人面對。Samaritans 24 小時開放,電話 116 123(英國任何電話免費),或者你可以傳送 SHOUT 到 85258。當你準備好,我哋可以繼續練習英文。",
+    "tr": "Bana söylediğin için teşekkürler — bu cesaret ister. Bununla yalnız başa çıkmak zorunda değilsin. Samaritans günde 24 saat 116 123 numarasında açık (İngiltere'deki her telefondan ücretsiz) veya konuşmak istemezsen SHOUT yazıp 85258'e gönderebilirsin. Hazır olduğunda İngilizce pratiğine devam etmek için buradayım.",
     "so": "",
     "fa": "",
     "zh": ""
   },
   "domestic_abuse": {
     "en": "Thank you for sharing that with me. What you're describing is serious, and help is available. The National Domestic Abuse Helpline (0808 2000 247) is free, 24 hours a day, and won't show on your phone bill. They speak many languages. I'm here when you want to carry on with our session.",
-    "ar": "",
+    "ar": "شكراً لمشاركتي هذا. ما تصفه أمر خطير، والمساعدة متاحة. الخط الوطني للعنف الأسري (0808 2000 247) مجاني، على مدار 24 ساعة، ولا يظهر في فاتورة هاتفك. يتحدثون لغات كثيرة. أنا هنا عندما تريد متابعة جلستنا.",
+    "yue": "多謝你同我分享。你所講嘅情況好嚴重,而且有幫助可以搵。National Domestic Abuse Helpline(0808 2000 247)免費、24 小時,亦唔會喺你嘅電話帳單上顯示。佢哋識講好多種語言。當你想繼續,我哋可以繼續堂。",
+    "tr": "Bunu benimle paylaştığın için teşekkürler. Anlattığın şey ciddi ve yardım mevcut. Ulusal Aile İçi Şiddet Yardım Hattı (0808 2000 247) ücretsizdir, günde 24 saat açıktır ve telefon faturanda görünmez. Birçok dil konuşurlar. Devam etmek istediğinde buradayım.",
     "so": "",
     "fa": "",
     "zh": ""
@@ -16,6 +20,8 @@
   "radicalisation": {
     "en": "Thank you for telling me. I've made a note of what you've said and someone from your organisation will be in touch when they can. There's nothing more you need to do right now. Would you like to carry on practising English, or would a short break be better?",
     "ar": "",
+    "yue": "",
+    "tr": "",
     "so": "",
     "fa": "",
     "zh": ""
@@ -23,6 +29,8 @@
   "child_concern": {
     "en": "Thank you for telling me — keeping children safe is really important. NSPCC has trained advisors available 24 hours a day on 0808 800 5000 (free from any UK phone). You can speak to them in confidence, and they can help you decide what to do next. Whenever you're ready, we can continue.",
     "ar": "",
+    "yue": "",
+    "tr": "",
     "so": "",
     "fa": "",
     "zh": ""
@@ -30,13 +38,17 @@
   "exploitation": {
     "en": "Thank you for sharing that. Help is available in confidence. The Modern Slavery Helpline (08000 121 700) is free, open 24 hours a day, and you can call from any UK phone. They can advise on what to do next. I'm here when you'd like to carry on with English.",
     "ar": "",
+    "yue": "",
+    "tr": "",
     "so": "",
     "fa": "",
     "zh": ""
   },
   "mental_health_crisis": {
     "en": "Thank you for telling me how you're feeling. You don't have to deal with this alone. NHS 111 (free, 24 hours a day — press option 2 for mental health) can help, or you can text SHOUT to 85258 if you'd rather not speak out loud. I'm here when you're ready to keep going.",
-    "ar": "",
+    "ar": "شكراً لإخباري بما تشعر به. لست مضطراً للتعامل مع هذا وحدك. خدمة NHS 111 (مجانية، على مدار 24 ساعة — اضغط الخيار 2 للصحة النفسية) يمكن أن تساعد، أو أرسل كلمة SHOUT إلى 85258 إذا كنت تفضّل عدم التحدث. أنا هنا عندما تكون مستعداً للمتابعة.",
+    "yue": "多謝你話我知你嘅感受。你唔使一個人面對。NHS 111(免費、24 小時 — 按 2 字選擇精神健康)可以幫到你,或者你可以傳送 SHOUT 到 85258。當你準備好,我哋可以繼續。",
+    "tr": "Nasıl hissettiğini söylediğin için teşekkürler. Bununla yalnız başa çıkmak zorunda değilsin. NHS 111 (ücretsiz, günde 24 saat — ruh sağlığı için 2'ye basın) yardımcı olabilir veya konuşmak istemezsen SHOUT yazıp 85258'e gönderebilirsin. Devam etmeye hazır olduğunda buradayım.",
     "so": "",
     "fa": "",
     "zh": ""

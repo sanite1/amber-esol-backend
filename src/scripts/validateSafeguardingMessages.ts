@@ -43,7 +43,11 @@ const CATEGORIES = [
   "mental_health_crisis",
 ] as const;
 
-const LANGUAGES = ["en", "ar", "so", "fa", "zh"] as const;
+// MVP completion gate (AI Tutor Brief §3): en, ar, yue, tr must all be
+// authored before pilot. Deferred langs (so/fa/zh) remain in the bank
+// for existing learners but fall back to English; checked too so the
+// safeguarding lead sees the full outstanding translation set.
+const LANGUAGES = ["en", "ar", "yue", "tr", "so", "fa", "zh"] as const;
 
 /**
  * Per-category signposting hints — Function 10 To-Do 1 spec.

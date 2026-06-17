@@ -25,7 +25,7 @@ export interface ISafeguardingMessage {
     | "child_concern"
     | "exploitation"
     | "mental_health_crisis";
-  language: "en" | "ar" | "so" | "fa" | "zh";
+  language: "en" | "ar" | "yue" | "tr" | "so" | "fa" | "zh";
   text: string;
   updated_by: Schema.Types.ObjectId | null;
   updated_at: Date;
@@ -47,7 +47,8 @@ const safeguardingMessageSchema = new Schema<ISafeguardingMessage>(
     },
     language: {
       type: String,
-      enum: ["en", "ar", "so", "fa", "zh"],
+      // MVP: en, ar, yue, tr. Deferred kept for existing data: so, fa, zh.
+      enum: ["en", "ar", "yue", "tr", "so", "fa", "zh"],
       required: true,
     },
     text: { type: String, default: "", maxlength: 2000 },

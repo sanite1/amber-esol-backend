@@ -6,6 +6,7 @@ import ApiError from "../errors/apiError";
 import ApiResponse from "../errors/apiResponse";
 import AISession from "../models/AISession";
 import AuditLog from "../models/AuditLog";
+import FailedJob from "../models/FailedJob";
 import SafeguardingAlert from "../models/SafeguardingAlert";
 import TurnLog from "../models/TurnLog";
 import User from "../models/User";
@@ -103,6 +104,81 @@ import { EsolLevel } from "../interfaces/placementQuestion.interface";
 import { IScenarioFile } from "../interfaces/scenario.interface";
 import ComplianceConfigService from "./ComplianceConfigService";
 import logger from "../config/logger";
+
+/**
+ * LOUD escalation when any step of the safeguarding-alert delivery
+ * fails (F22 hardening). A safeguarding disclosure that doesn't reach
+ * the DSL is a binary inspection failure, so a failure here must never
+ * be a quiet logger.error.
+ *
+ * Robust by design: writes a durable FailedJob row (surfaced on the
+ * Amber-admin Failed Jobs dashboard) FIRST — that path doesn't depend
+ * on Redis, so it survives the very outage that broke the live alert —
+ * then best-effort enqueues an admin notification, then logs FATAL.
+ * The learner has already been served the supportive pre-cache reply;
+ * this is purely about getting a human's attention.
+ */
+const escalateSafeguardingFailure = async (params: {
+  stage: "alert_create" | "audit_write" | "dsl_notify_enqueue";
+  err: unknown;
+  learnerId: Types.ObjectId | string;
+  sessionId: Types.ObjectId | string;
+  orgId: string;
+  category: string | null;
+}): Promise<void> => {
+  const errMsg =
+    params.err instanceof Error ? params.err.message : String(params.err);
+  logger.fatal(
+    {
+      stage: params.stage,
+      err: errMsg,
+      learnerId: String(params.learnerId),
+      sessionId: String(params.sessionId),
+      orgId: params.orgId,
+      category: params.category,
+    },
+    "SAFEGUARDING DELIVERY FAILURE — a disclosure may not have reached the DSL. Escalating to admin.",
+  );
+
+  // Durable, admin-visible, queue-independent record.
+  await FailedJob.create({
+    queue_name: "safeguarding-critical",
+    job_id: `sg-${String(params.sessionId)}-${Date.now()}`,
+    error: `Safeguarding ${params.stage} failed: ${errMsg}`,
+    job_data: {
+      stage: params.stage,
+      learner_id: String(params.learnerId),
+      session_id: String(params.sessionId),
+      org_id: params.orgId,
+      category: params.category,
+    },
+    attempts: 0,
+  }).catch((e) =>
+    logger.fatal(
+      { err: (e as Error).message, stage: params.stage },
+      "SAFEGUARDING ESCALATION: FailedJob write ALSO failed — manual check required",
+    ),
+  );
+
+  // Best-effort admin ping (may itself fail if the queue is the outage).
+  await notificationsQueue
+    .add(
+      "admin_job_failure",
+      {
+        channel: "email",
+        recipientId: "amber-admin",
+        type: "admin_job_failure",
+        payload: {
+          queue: "safeguarding-critical",
+          jobName: `safeguarding_${params.stage}`,
+          error: `Safeguarding ${params.stage} failed`,
+          orgId: params.orgId,
+        },
+      },
+      { priority: 1 },
+    )
+    .catch(() => undefined);
+};
 
 /**
  * Per-turn AI tutor handler — brief Function 7 To-Do 5 + Final
@@ -384,10 +460,17 @@ const recordSafeguardingTrigger = async (
       status: "open",
     });
   } catch (err) {
-    logger.error(
-      { err, learnerId: learner._id, sessionId: session._id, source },
-      "SafeguardingAlert creation failed — pre-cache reply still served",
-    );
+    // CRITICAL: with no alertDoc the DSL notification + session flag
+    // below are skipped — the disclosure would otherwise vanish. Escalate
+    // loudly so a human picks it up. Learner still gets the pre-cache reply.
+    await escalateSafeguardingFailure({
+      stage: "alert_create",
+      err,
+      learnerId: learner._id as Types.ObjectId,
+      sessionId: session._id as Types.ObjectId,
+      orgId,
+      category: triggerCategory,
+    });
   }
 
   // 2. Audit row — use the right action depending on source
@@ -423,10 +506,14 @@ const recordSafeguardingTrigger = async (
         : `Pre-Gemini keyword scan matched ${scanCategory ?? "unknown category"}`,
     compliance_config_version: ilrConfig?.version ?? null,
   }).catch((err) =>
-    logger.error(
-      { err, source },
-      "AuditLog write failed for safeguarding trigger",
-    ),
+    escalateSafeguardingFailure({
+      stage: "audit_write",
+      err,
+      learnerId: learner._id as Types.ObjectId,
+      sessionId: session._id as Types.ObjectId,
+      orgId,
+      category: triggerCategory,
+    }),
   );
 
   // 3. Notifications queue — email the DSL (brief Function 10).
@@ -457,10 +544,14 @@ const recordSafeguardingTrigger = async (
         { priority: 1 },
       )
       .catch((err) =>
-        logger.error(
-          { err, alert_id: alertDoc._id?.toString() },
-          "Failed to enqueue safeguarding-alert notification",
-        ),
+        escalateSafeguardingFailure({
+          stage: "dsl_notify_enqueue",
+          err,
+          learnerId: learner._id as Types.ObjectId,
+          sessionId: session._id as Types.ObjectId,
+          orgId,
+          category: triggerCategory,
+        }),
       );
   }
 

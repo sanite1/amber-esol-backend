@@ -30,7 +30,8 @@ const CATEGORIES = [
   "mental_health_crisis",
 ] as const;
 
-const LANGUAGES = ["en", "ar", "so", "fa", "zh"] as const;
+// MVP: en, ar, yue, tr. Deferred kept editable for existing data.
+const LANGUAGES = ["en", "ar", "yue", "tr", "so", "fa", "zh"] as const;
 
 export const listSafeguardingMessagesService =
   async (): Promise<ApiResponse> => {
