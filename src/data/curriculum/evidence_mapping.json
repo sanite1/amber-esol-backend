@@ -1,0 +1,195 @@
+{
+  "meta": {
+    "project": "Project Silk ESOL Framework",
+    "date": "2026-06-13",
+    "purpose": "Machine-readable evidence chain: for each beat and each per-turn AI data point, which ILR field it populates and which RARPA stage it satisfies, with a human-confirmation flag.",
+    "ilr_note": "Funding model 11 (Tailored Learning) or 38 (Adult Skills Fund). Non-regulated ESOL uses a Category B Z-code as LearnAimRef. In 2026/27 hours move to the HRSRecord entity. Exact current Z-code and HRSType codes are [UNVERIFIED - CONFIRM BEFORE BUILD].",
+    "rarpa_note": "Six-step L&W 2017 model; first five steps carry the assessment evidence.",
+    "human_confirm_principle": "AI judgements are formative/supporting evidence. Summative achievement, assessment reliability, eligibility and objective-negotiation require human teacher confirmation to be audit-defensible."
+  },
+  "pre_session": [
+    {
+      "data_point": "learner_identity",
+      "ilr_fields": [
+        "LearnRefNumber",
+        "ULN",
+        "Postcode",
+        "PostcodePrior",
+        "Ethnicity",
+        "Sex",
+        "LLDDHealthProb"
+      ],
+      "rarpa_stage": "Stage 1 (aims)",
+      "human_confirm": true,
+      "note": "ULN from LRS; postcode drives funder routing (GLA) and uplift."
+    },
+    {
+      "data_point": "eligibility_evidence",
+      "ilr_fields": [],
+      "rarpa_stage": "n/a (evidence pack)",
+      "human_confirm": true,
+      "note": "Documentation seen and recorded, not photocopied (GDPR)."
+    },
+    {
+      "data_point": "initial_diagnostic_assessment",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 2 (starting point)",
+      "human_confirm": true,
+      "note": "Recorded in the evidence pack; the baseline for progress."
+    },
+    {
+      "data_point": "aim_setup",
+      "ilr_fields": [
+        "LearnAimRef",
+        "AimType",
+        "AimSeqNumber",
+        "FundModel",
+        "LearnStartDate",
+        "LearnPlanEndDate",
+        "DelLocPostCode",
+        "PlanLearnHours"
+      ],
+      "rarpa_stage": "Stage 1 (aims)",
+      "human_confirm": false,
+      "note": "PlanLearnHours at learner level; LearnAimRef is the Z-code or regulated aim."
+    },
+    {
+      "data_point": "stage3_objective_negotiated",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 3 (objectives)",
+      "human_confirm": true,
+      "note": "Objective text + date + link to Stage 2 stored; learner negotiation must be evidenced."
+    }
+  ],
+  "beat_1_prepare": [
+    {
+      "data_point": "objective_activated",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 3 (engagement)",
+      "human_confirm": false,
+      "note": "The session's Stage 3 objective is timestamped as engaged."
+    },
+    {
+      "data_point": "pretask_vocabulary_primed",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 4 (formative)",
+      "human_confirm": false,
+      "note": "Vocabulary set logged to the ledger."
+    },
+    {
+      "data_point": "session_attendance_start",
+      "ilr_fields": ["PlanLearnHours (reconciliation evidence)"],
+      "rarpa_stage": "n/a (delivery evidence)",
+      "human_confirm": false,
+      "note": "Session start logged; attendance evidence behind planned hours."
+    }
+  ],
+  "beat_2_roleplay": [
+    {
+      "data_point": "turn_score",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 4 (formative)",
+      "human_confirm": true,
+      "note": "Self-scored by the same model; supporting evidence only, sample and moderate for reliability."
+    },
+    {
+      "data_point": "vocabulary_items_used",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 4 (formative)",
+      "human_confirm": false,
+      "note": "Feeds the ledger; evidences vocabulary growth and retention encounters."
+    },
+    {
+      "data_point": "skill_codes",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 4 (formative)",
+      "human_confirm": false,
+      "note": "Core Curriculum element codes (e.g. Sd/E1, Lr/E1); maps the turn to the fundable curriculum element."
+    },
+    {
+      "data_point": "teaching_mode_and_transitions",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 4 (formative)",
+      "human_confirm": false,
+      "note": "ANCHOR/BRIDGE/IMMERSION shifts evidence distance travelled."
+    },
+    {
+      "data_point": "recast_uptake",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 4 (formative)",
+      "human_confirm": false,
+      "note": "Did the learner reuse the corrected form? Formative acquisition evidence."
+    },
+    {
+      "data_point": "safeguarding_flag",
+      "ilr_fields": [],
+      "rarpa_stage": "n/a (safeguarding path)",
+      "human_confirm": true,
+      "note": "Routed to the named DSL and the referral log; never left in the lesson flow."
+    },
+    {
+      "data_point": "roleplay_time",
+      "ilr_fields": ["PlanLearnHours (reconciliation evidence)"],
+      "rarpa_stage": "n/a (delivery evidence)",
+      "human_confirm": false,
+      "note": "Delivered learning time; attendance log reconciles against planned hours."
+    }
+  ],
+  "beat_3_complete": [
+    {
+      "data_point": "session_complete",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 4 (formative)",
+      "human_confirm": false,
+      "note": "Marks the session finished; contributes to the hours record."
+    },
+    {
+      "data_point": "session_summary",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 4 summary feeding Stage 5",
+      "human_confirm": false,
+      "note": "Plain-language distance-travelled statement against the objective."
+    },
+    {
+      "data_point": "learner_self_assessment",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 4/5 (learner voice)",
+      "human_confirm": false,
+      "note": "The learner's own voice in the record, required by RARPA."
+    }
+  ],
+  "review_point": [
+    {
+      "data_point": "summative_review",
+      "ilr_fields": [
+        "CompStatus",
+        "Outcome",
+        "OutGrade",
+        "AchDate",
+        "LearnActEndDate"
+      ],
+      "rarpa_stage": "Stage 5 (summative)",
+      "human_confirm": true,
+      "note": "Teacher confirms achievement against the configurable threshold (commonly 75-80% of objectives, incl. at least one individual objective)."
+    },
+    {
+      "data_point": "assessment_moderation",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 5 QA",
+      "human_confirm": true,
+      "note": "Sampled moderation of AI formative judgements for reliability/consistency (the Ofsted-flagged risk)."
+    },
+    {
+      "data_point": "next_steps_iag",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 6 (next steps)",
+      "human_confirm": true,
+      "note": "Progression into further learning, volunteering or employment recorded."
+    }
+  ],
+  "open_flags": [
+    "[FLAG FOR EXPERT REVIEW: funding specialist] confirm this chain satisfies the GLA ASF Assurance Framework and the reliable/consistent/comparable assessment bar.",
+    "[FLAG FOR EXPERT REVIEW: funding specialist] confirm whether AI session logs are accepted attendance evidence for planned hours, and the current Z-code/hours band.",
+    "[FLAG FOR EXPERT REVIEW: DELTA practitioner] confirm the formative data points genuinely evidence progress against the objectives."
+  ]
+}

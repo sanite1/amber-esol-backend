@@ -1,0 +1,564 @@
+{
+  "meta": {
+    "project": "Project Silk ESOL Framework",
+    "date": "2026-06-13",
+    "curriculum_anchor": "CEFR (primary); Adult ESOL Core Curriculum 2001 (secondary, UK functional context)",
+    "mapping_convention": "curriculum/empirical convention (locked): E1=A1, E2=A1/A2, E3=A2, L1=B1, L2=B2. NB the SQA/UK NARIC qualification-award chart sits one level higher from E2 up; state the convention on any certification-facing equivalence claim.",
+    "rarpa_bank_note": "Five representative objectives per skill domain per level are included here for build use; the full bank of eight per domain per level is in analysis/rarpa_objectives.md.",
+    "flags": [
+      "[FLAG FOR EXPERT REVIEW: DELTA practitioner] validate can-do selection, grammar sequencing, vocabulary load, objective challenge",
+      "[FLAG FOR EXPERT REVIEW: funding specialist] confirm objectives meet GLA RARPA expectations"
+    ]
+  },
+  "levels": {
+    "E1": {
+      "cefr_equivalent": "A1",
+      "can_do": {
+        "listening": "Recognise familiar words and very basic phrases about self, family and immediate surroundings when speech is slow and clear.",
+        "reading": "Understand familiar names, words and very simple sentences on notices, posters and forms.",
+        "spoken_interaction": "Interact simply if the other person repeats or rephrases slowly; ask and answer simple questions on immediate need.",
+        "spoken_production": "Use simple phrases to describe where I live and people I know.",
+        "writing": "Write simple isolated phrases and sentences; fill in a form with personal details."
+      },
+      "grammar_targets": [
+        "to be",
+        "subject pronouns and possessive determiners",
+        "present simple of common verbs",
+        "singular/plural nouns",
+        "basic wh- questions",
+        "imperatives",
+        "demonstratives",
+        "there is/are",
+        "have got",
+        "prepositions of place",
+        "can (ability)"
+      ],
+      "vocabulary_target_size": "500-750 cumulative receptive word families (NGSL first 500-750)",
+      "vocab_per_session": "3-5 new items",
+      "bridge_l1_ratio": "70:30 to 60:40 (L1:English)",
+      "anchor_triggers": [
+        "no response or L1-only response to an English prompt",
+        "clarification request",
+        "utterance with breakdown of meaning",
+        "affective distress or safeguarding cue"
+      ],
+      "immersion_triggers": [
+        "intelligible on-topic English across consecutive turns without requesting L1",
+        "self-repair after a recast",
+        "extends the exchange unprompted"
+      ],
+      "retention_encounters": "8-14 encounters per item for receptive knowledge",
+      "reinforcement_interval": "expanding by calendar time: ~1 day, then ~3 days, then ~1-2 weeks, shorten on lapse",
+      "rarpa_objectives_bank": {
+        "speaking_listening": [
+          "By the end of week 4, I can introduce myself by saying my name, my country and my first language in a spoken exchange.",
+          "By the end of week 6, I can make a GP appointment in a roleplay by giving my name, date of birth and one reason for the visit.",
+          "By week 6, I can ask 'how much is it?' and say the price back when shopping in a roleplay.",
+          "By the end of the unit, I can respond to five everyday spoken questions about my family with single words or short phrases.",
+          "By week 5, I can follow three simple spoken instructions in a roleplay."
+        ],
+        "reading": [
+          "By week 4, I can recognise and point to my name, date of birth and address on a simple form.",
+          "By the end of the unit, I can read ten everyday signs and say what each one means.",
+          "By week 5, I can find the date and time on a simple appointment letter or card.",
+          "By week 6, I can match five written words to the correct picture.",
+          "By the end of the unit, I can read the numbers 1 to 100 and say a price on a label."
+        ],
+        "writing": [
+          "By week 4, I can write my full name, date of birth and nationality on a simple form.",
+          "By the end of the unit, I can copy my address accurately into the correct field of a form.",
+          "By week 6, I can write three short phrases about myself.",
+          "By the end of the unit, I can fill in a simple registration form with my personal details.",
+          "By the end of the unit, I can write a one-line message saying I cannot come to an appointment."
+        ]
+      }
+    },
+    "E2": {
+      "cefr_equivalent": "A1/A2 boundary",
+      "can_do": {
+        "listening": "Understand high-frequency phrases and catch the main point in short, clear, simple messages and announcements.",
+        "reading": "Read short simple texts; find predictable information in everyday material.",
+        "spoken_interaction": "Handle short routine exchanges of information on familiar topics.",
+        "spoken_production": "Use a series of phrases to describe family, living conditions, background and recent job.",
+        "writing": "Write a series of simple phrases and sentences linked with and, but, because; short notes and messages."
+      },
+      "grammar_targets": [
+        "present continuous",
+        "past simple of to be and regular past",
+        "present vs continuous contrast",
+        "prepositions of time and movement",
+        "can/can't",
+        "basic connectives",
+        "object pronouns"
+      ],
+      "vocabulary_target_size": "1,000-1,250 cumulative",
+      "vocab_per_session": "4-6 new items",
+      "bridge_l1_ratio": "50:50 to 40:60 (L1:English)",
+      "anchor_triggers": [
+        "L1-only response to an English prompt",
+        "clarification request",
+        "breakdown of meaning",
+        "distress or safeguarding cue"
+      ],
+      "immersion_triggers": [
+        "mixed L1/English completing the task with support",
+        "self-repair after recast",
+        "short exchange sustained"
+      ],
+      "retention_encounters": "8-14 encounters per item",
+      "reinforcement_interval": "expanding by calendar time from ~1 day",
+      "rarpa_objectives_bank": {
+        "speaking_listening": [
+          "By week 6, I can describe my family in four or five linked spoken sentences using and, but, because.",
+          "By week 5, I can report a simple housing repair in a roleplay, saying what is broken and where.",
+          "By the end of the unit, I can ask and answer at least five questions about a daily routine.",
+          "By week 6, I can explain why I missed an appointment using the past simple.",
+          "By week 4, I can catch the main point of a short spoken announcement and say what it was about."
+        ],
+        "reading": [
+          "By week 5, I can find the price, date and place in a short advert or leaflet.",
+          "By the end of the unit, I can read a short text message and say what action it asks me to take.",
+          "By week 6, I can read a simple appointment letter and say the date, time and sender.",
+          "By week 4, I can find a time, platform or price in a timetable.",
+          "By the end of the unit, I can read three-to-four-step instructions and put them in order."
+        ],
+        "writing": [
+          "By week 6, I can write three to four sentences about my family linked with simple connectors.",
+          "By week 5, I can write a short note to my child's teacher to say my child is ill.",
+          "By the end of the unit, I can complete a form with personal details and one short written answer.",
+          "By week 6, I can write a short message to report a repair.",
+          "By the end of the unit, I can write four sentences about my present or recent job."
+        ]
+      }
+    },
+    "E3": {
+      "cefr_equivalent": "A2",
+      "can_do": {
+        "listening": "Understand phrases and the main point in short clear messages on areas of immediate relevance.",
+        "reading": "Find specific information in everyday material; understand short simple personal letters.",
+        "spoken_interaction": "Communicate in simple routine tasks; manage short social exchanges.",
+        "spoken_production": "Describe in simple terms family, living conditions, education and job.",
+        "writing": "Write short simple connected text and a simple personal letter."
+      },
+      "grammar_targets": [
+        "past simple irregular",
+        "present perfect (experience/recent)",
+        "going to and will futures",
+        "comparatives and superlatives",
+        "adverbs of frequency",
+        "modals of advice and obligation (should, must, have to)",
+        "first conditional",
+        "countable/uncountable and quantifiers"
+      ],
+      "vocabulary_target_size": "1,500-2,000 cumulative (toward NGSL 2,000 core)",
+      "vocab_per_session": "5-7 new items",
+      "bridge_l1_ratio": "40:60 to 30:70 (L1:English)",
+      "anchor_triggers": [
+        "breakdown of meaning",
+        "repeated clarification requests",
+        "distress or safeguarding cue"
+      ],
+      "immersion_triggers": [
+        "intelligible English over consecutive turns",
+        "self-repair and uptake after recast",
+        "keeps an exchange going"
+      ],
+      "retention_encounters": "8-14 encounters per item",
+      "reinforcement_interval": "expanding by calendar time",
+      "rarpa_objectives_bank": {
+        "speaking_listening": [
+          "By the end of the unit, I can describe a past event in six or more spoken sentences using the past simple.",
+          "By week 6, I can give and respond to advice in a roleplay using should and have to.",
+          "By the end of the course, I can register my child at a school in a roleplay, giving the information requested and asking one question.",
+          "By week 5, I can explain a problem with a bill or letter and ask what to do next.",
+          "By week 6, I can describe my plans for next week using going to and will."
+        ],
+        "reading": [
+          "By the end of the unit, I can read a short personal letter or email and answer three questions about it.",
+          "By week 6, I can find gross pay, a named deduction and net pay on a payslip.",
+          "By the end of the course, I can read a short public-service notice and say what I need to do and by when.",
+          "By the end of the unit, I can skim a short text and say what it is mainly about.",
+          "By week 5, I can read an email from a GP or school and identify the action and the deadline."
+        ],
+        "writing": [
+          "By the end of the unit, I can write a short connected text of six or more sentences about a past experience.",
+          "By week 6, I can write a short personal email asking for information from a service.",
+          "By the end of the course, I can write a message reporting a problem and requesting a specific action.",
+          "By the end of the unit, I can complete a longer form including a short free-text reason.",
+          "By the end of the course, I can write a reply to a school email confirming attendance and asking one question."
+        ]
+      }
+    },
+    "L1": {
+      "cefr_equivalent": "B1",
+      "can_do": {
+        "listening": "Understand the main points of clear standard speech on familiar matters in work, school and leisure.",
+        "reading": "Understand high-frequency everyday and job-related texts and descriptions of feelings in personal letters.",
+        "spoken_interaction": "Deal with most situations while travelling; enter unprepared into conversation on familiar topics.",
+        "spoken_production": "Connect phrases to describe experiences and hopes; briefly give reasons and explanations.",
+        "writing": "Write straightforward connected text on familiar topics; personal letters describing experiences."
+      },
+      "grammar_targets": [
+        "present perfect continuous",
+        "past continuous",
+        "defining relative clauses",
+        "reported statements",
+        "wider modal range",
+        "first and second conditional",
+        "passive (present/past simple)",
+        "phrasal verbs"
+      ],
+      "vocabulary_target_size": "2,500-3,000 cumulative (completing high-frequency core, ~95% spoken coverage)",
+      "vocab_per_session": "6-8 new items",
+      "bridge_l1_ratio": "25:75 to 15:85 (L1:English)",
+      "anchor_triggers": [
+        "genuine breakdown of understanding",
+        "distress or safeguarding cue"
+      ],
+      "immersion_triggers": [
+        "fluent intelligible English",
+        "uptake and self-repair",
+        "extends and elaborates unprompted"
+      ],
+      "retention_encounters": "8-14 encounters per item",
+      "reinforcement_interval": "expanding by calendar time, longer gaps for well-learned items",
+      "rarpa_objectives_bank": {
+        "speaking_listening": [
+          "By the end of the course, I can explain a problem with a service and negotiate a resolution in a roleplay, sustaining at least eight turns.",
+          "By week 6, I can give reasons and explanations for a decision using a range of connectors.",
+          "By the end of the course, I can handle a bank-account-opening roleplay, answering questions and querying anything unclear.",
+          "By week 8, I can take part in an unprepared conversation on a familiar topic and ask follow-up questions.",
+          "By week 6, I can use the present perfect to talk about my experience since arriving in the UK."
+        ],
+        "reading": [
+          "By the end of the course, I can read an official text and explain its main points in my own words.",
+          "By week 8, I can read a payslip or tenancy agreement and explain each main section.",
+          "By the end of the unit, I can identify the writer's purpose and main argument in a short factual text.",
+          "By week 6, I can read an official email and identify the request and any implied deadline.",
+          "By the end of the unit, I can read guidelines and identify what I must, should and must not do."
+        ],
+        "writing": [
+          "By the end of the course, I can write a connected text of three or more paragraphs on a familiar topic.",
+          "By week 6, I can write a formal email of complaint stating the problem, the impact and the action I want.",
+          "By the end of the course, I can write a reply to an official email answering each point raised.",
+          "By the end of the unit, I can write clear instructions for a multi-step process.",
+          "By week 8, I can write a short text giving reasons for and against a choice."
+        ]
+      }
+    },
+    "L2": {
+      "cefr_equivalent": "B2",
+      "can_do": {
+        "listening": "Follow extended speech and complex argument on reasonably familiar topics; most TV news and current affairs.",
+        "reading": "Read articles and reports with particular viewpoints; understand contemporary prose.",
+        "spoken_interaction": "Interact with fluency and spontaneity; take an active part in discussion, sustaining views.",
+        "spoken_production": "Give clear detailed descriptions; explain a viewpoint with advantages and disadvantages.",
+        "writing": "Write clear detailed text, an essay or report giving reasons for or against a viewpoint."
+      },
+      "grammar_targets": [
+        "past perfect",
+        "full conditional range incl. third conditional",
+        "full passive",
+        "reported questions and commands",
+        "non-defining relative clauses",
+        "modals of deduction",
+        "complex subordination and discourse markers"
+      ],
+      "vocabulary_target_size": "3,500-5,000 cumulative (beyond NGSL into topic/academic)",
+      "vocab_per_session": "8-10 new items",
+      "bridge_l1_ratio": "10:90 to 0:100 (L1:English)",
+      "anchor_triggers": [
+        "genuine breakdown (rare)",
+        "distress or safeguarding cue"
+      ],
+      "immersion_triggers": [
+        "sustained fluent English",
+        "self-correction",
+        "structured extended argument"
+      ],
+      "retention_encounters": "8-14 encounters per item",
+      "reinforcement_interval": "expanding by calendar time, long gaps for mastered items",
+      "rarpa_objectives_bank": {
+        "speaking_listening": [
+          "By the end of the course, I can present a viewpoint on a topical issue, giving advantages and disadvantages.",
+          "By week 8, I can take an active part in a discussion, accounting for and sustaining my views.",
+          "By week 6, I can challenge a decision in a formal roleplay, stating my grounds.",
+          "By the end of the unit, I can give a clear, detailed spoken description of a process.",
+          "By week 6, I can interview-practise, answering competency questions with structured examples."
+        ],
+        "reading": [
+          "By the end of the course, I can read an article that takes a viewpoint and identify the stance and supporting points.",
+          "By week 8, I can read a contract or formal policy and explain my rights and obligations.",
+          "By the end of the unit, I can distinguish fact from opinion in contemporary writing.",
+          "By week 6, I can read two articles on the same issue and compare their arguments.",
+          "By the end of the unit, I can locate and synthesise information from across a long text."
+        ],
+        "writing": [
+          "By the end of the course, I can write a clear, detailed essay or report giving reasons for or against a viewpoint.",
+          "By week 8, I can write a formal letter highlighting the personal significance of an event.",
+          "By the end of the unit, I can write a structured argument with introduction, body and conclusion.",
+          "By week 6, I can write a covering message for a job application tailored to the role.",
+          "By the end of the unit, I can redraft my own writing to improve clarity and cohesion after feedback."
+        ]
+      }
+    }
+  },
+  "functional_areas": [
+    "Health and wellbeing",
+    "Money and finance",
+    "Housing",
+    "Personal and social",
+    "Education and children",
+    "Transport and travel",
+    "Employment and work",
+    "Services and digital communication"
+  ],
+  "scenario_library_plan": [
+    {
+      "id": "health_gp_appointment",
+      "area": "Health and wellbeing",
+      "level_range": "E1-L2",
+      "mvp": true
+    },
+    {
+      "id": "health_describe_symptoms",
+      "area": "Health and wellbeing",
+      "level_range": "E2-L2",
+      "mvp": false
+    },
+    {
+      "id": "health_pharmacy_request",
+      "area": "Health and wellbeing",
+      "level_range": "E1-E3",
+      "mvp": false
+    },
+    {
+      "id": "health_understand_gp_email",
+      "area": "Health and wellbeing",
+      "level_range": "E3-L2",
+      "mvp": true
+    },
+    {
+      "id": "health_register_with_gp",
+      "area": "Health and wellbeing",
+      "level_range": "E2-L1",
+      "mvp": false
+    },
+    {
+      "id": "money_read_payslip",
+      "area": "Money and finance",
+      "level_range": "E3-L2",
+      "mvp": true
+    },
+    {
+      "id": "money_open_bank_account",
+      "area": "Money and finance",
+      "level_range": "E3-L2",
+      "mvp": true
+    },
+    {
+      "id": "money_shopping_prices_change",
+      "area": "Money and finance",
+      "level_range": "E1-E2",
+      "mvp": false
+    },
+    {
+      "id": "money_understand_a_bill",
+      "area": "Money and finance",
+      "level_range": "E3-L1",
+      "mvp": false
+    },
+    {
+      "id": "money_query_a_charge",
+      "area": "Money and finance",
+      "level_range": "L1-L2",
+      "mvp": false
+    },
+    {
+      "id": "money_budgeting_conversation",
+      "area": "Money and finance",
+      "level_range": "L1-L2",
+      "mvp": false
+    },
+    {
+      "id": "housing_report_repair",
+      "area": "Housing",
+      "level_range": "E2-L2",
+      "mvp": true
+    },
+    {
+      "id": "housing_understand_tenancy",
+      "area": "Housing",
+      "level_range": "L1-L2",
+      "mvp": false
+    },
+    {
+      "id": "housing_contact_council",
+      "area": "Housing",
+      "level_range": "E3-L1",
+      "mvp": false
+    },
+    {
+      "id": "housing_neighbour_issue",
+      "area": "Housing",
+      "level_range": "E3-L2",
+      "mvp": false
+    },
+    {
+      "id": "housing_utilities_setup",
+      "area": "Housing",
+      "level_range": "E3-L1",
+      "mvp": false
+    },
+    {
+      "id": "personal_introduce_yourself",
+      "area": "Personal and social",
+      "level_range": "E1-L2",
+      "mvp": true
+    },
+    {
+      "id": "personal_small_talk",
+      "area": "Personal and social",
+      "level_range": "E2-L1",
+      "mvp": false
+    },
+    {
+      "id": "personal_describe_family",
+      "area": "Personal and social",
+      "level_range": "E1-E3",
+      "mvp": false
+    },
+    {
+      "id": "personal_make_arrangements",
+      "area": "Personal and social",
+      "level_range": "E2-L1",
+      "mvp": false
+    },
+    {
+      "id": "personal_share_your_story",
+      "area": "Personal and social",
+      "level_range": "L1-L2",
+      "mvp": false
+    },
+    {
+      "id": "education_register_child_school",
+      "area": "Education and children",
+      "level_range": "E2-L2",
+      "mvp": true
+    },
+    {
+      "id": "education_parents_evening",
+      "area": "Education and children",
+      "level_range": "E3-L2",
+      "mvp": false
+    },
+    {
+      "id": "education_understand_school_letter",
+      "area": "Education and children",
+      "level_range": "E2-L1",
+      "mvp": false
+    },
+    {
+      "id": "education_report_child_absence",
+      "area": "Education and children",
+      "level_range": "E1-E3",
+      "mvp": false
+    },
+    {
+      "id": "education_enrol_on_a_course",
+      "area": "Education and children",
+      "level_range": "E3-L2",
+      "mvp": false
+    },
+    {
+      "id": "transport_use_public_transport",
+      "area": "Transport and travel",
+      "level_range": "E1-L2",
+      "mvp": true
+    },
+    {
+      "id": "transport_buy_a_ticket",
+      "area": "Transport and travel",
+      "level_range": "E1-E2",
+      "mvp": false
+    },
+    {
+      "id": "transport_ask_directions",
+      "area": "Transport and travel",
+      "level_range": "E1-E3",
+      "mvp": false
+    },
+    {
+      "id": "transport_report_a_problem",
+      "area": "Transport and travel",
+      "level_range": "E3-L1",
+      "mvp": false
+    },
+    {
+      "id": "employment_introduce_your_job",
+      "area": "Employment and work",
+      "level_range": "E2-L1",
+      "mvp": false
+    },
+    {
+      "id": "employment_job_interview",
+      "area": "Employment and work",
+      "level_range": "L1-L2",
+      "mvp": false
+    },
+    {
+      "id": "employment_understand_rota",
+      "area": "Employment and work",
+      "level_range": "E2-E3",
+      "mvp": false
+    },
+    {
+      "id": "employment_call_in_sick",
+      "area": "Employment and work",
+      "level_range": "E2-L1",
+      "mvp": false
+    },
+    {
+      "id": "employment_workplace_rights",
+      "area": "Employment and work",
+      "level_range": "L1-L2",
+      "mvp": false
+    },
+    {
+      "id": "employment_apply_for_a_job",
+      "area": "Employment and work",
+      "level_range": "L1-L2",
+      "mvp": false
+    },
+    {
+      "id": "services_understand_official_email",
+      "area": "Services and digital communication",
+      "level_range": "E3-L2",
+      "mvp": false
+    },
+    {
+      "id": "services_fill_online_form",
+      "area": "Services and digital communication",
+      "level_range": "E1-L1",
+      "mvp": false
+    },
+    {
+      "id": "services_phone_a_service",
+      "area": "Services and digital communication",
+      "level_range": "E3-L2",
+      "mvp": false
+    },
+    {
+      "id": "services_make_a_complaint",
+      "area": "Services and digital communication",
+      "level_range": "L1-L2",
+      "mvp": false
+    },
+    {
+      "id": "services_book_an_appointment_online",
+      "area": "Services and digital communication",
+      "level_range": "E2-L1",
+      "mvp": false
+    }
+  ]
+}

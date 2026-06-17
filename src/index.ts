@@ -85,6 +85,7 @@ import { createBullBoardAdapter } from "./lib/bullBoard";
 import { isAuthenticated, isAdmin } from "./middlewares/authMiddleWare";
 import { requireBullBoardToken } from "./middlewares/bullBoardToken";
 import ComplianceConfigService from "./services/ComplianceConfigService";
+import CurriculumLevelService from "./services/curriculumLevel.service";
 import SafeguardingDetector from "./services/safeguardingDetector.service";
 import PostcodeRouter from "./services/postcodeRouter.service";
 import FALACache from "./services/falaCache.service";
@@ -152,6 +153,20 @@ app.use(demoModeHeader);
       "ComplianceConfig loadAll failed at boot. Refusing to start.",
     );
     process.exit(1);
+  }
+
+  // ── Prime the curriculum cache (AI Tutor Build Brief §1.1) ──
+  // CurriculumLevel docs drive Layer 3/5 prompt build, placement
+  // objectives, vocab retention thresholds and the Bridge mode
+  // controller. Non-fatal if empty (seed via `npm run seed:curriculum`)
+  // — downstream reads fall back rather than refusing to serve.
+  try {
+    await CurriculumLevelService.loadAll();
+  } catch (err) {
+    logger.error(
+      { err: (err as Error).message },
+      "CurriculumLevel loadAll failed at boot — continuing with empty cache",
+    );
   }
 
   // ── Initialise Vertex AI Gemini singleton at boot ──

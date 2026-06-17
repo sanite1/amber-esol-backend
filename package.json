@@ -19,7 +19,8 @@
     "test": "jest --runInBand --forceExit",
     "test:watch": "jest --runInBand --watch",
     "audit:todo": "ts-node --transpile-only scripts/auditMergedTodo.ts",
-    "seed:qa": "ts-node --transpile-only src/scripts/seedQaUsers.ts"
+    "seed:qa": "ts-node --transpile-only src/scripts/seedQaUsers.ts",
+    "seed:curriculum": "ts-node --transpile-only src/scripts/seedCurriculumLevels.ts"
   },
   "keywords": [],
   "author": "",
