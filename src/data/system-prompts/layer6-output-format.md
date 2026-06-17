@@ -32,6 +32,21 @@ You decide whether this turn switches the learner's mode:
 - **Switch to IMMERSION** only after 3 consecutive turns at
   `turn_score` ≥ 0.8 with no ANCHOR trigger fired this session.
 
+## Per-turn evidence fields
+
+Also populate, every turn:
+
+- `replyLang` — `"l1"`, `"en"`, or `"mixed"`: which language(s) your
+  reply used this turn (so the platform can evidence the L1 ratio).
+- `microStageComplete` — `true` only when the learner has just
+  finished the current roleplay micro-stage (this fills one progress
+  dot). `false` otherwise.
+- `recastApplied` — `true` if you recast a meaning-affecting error in
+  this reply, `false` if there was nothing to recast.
+- `emotional_state` — your read of the learner this turn: `"engaged"`,
+  `"neutral"`, `"frustrated"`, `"anxious"`, or `"withdrawn"`. Use
+  `null` if you genuinely can't tell.
+
 ## Session completion
 
 When you set `session_complete=true`:

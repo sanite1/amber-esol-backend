@@ -26,6 +26,15 @@ import logger from "../config/logger";
 // ─────────────────────────────────────────────────────────────────────
 
 const PROMPT_DIR = resolve(__dirname, "../data/system-prompts");
+// Layer 2 (hard rules) + Layer 3 (level calibration) are the curriculum
+// task's machine output — the AI Tutor Brief is emphatic that we use its
+// EXACT text and never paraphrase. So they're built from this JSON, not
+// from hand-edited .md files (which would drift). Layer 1 (identity) and
+// Layer 6 (output format) remain editorial .md.
+const SPEC_PATH = resolve(
+  __dirname,
+  "../data/curriculum/system_prompt_spec.json",
+);
 
 interface LayerCache {
   layer1: string;
@@ -50,15 +59,75 @@ const readLayer = (relativePath: string): string => {
   return stripHtmlComments(raw);
 };
 
+interface SystemPromptSpec {
+  layer_2_hard_rules: Record<string, string>;
+  layer_3_level_calibration: Record<
+    string,
+    {
+      nqf_level: string;
+      cefr: string;
+      response_length_cap: string;
+      l1_ratio_instruction: string;
+      grammar_instruction: string;
+      vocabulary_instruction: string;
+      question_types: string;
+      sentence_complexity_ceiling: string;
+      recast_instruction: string;
+      anchor_triggers: string;
+      immersion_triggers: string;
+    }
+  >;
+}
+
+/** Build the Layer 2 hard-rules block verbatim from the spec, in file
+ *  order (the advice guardrail sits first). */
+const buildLayer2FromSpec = (spec: SystemPromptSpec): string => {
+  const rules = Object.values(spec.layer_2_hard_rules)
+    .map((r) => `- ${r}`)
+    .join("\n");
+  return `# Layer 2 — Hard Rules\n\nThese rules apply at every level and override anything below.\n\n${rules}`;
+};
+
+/** Build a level's Layer 3 calibration block verbatim from the spec. */
+const buildLayer3FromSpec = (
+  spec: SystemPromptSpec,
+  levelUpper: string,
+): string | null => {
+  const c = spec.layer_3_level_calibration[levelUpper];
+  if (!c) return null;
+  return `# Layer 3 — Level Calibration (${c.nqf_level} / CEFR ${c.cefr})
+
+- Response length: ${c.response_length_cap}
+- First-language ratio: ${c.l1_ratio_instruction}
+- Grammar: ${c.grammar_instruction}
+- Vocabulary: ${c.vocabulary_instruction}
+- Question types: ${c.question_types}
+- Sentence complexity: ${c.sentence_complexity_ceiling}
+- Corrective feedback: ${c.recast_instruction}
+- Lean on more first language when: ${c.anchor_triggers}
+- Move toward more English when: ${c.immersion_triggers}`;
+};
+
 const loadLayers = (): LayerCache => {
   if (_cache) return _cache;
+
+  const spec = JSON.parse(readFileSync(SPEC_PATH, "utf8")) as SystemPromptSpec;
+
   const layer3 = new Map<EsolLevel, string>();
   for (const level of ["e1", "e2", "e3", "l1", "l2"] as EsolLevel[]) {
-    layer3.set(level, readLayer(`layer3-level-calibration/${level}.md`));
+    const built = buildLayer3FromSpec(spec, level.toUpperCase());
+    if (!built) {
+      throw new ApiError(
+        500,
+        `system_prompt_spec.json has no layer_3 calibration for "${level.toUpperCase()}"`,
+      );
+    }
+    layer3.set(level, built);
   }
+
   _cache = {
     layer1: readLayer("layer1-identity.md"),
-    layer2: readLayer("layer2-hard-rules.md"),
+    layer2: buildLayer2FromSpec(spec),
     layer6: readLayer("layer6-output-format.md"),
     layer3,
   };
@@ -68,8 +137,9 @@ const loadLayers = (): LayerCache => {
       layer2Chars: _cache.layer2.length,
       layer6Chars: _cache.layer6.length,
       layer3Entries: _cache.layer3.size,
+      source: "layer2+3 from system_prompt_spec.json",
     },
-    "Prompt layers loaded from disk",
+    "Prompt layers loaded",
   );
   return _cache;
 };

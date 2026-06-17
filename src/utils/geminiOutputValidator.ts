@@ -72,6 +72,23 @@ export const geminiTurnOutputSchema = z
       .nullable(),
     session_complete: z.boolean(),
     session_summary: z.string().min(1).nullable(),
+    // ── F23/F24 contract additions ────────────────────────────────
+    // Optional-with-default: the model SHOULD return these (the
+    // response schema asks for them), but a turn must never FAIL for
+    // omitting one — a missing evidence signal degrades gracefully,
+    // it doesn't break the learner's reply.
+    replyLang: z
+      .enum(["l1", "en", "mixed"] as ["l1", "en", "mixed"])
+      .default("mixed"),
+    microStageComplete: z.boolean().default(false),
+    recastApplied: z.boolean().default(false),
+    emotional_state: z
+      .enum(["engaged", "neutral", "frustrated", "anxious", "withdrawn"] as [
+        string,
+        ...string[],
+      ])
+      .nullable()
+      .default(null),
   })
   // .strip() (the Zod default) drops unknown keys silently rather than
   // erroring. Explicit here for the next reader who wonders why we

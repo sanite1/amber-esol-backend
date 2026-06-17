@@ -569,7 +569,7 @@ describe("D2-T9 — vocab ledger updates referencing Stage 3 objectives", () => 
 });
 
 describe("D2-T10 — Gemini timeout", () => {
-  it("returns 502, no crash, session state preserved", async () => {
+  it("serves a safe ANCHOR fallback (not a 502), no crash, session preserved", async () => {
     mockGenerateContent!.mockImplementation(
       () =>
         new Promise((_resolve, reject) => {
@@ -585,14 +585,17 @@ describe("D2-T10 — Gemini timeout", () => {
     const learner = await createLearner(org._id);
     const session = await createSession(learner._id, org._id);
 
-    await expect(
-      processTurnService({
-        sessionId: session._id.toString(),
-        message: "hello",
-        learnerId: learner._id.toString(),
-        orgId: org._id.toString(),
-      }),
-    ).rejects.toMatchObject({ statusCode: 502 });
+    // F24: never show the learner a broken turn — a terminal Gemini
+    // failure now returns a safe ANCHOR-mode reply, not a 502.
+    const res = await processTurnService({
+      sessionId: session._id.toString(),
+      message: "hello",
+      learnerId: learner._id.toString(),
+      orgId: org._id.toString(),
+    });
+    expect(res.statusCode).toBe(200);
+    expect((res.data as { mode: string }).mode).toBe("anchor");
+    expect((res.data as { reply: string }).reply).toMatch(/say it again/i);
 
     // Session state preserved — no turn appended, no score added
     const after = await AISession.findById(session._id).lean();

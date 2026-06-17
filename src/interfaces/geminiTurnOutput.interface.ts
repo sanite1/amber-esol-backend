@@ -46,12 +46,43 @@ export type GeminiSafeguardingCategory =
   | "exploitation"
   | "mental_health_crisis";
 
+/** Which language(s) Amber actually replied in this turn — feeds the
+ *  Bridge-Method L1-ratio evidence (F26) without re-parsing the text. */
+export type GeminiReplyLang = "l1" | "en" | "mixed";
+
+/** Emotional-attunement read of the learner this turn (Engagement deck
+ *  ask — a signal alongside turn_score that the re-engagement layer can
+ *  act on). Nullable; the model omits it when it can't tell. */
+export type GeminiEmotionalState =
+  | "engaged"
+  | "neutral"
+  | "frustrated"
+  | "anxious"
+  | "withdrawn";
+
 export interface IGeminiTurnOutput {
   /** The user-visible reply — the only field a learner sees. */
   reply: string;
 
   /** Recommended mode for the next turn. */
   mode: GeminiTurnMode;
+
+  /** Language(s) THIS reply used. Defaults to "mixed" if the model
+   *  omits it — never fails the turn. */
+  replyLang?: GeminiReplyLang;
+
+  /** True when the learner completed the current roleplay micro-stage
+   *  (drives the four-dot progress UI + the F25 beat engine). Defaults
+   *  false when omitted. */
+  microStageComplete?: boolean;
+
+  /** True when Amber recast a meaning-affecting error this turn
+   *  (formative acquisition evidence). Defaults false when omitted. */
+  recastApplied?: boolean;
+
+  /** Emotional-attunement signal alongside turn_score. Null/omitted
+   *  when the model can't read it. */
+  emotional_state?: GeminiEmotionalState | null;
 
   /**
    * ILR skill codes practised in this turn. Subset of the 9 codes

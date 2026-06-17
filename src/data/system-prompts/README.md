@@ -1,16 +1,26 @@
 # Amber AI Tutor — Six-Layer System Prompt
 
+> ⚠️ **Layers 2 and 3 are now built from
+> `src/data/curriculum/system_prompt_spec.json`, NOT from the `.md`
+> files here.** The AI Tutor Brief §8.1 requires the exact curriculum
+> text, so `promptAssembly.service.ts` reads Layer 2 (hard rules, incl.
+> the advice guardrail) and Layer 3 (per-level calibration) straight
+> from that JSON. `layer2-hard-rules.md` and `layer3-level-calibration/*.md`
+> are **retained for history only and NO LONGER READ** — editing them
+> has no effect. Change Layer 2/3 content in `system_prompt_spec.json`.
+> Layers 1 and 6 are still sourced from their `.md` files.
+
 This directory holds the static layers of the system prompt Gemini reads
 on every AI tutor turn. The full ordering at call time is:
 
-| #   | Layer             | Source                                 | Cacheable?         |
-| --- | ----------------- | -------------------------------------- | ------------------ |
-| 1   | Identity          | `layer1-identity.md`                   | yes                |
-| 2   | Hard rules        | `layer2-hard-rules.md`                 | yes                |
-| 3   | Level calibration | `layer3-level-calibration/{level}.md`  | yes                |
-| 4   | Scenario          | the live `Scenario` document           | yes (per scenario) |
-| 5   | Learner profile   | built at runtime from `User` + session | **no** — dynamic   |
-| 6   | Output format     | `layer6-output-format.md`              | yes                |
+| #   | Layer             | Source                                         | Cacheable?         |
+| --- | ----------------- | ---------------------------------------------- | ------------------ |
+| 1   | Identity          | `layer1-identity.md`                           | yes                |
+| 2   | Hard rules        | `curriculum/system_prompt_spec.json` (layer_2) | yes                |
+| 3   | Level calibration | `curriculum/system_prompt_spec.json` (layer_3) | yes                |
+| 4   | Scenario          | the live `Scenario` document                   | yes (per scenario) |
+| 5   | Learner profile   | built at runtime from `User` + session         | **no** — dynamic   |
+| 6   | Output format     | `layer6-output-format.md`                      | yes                |
 
 **Concatenation order at the wire:**
 `1 → 2 → 3 → 4 → 6 → 5`

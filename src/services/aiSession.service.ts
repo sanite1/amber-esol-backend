@@ -88,6 +88,20 @@ const TURN_RESPONSE_SCHEMA = {
       type: SchemaType.STRING,
       nullable: true,
     },
+    // F23/F24 contract additions — optional (validator defaults them),
+    // so they're declared here for Gemini but kept out of `required`.
+    replyLang: {
+      type: SchemaType.STRING,
+      enum: ["l1", "en", "mixed"],
+      nullable: true,
+    },
+    microStageComplete: { type: SchemaType.BOOLEAN, nullable: true },
+    recastApplied: { type: SchemaType.BOOLEAN, nullable: true },
+    emotional_state: {
+      type: SchemaType.STRING,
+      enum: ["engaged", "neutral", "frustrated", "anxious", "withdrawn"],
+      nullable: true,
+    },
   },
   required: [
     "reply",
@@ -180,6 +194,15 @@ const escalateSafeguardingFailure = async (params: {
     )
     .catch(() => undefined);
 };
+
+/**
+ * Safe reply served when a Gemini turn fails terminally (F24 — "never
+ * show the learner a broken turn"). Deliberately plain English + warm;
+ * the learner is practising English so an English nudge is appropriate,
+ * and it makes no claim / sets no score. ANCHOR mode keeps support high.
+ */
+const ANCHOR_FALLBACK_REPLY =
+  "Sorry — I didn't quite catch that. Could you say it again? Take your time, there's no rush.";
 
 /**
  * Per-turn AI tutor handler — brief Function 7 To-Do 5 + Final
@@ -782,17 +805,39 @@ export const processTurnService = async (
     geminiOutput = result.parsed;
     rawReplyText = result.rawText;
   } catch (err) {
-    // generateTurn handles its own retry; if we get here, the turn
-    // failed terminally. Surface a 502.
-    throw new ApiError(
-      502,
-      `Gemini turn failed: ${err instanceof Error ? err.message : "unknown error"}`,
+    // generateTurn handles its own retry; if we get here the turn failed
+    // terminally (parse/validate/transport). The spec is explicit: never
+    // show the learner a broken turn. Serve a safe ANCHOR-mode reply
+    // (no scoring, no session progression) and log loudly for ops. The
+    // pre-Gemini TurnLog row already captured the audit trail.
+    logger.error(
+      {
+        err: err instanceof Error ? err.message : String(err),
+        sessionId: session._id.toString(),
+        learnerId: String(input.learnerId),
+      },
+      "Gemini turn failed terminally — serving safe ANCHOR fallback reply",
     );
+    const fallback: ProcessTurnResponse = {
+      reply: ANCHOR_FALLBACK_REPLY,
+      mode: "anchor",
+      session_complete: false,
+      vocab_words_seen: [],
+    };
+    return new ApiResponse(200, "Fallback reply served", fallback);
   }
 
   // ── 8. (Validation already inside generateTurn via Zod) ──────────
 
   // ── 9. Secondary safeguarding check (AI flagged, keyword didn't) ─
+  // RETAINED on purpose. The AI Tutor Brief §8.2 says to remove the AI
+  // safeguarding flag, but it's a genuine defence-in-depth net that
+  // catches disclosures the (still-incomplete, starter) keyword banks
+  // miss. We keep it until the ar/tr/yue keyword banks are completed +
+  // safeguarding-lead reviewed, then revisit removal. It's secondary
+  // (keyword scan runs first, independently) so the "lost in a malformed
+  // response" risk only degrades this turn to keyword-only — the spec's
+  // own baseline — never below it.
   if (geminiOutput.safeguarding_flag) {
     await recordSafeguardingTrigger({
       session,
