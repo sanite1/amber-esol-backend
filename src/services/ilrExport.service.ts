@@ -102,7 +102,11 @@ export interface IlrRow {
   _session_id: string;
   _session_source: "ai_tutor" | "teacher_consolidation" | "pre_platform";
   _learner_id: string;
+  /** Claim-driving GLH on this row (EXCLUDES AI tutor time — F29). */
   _total_glh_hours: number;
+  /** AI tutor hours on this row — reconciliation only, never claimed (F29).
+   *  Optional on the type (internal metadata); always set by the row builder. */
+  _ai_glh_hours?: number;
   _skill_domains_covered: ForSkillsDomain[];
   _aim_invalid: boolean;
   _suppression_notes: string[];
@@ -548,12 +552,22 @@ const buildRowForSession = (args: BuildRowArgs): IlrRow => {
   const sof = sofResult.value;
   if (sofResult.warning) rowWarnings.push(sofResult.warning);
 
-  // GLH for AddHours — the session's duration + the learner's
-  // accumulated teacher-contact hours. Imported sessions count too
-  // because they're prior platform learning that the org wants to
-  // claim against this academic year's record.
+  // GLH for AddHours — the claim-driving figure.
+  //
+  // HOURS CONSTRAINT (AI Tutor Build Brief F29): AI tutor time is NOT a
+  // funding-claim basis until the GLA opinion lands. So `ai_tutor`
+  // session minutes are EXCLUDED from the claim here; `pre_platform`
+  // (prior platform learning the org claims this year) and
+  // `teacher_consolidation` session time remain claimable, as does the
+  // learner's accumulated teacher-contact. The raw AI minutes are still
+  // surfaced (`_ai_glh_hours`) for reconciliation, just never summed
+  // into a claim.
   const sessionHours = minutesToHours(session.duration_mins);
-  const glhForRow = Math.round((sessionHours + teacherContactHours) * 10) / 10;
+  const aiGlhHours = session.session_source === "ai_tutor" ? sessionHours : 0;
+  const claimableSessionHours =
+    session.session_source === "ai_tutor" ? 0 : sessionHours;
+  const glhForRow =
+    Math.round((claimableSessionHours + teacherContactHours) * 10) / 10;
 
   const { addHours, note: addHoursNote } = decideAddHours(
     learner.esol_aim_type,
@@ -674,6 +688,7 @@ const buildRowForSession = (args: BuildRowArgs): IlrRow => {
     // Internal metadata for the orchestrator
     _session_id: (session._id as Types.ObjectId).toString(),
     _session_source: session.session_source as IlrRow["_session_source"],
+    _ai_glh_hours: Math.round(aiGlhHours * 10) / 10,
     _learner_id: (learner._id as Types.ObjectId).toString(),
     _total_glh_hours: glhForRow,
     _skill_domains_covered: Array.from(skillDomains),
@@ -849,6 +864,14 @@ export const buildIlrRows = async (
     const humanConfirmedAchievement =
       learnerLevel.length > 0 &&
       (confirmedLevelsByLearner.get(learnerKey)?.has(learnerLevel) ?? false);
+    // HOURS DOUBLE-COUNT FIX (F29): `glh_teacher_contact` is a single
+    // learner-level accumulated total. The previous code passed it to
+    // EVERY session row, so a learner with N sessions had their teacher
+    // hours counted N times across the export. Attribute the teacher
+    // contact to the learner's FIRST row only; subsequent rows get 0.
+    // (The proper one-row-per-learner-aim restructure is a separate
+    // follow-up; this stops the over-claim without that refactor.)
+    let firstRowForLearner = true;
     for (const session of learnerSessions) {
       const row = buildRowForSession({
         learner,
@@ -856,11 +879,12 @@ export const buildIlrRows = async (
         config,
         academicYear,
         aimSeqNumber: seq,
-        teacherContactHours,
+        teacherContactHours: firstRowForLearner ? teacherContactHours : 0,
         humanConfirmedAchievement,
       });
       rows.push(row);
       seq += 1;
+      firstRowForLearner = false;
     }
   }
 

@@ -3,6 +3,10 @@ import logger from "../../config/logger";
 import PostcodeRouter from "../postcodeRouter.service";
 import FALACache from "../falaCache.service";
 import { updateLedgerForTurn } from "../vocabLedger.service";
+import {
+  recordTurnEvidence,
+  recordSessionCompleteEvidence,
+} from "../evidenceChain.service";
 import { sendSafeguardingAlertEmail } from "../notifications/safeguardingAlertEmail.service";
 import { sendProgressionReadyEmail } from "../notifications/progressionReadyEmail.service";
 import { sendProgressionConfirmedEmail } from "../notifications/progressionConfirmedEmail.service";
@@ -136,10 +140,60 @@ export const processEsolSession = async (
       return { action, result };
     }
 
-    case "capture_evidence":
+    case "capture_evidence": {
+      // F29 — write the structured per-beat evidence chain for this
+      // turn (beat_2_roleplay) and, when the session just completed,
+      // its beat_3_complete records. Capture-time, append-only.
+      const sessionId =
+        typeof job.data.sessionId === "string" ? job.data.sessionId : null;
+      const orgId = typeof job.data.orgId === "string" ? job.data.orgId : null;
+      const turnIndex =
+        typeof payload.turnIndex === "number"
+          ? (payload.turnIndex as number)
+          : 0;
+
+      await recordTurnEvidence({
+        learnerId,
+        orgId,
+        sessionId,
+        turnIndex,
+        turnScore:
+          typeof payload.turnScore === "number"
+            ? (payload.turnScore as number)
+            : undefined,
+        skillCodesUsed: Array.isArray(payload.skillCodesUsed)
+          ? (payload.skillCodesUsed as string[])
+          : undefined,
+        vocabularyItemsUsed: Array.isArray(payload.vocabularyItemsUsed)
+          ? (payload.vocabularyItemsUsed as string[])
+          : undefined,
+        mode:
+          typeof payload.mode === "string"
+            ? (payload.mode as string)
+            : undefined,
+        recastApplied:
+          typeof payload.recastApplied === "boolean"
+            ? (payload.recastApplied as boolean)
+            : undefined,
+      });
+
+      if (payload.sessionComplete === true) {
+        await recordSessionCompleteEvidence({
+          learnerId,
+          orgId,
+          sessionId,
+          sessionSummary:
+            typeof payload.sessionSummary === "string"
+              ? (payload.sessionSummary as string)
+              : null,
+        });
+      }
+
+      return { action, result: { captured: true } };
+    }
+
     case "process_turn":
-      // Stubs — implementation lands with the Stage 4 evidence
-      // rollup (Phase 11) and the async-turn mode (post-MVP).
+      // Stub — async-turn mode (post-MVP).
       return {
         action,
         result: await stub(`processEsolSession.${action}`, job),

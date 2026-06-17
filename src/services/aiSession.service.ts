@@ -1108,7 +1108,12 @@ export const processTurnService = async (
         turnIndex: newTurnIndex,
         skillCodesUsed: geminiOutput.skill_codes_used,
         turnScore: geminiOutput.turn_score,
-        mode: geminiOutput.mode,
+        mode: reconciledMode,
+        // F29 evidence-chain inputs (beat_2 + beat_3 capture).
+        vocabularyItemsUsed: geminiOutput.vocabulary_items_used,
+        recastApplied: geminiOutput.recastApplied,
+        sessionComplete: geminiOutput.session_complete,
+        sessionSummary: geminiOutput.session_summary ?? null,
       },
     })
     .catch((err) =>

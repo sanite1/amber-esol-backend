@@ -59,6 +59,8 @@ describe("Final Addendum §12 — ILR GLH formula", () => {
       teacher_consolidation_glh: 0,
       unknown_source_count: 0,
       total_glh: 10.0,
+      // F29 — claim-driving total EXCLUDES AI time: 2.0 + 5.0 = 7.0.
+      claimable_glh: 7.0,
     });
   });
 
@@ -84,6 +86,8 @@ describe("Final Addendum §12 — ILR GLH formula", () => {
     expect(result.teacher_consolidation_glh).toBeCloseTo(3.0, 6);
     // total_glh = ai + pre_platform + teacher_contact ONLY.
     expect(result.total_glh).toBeCloseTo(7.0, 6);
+    // claimable_glh (F29) drops the 1.0h AI time: 2.0 + 4.0 = 6.0.
+    expect(result.claimable_glh).toBeCloseTo(6.0, 6);
   });
 
   // ── F3 ────────────────────────────────────────────────────────
@@ -175,6 +179,7 @@ describe("Final Addendum §12 — ILR GLH formula", () => {
       teacher_consolidation_glh: 0,
       unknown_source_count: 0,
       total_glh: 0,
+      claimable_glh: 0,
     });
   });
 

@@ -73,8 +73,17 @@ export interface IlrGlhBreakdown {
   teacher_consolidation_glh: number;
   /** Number of sessions whose `session_source` matched none of the known values. */
   unknown_source_count: number;
-  /** total_glh = ai_glh + pre_platform_glh + teacher_contact_glh */
+  /** total_glh = ai_glh + pre_platform_glh + teacher_contact_glh.
+   *  INCLUDES AI time — for display / reconciliation, NOT for claims. */
   total_glh: number;
+  /**
+   * Claim-driving GLH = pre_platform_glh + teacher_contact_glh.
+   * EXCLUDES ai_glh per AI Tutor Build Brief F29 — AI tutor time is not
+   * a funding-claim basis until the GLA opinion lands [UNVERIFIED —
+   * confirm with funding specialist]. Use THIS, not total_glh, for any
+   * fundable hours figure.
+   */
+  claimable_glh: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -164,6 +173,8 @@ export const computeIlrLearnerGlh = (
   // the test can assert exact equality without floating-point
   // hand-wringing.
   const totalUnrounded = aiGlh + prePlatformGlh + teacherContact;
+  // Claim-driving total excludes AI time (F29).
+  const claimableUnrounded = prePlatformGlh + teacherContact;
 
   return {
     ai_glh: round1dp(aiGlh),
@@ -172,6 +183,7 @@ export const computeIlrLearnerGlh = (
     teacher_consolidation_glh: round1dp(teacherConsolidationGlh),
     unknown_source_count: unknownSourceCount,
     total_glh: round1dp(totalUnrounded),
+    claimable_glh: round1dp(claimableUnrounded),
   };
 };
 
