@@ -30,6 +30,12 @@
     "TODO: 3-5 grammar items the scenario should teach — e.g. 'modal verbs for politeness (can / could / would)', 'present simple questions (do you have…?)'."
   ],
   "roleplay_prompt_en": "TODO: 2-4 sentences describing the role-play setup. Who is Amber playing? What does the learner need to do? Example: 'You are calling the GP surgery to book an appointment. The receptionist (Amber) will answer. Tell the receptionist your name, why you need an appointment, and what days you are free.'",
+  "micro_stages": [
+    "Greet the receptionist and say why you are calling",
+    "Describe your symptoms and how long you have had them",
+    "Ask about and agree an appointment time",
+    "Give your details and confirm the booking"
+  ],
   "pass_threshold": 0.7,
   "cultural_notes_en": "TODO: 3-5 sentences on UK-specific context the learner needs. For a GP appointment: how GP surgeries work in the UK, the difference between routine and urgent appointments, what 'triage' means, that NHS appointments are free at point of use.",
   "cultural_notes_ar": "",

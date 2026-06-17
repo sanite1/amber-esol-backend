@@ -161,6 +161,12 @@
     "Persuasive sentence structures: 'Given that X, it seems reasonable to ask Y', 'In light of X, I'd like to propose Y'"
   ],
   "roleplay_prompt_en": "You've worked in your role for eighteen months. You've taken on extra responsibilities — leading a project, training a new colleague, picking up work after a teammate left — but your salary hasn't changed. You've researched the market rate for your role and you're earning around £4,000 below it. You have an appraisal meeting scheduled with your manager next week. Amber will play your manager. Practise opening the salary conversation, presenting your case with tangible evidence, responding to hedging or pushback ('the budget is tight this year', 'we'd love to but…'), and either reaching an agreement or proposing a clear next step (a follow-up review, a non-monetary alternative). The goal is to leave the conversation with a concrete outcome, not just a vague 'we'll see'.",
+  "micro_stages": [
+    "Open the salary conversation and state your purpose",
+    "Present your case with specific evidence and a figure",
+    "Respond to hedging or pushback without backing down",
+    "Reach an agreement or propose a clear next step"
+  ],
   "pass_threshold": 0.75,
   "cultural_notes_en": "UK workplace norms around pay are quieter than American ones — discussing salary openly with colleagues is still slightly taboo in most sectors, though Gen Z workers and unionised industries are shifting that. Annual appraisals are the standard moment to raise pay, but a strong case can be made any time, particularly after a project win or a scope change. Managers often have limited discretion — they may need to 'go to HR' or 'check with finance', which is genuine, not a brush-off. Counteroffers triggered by a competing job offer happen but are risky: many UK employers see them as a sign of disloyalty and the goodwill rarely lasts. A respectful, evidence-led approach (industry benchmarks from Glassdoor / LinkedIn Salary, specific contributions, quantified results) lands better than emotional appeals or comparisons with colleagues. Pay transparency law is changing — from 2026 UK employers with 250+ staff must publish pay ranges in job ads, which gives candidates better leverage. Trade unions are an option for organised workplaces; for unorganised ones, ACAS provides free, neutral advice on workplace disputes (0300 123 1100).",
   "cultural_notes_ar": "",

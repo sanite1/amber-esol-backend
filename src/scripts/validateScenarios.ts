@@ -406,6 +406,35 @@ const validateScenario = (id: string, s: IScenarioFile): Issue[] => {
     });
   }
 
+  // micro_stages (F25) — optional, but when present must be exactly
+  // four non-empty labels (one per learner-facing progress dot). A
+  // scenario with none falls back to the generic four-beat arc.
+  if (s.micro_stages !== undefined) {
+    if (!Array.isArray(s.micro_stages) || s.micro_stages.length !== 4) {
+      issues.push({
+        scope: `${scope}.micro_stages`,
+        severity: "error",
+        message: `when present, must be an array of exactly 4 labels, got ${
+          Array.isArray(s.micro_stages)
+            ? s.micro_stages.length
+            : typeof s.micro_stages
+        }`,
+      });
+    } else if (s.micro_stages.some((m) => !isNonEmptyString(m))) {
+      issues.push({
+        scope: `${scope}.micro_stages`,
+        severity: "error",
+        message: "every micro-stage label must be a non-empty string",
+      });
+    } else if (s.micro_stages.some((m) => containsTodo(m))) {
+      issues.push({
+        scope: `${scope}.micro_stages`,
+        severity: "warning",
+        message: "contains TODO/REPLACE marker",
+      });
+    }
+  }
+
   // pass_threshold
   if (
     typeof s.pass_threshold !== "number" ||

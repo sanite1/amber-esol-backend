@@ -19,7 +19,15 @@ import mongoose, { Schema, Document, Types } from "mongoose";
  * a service that processes requests.
  */
 
-export type ComplianceDomain = "ilr" | "rarpa" | "asf-routing";
+export type ComplianceDomain =
+  | "ilr"
+  | "rarpa"
+  | "asf-routing"
+  // Bridge-Method mode-controller thresholds (F26). Optional — the
+  // mode controller falls back to DEFAULT_MODE_THRESHOLDS when no
+  // active "bridge-mode" config exists, so the platform runs correctly
+  // before any admin seeds an override.
+  | "bridge-mode";
 
 export interface IComplianceConfig extends Document {
   domain: ComplianceDomain;
@@ -36,7 +44,7 @@ const complianceConfigSchema = new Schema<IComplianceConfig>(
   {
     domain: {
       type: String,
-      enum: ["ilr", "rarpa", "asf-routing"],
+      enum: ["ilr", "rarpa", "asf-routing", "bridge-mode"],
       required: true,
     },
     academic_year: { type: String, required: true, index: true },

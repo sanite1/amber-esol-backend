@@ -105,6 +105,25 @@ const aiSessionSchema = new Schema<IAISession>(
     nqf_level_at_start: { type: String, default: null },
     start_time: { type: Date, default: null },
     end_time: { type: Date, default: null },
+
+    // ── Brief F25 — three-beat scenario engine ───────────────────────
+    // The arc the learner is on: PREPARE (lead-in) → ROLEPLAY (four
+    // micro-stages = four progress dots) → COMPLETE (closing + chime).
+    // Driven by `microStageComplete` / `session_complete` from the
+    // validated Gemini turn; see sessionBeat.service.ts. No gating — a
+    // weak attempt advances with a recast; only completion fills all dots.
+    beat: {
+      type: String,
+      enum: ["prepare", "roleplay", "complete"],
+      default: "prepare",
+    },
+    /** Index of the micro-stage currently in play (0..3). */
+    micro_stage_index: { type: Number, default: 0 },
+    /** One flag per progress dot; true once that micro-stage is done. */
+    micro_stages_completed: {
+      type: [Boolean],
+      default: () => [false, false, false, false],
+    },
   },
   {
     timestamps: true,

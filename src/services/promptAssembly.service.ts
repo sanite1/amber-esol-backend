@@ -5,6 +5,7 @@ import { resolve } from "path";
 import ApiError from "../errors/apiError";
 import { EsolLevel } from "../interfaces/placementQuestion.interface";
 import logger from "../config/logger";
+import { DEFAULT_MICRO_STAGES } from "./sessionBeat.service";
 
 /**
  * Six-layer system prompt assembly — brief Function 7 To-Do 1.
@@ -161,6 +162,20 @@ export interface LearnerProfileForPrompt {
   skillWeaknessFlags: string[];
   currentMode: "BRIDGE" | "ANCHOR" | "IMMERSION";
   advancementCeremony?: { toLevel: string } | null;
+
+  // ── F26 mode controller directives (server-authoritative) ──────────
+  /** How to operate this turn — from modeController.decideMode. */
+  modeDirective?: string;
+  /** L1:English ratio guidance for this turn (widened on distress). */
+  l1RatioGuidance?: string;
+
+  // ── F25 three-beat arc position ────────────────────────────────────
+  /** Where the session is in the arc, so the AI drives the right move. */
+  beat?: "prepare" | "roleplay" | "complete";
+  /** 1-based dot the learner is on (for the AI's narration). */
+  microStageNumber?: number;
+  /** Label of the micro-stage currently in play. */
+  microStageLabel?: string;
 }
 
 export interface ScenarioForPrompt {
@@ -176,6 +191,8 @@ export interface ScenarioForPrompt {
     translations?: Record<string, string>;
   }>;
   l1Code?: string;
+  /** F25 — the four roleplay micro-stages (one per progress dot). */
+  microStages?: string[];
 }
 
 export interface AssembledPrompt {
@@ -239,6 +256,12 @@ about anything they need help with.`;
       return `- ${v.word}${def}${l1}`;
     })
     .join("\n");
+  const stages =
+    scenario.microStages && scenario.microStages.length
+      ? scenario.microStages
+      : DEFAULT_MICRO_STAGES;
+  const stageList = stages.map((s, i) => `${i + 1}. ${s}`).join("\n");
+
   return `# Layer 4 — Scenario
 
 SCENARIO: ${scenario.title} (id: ${scenario.scenarioId}).
@@ -247,6 +270,9 @@ GRAMMAR TARGETS: ${scenario.grammarTargets.join(", ")}
 CULTURAL NOTES (UK context the learner needs): ${scenario.culturalNotes}
 VOCABULARY TO TEACH (weave naturally, do not drill):
 ${vocabList}
+ROLEPLAY MICRO-STAGES (drive the conversation through these four moves
+in order; set microStageComplete=true as each one finishes):
+${stageList}
 PASS THRESHOLD: turn_score average must reach ${scenario.passThreshold} for session_complete.`;
 };
 
@@ -266,6 +292,25 @@ const buildLayer5LearnerProfile = (
         .map((s, i) => `${i + 1}. ${s}`)
         .join("\n")
     : "First session.";
+  // F25 arc position — tell the AI which beat + micro-stage to drive so
+  // it sets microStageComplete at the right moment.
+  const arc =
+    learner.beat === "prepare"
+      ? "PREPARE — this is the lead-in. Settle the learner, set the scene, and invite them into the first move."
+      : learner.beat === "complete"
+        ? "COMPLETE — the roleplay is finished. Close warmly."
+        : learner.microStageLabel
+          ? `ROLEPLAY — micro-stage ${learner.microStageNumber ?? "?"} of 4: "${learner.microStageLabel}". Set microStageComplete=true the moment the learner has accomplished this move, then begin the next one.`
+          : "ROLEPLAY — drive the conversation through its four micro-stages, marking each complete as it finishes.";
+
+  // F26 controller directives — server-authoritative mode + L1 ratio for
+  // THIS turn. These override the AI's own mode instinct; the platform
+  // has already read the observable signals.
+  const directiveBlock =
+    learner.modeDirective || learner.l1RatioGuidance
+      ? `\n- THIS TURN'S DIRECTIVE: ${learner.modeDirective ?? ""}\n- L1 ratio this turn: ${learner.l1RatioGuidance ?? ""}`
+      : "";
+
   return `# Layer 5 — Learner Profile
 
 LEARNER PROFILE:
@@ -274,7 +319,8 @@ LEARNER PROFILE:
 ${summaries}
 - Skill weakness flags: ${learner.skillWeaknessFlags.join(", ") || "none"}
 - Vocabulary to reinforce this session (weave naturally into dialogue): ${vocab}
-- Current mode at session start: ${learner.currentMode}
+- Current mode: ${learner.currentMode}
+- Where we are in the roleplay: ${arc}${directiveBlock}
 - Advancement ceremony pending: ${
     learner.advancementCeremony
       ? `YES — celebrate the learner's promotion to ${learner.advancementCeremony.toLevel} in their L1 in your first reply, briefly and warmly.`

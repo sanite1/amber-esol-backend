@@ -130,6 +130,14 @@ export interface IScenarioFile {
   vocabulary_set: VocabularyItem[];
   grammar_targets: string[];
   roleplay_prompt_en: string;
+  /**
+   * F25 — the four roleplay micro-stages (one per learner-facing
+   * progress dot). Optional: a scenario with none falls back to the
+   * generic four-beat arc in sessionBeat.service.ts. When present, the
+   * validator requires exactly MICRO_STAGE_COUNT (4) non-empty labels.
+   * English here; L1 translations are a Phase-8 authoring task.
+   */
+  micro_stages?: string[];
   pass_threshold: number;
   cultural_notes_en: string;
   cultural_notes_ar: string;

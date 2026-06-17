@@ -31,6 +31,12 @@
     "TODO: 3-5 grammar items — likely 'numbers and money (£, p)', 'present simple for facts (My tax code is …)', 'asking clarification questions (What does … mean?)'."
   ],
   "roleplay_prompt_en": "TODO: 2-4 sentences. Example: 'You have just received your first payslip from a new job in the UK. There are several lines you do not understand. Amber will help you read and understand each part — gross pay, deductions, net pay — and answer your questions.'",
+  "micro_stages": [
+    "Say which part of the payslip you don't understand",
+    "Work out gross pay, deductions and net pay",
+    "Ask what each deduction (tax, National Insurance) is for",
+    "Confirm what you've understood and what to check next"
+  ],
   "pass_threshold": 0.7,
   "cultural_notes_en": "TODO: 3-5 sentences on UK payroll context. Key UK-specific concepts: PAYE (Pay As You Earn) tax, National Insurance contributions, tax codes (1257L is the standard), the difference between gross and net pay, monthly vs weekly payslips, what HMRC is, that payslips are a legal right (Employment Rights Act 1996 s.8).",
   "cultural_notes_ar": "",

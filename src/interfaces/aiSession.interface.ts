@@ -75,6 +75,14 @@ export interface IAISession extends Document {
   nqf_level_at_start?: string | null;
   start_time?: Date | null;
   end_time?: Date | null;
+
+  // ── Brief F25 — three-beat scenario engine ─────────────────────────
+  /** PREPARE → ROLEPLAY → COMPLETE. See sessionBeat.service.ts. */
+  beat?: "prepare" | "roleplay" | "complete";
+  /** Index of the micro-stage currently in play (0..3). */
+  micro_stage_index?: number;
+  /** One flag per progress dot (length 4); true once that stage is done. */
+  micro_stages_completed?: boolean[];
 }
 
 export interface ICreateAISessionRequest {

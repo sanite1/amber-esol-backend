@@ -37,6 +37,13 @@ import { updateLedgerForTurn } from "./vocabLedger.service";
 import { encryptSafeguardingRaw } from "../lib/safeguardingCrypto";
 import { validateGeminiTurnOutput } from "../utils/geminiOutputValidator";
 import { IGeminiTurnOutput } from "../interfaces/geminiTurnOutput.interface";
+import { decideMode, reconcileMode } from "./modeController.service";
+import {
+  advanceBeat,
+  microStageLabel,
+  Beat,
+  MICRO_STAGE_COUNT,
+} from "./sessionBeat.service";
 
 /**
  * Gemini structured-output schema for AI tutor turns — sent to Vertex
@@ -301,6 +308,24 @@ const lowerMode = (m: string): "bridge" | "anchor" | "immersion" => {
 };
 
 /**
+ * Current arc snapshot for the early-return paths (safeguarding +
+ * fallback). These turns don't produce a normal AI move, so the beat
+ * does NOT advance — we just echo the session's current arc state so
+ * the learner UI's progress dots stay consistent.
+ */
+const beatSnapshot = (
+  session: any,
+): Pick<
+  ProcessTurnResponse,
+  "beat" | "micro_stage_index" | "micro_stages_completed"
+> => ({
+  beat: (session.beat as Beat) ?? "prepare",
+  micro_stage_index: session.micro_stage_index ?? 0,
+  micro_stages_completed:
+    session.micro_stages_completed ?? new Array(MICRO_STAGE_COUNT).fill(false),
+});
+
+/**
  * Layer 5 builder — pulls the per-session learner state Gemini needs
  * to calibrate this turn. Pure-ish (one DB read for vocab); no Gemini
  * call, no side effects on the learner doc.
@@ -388,6 +413,7 @@ const adaptScenario = (
   culturalNotes: scenario.cultural_notes_en,
   passThreshold: scenario.pass_threshold,
   l1Code,
+  microStages: scenario.micro_stages,
   vocabulary: scenario.vocabulary_set.map((v) => ({
     word: v.word,
     definition: v.definition_en,
@@ -633,6 +659,10 @@ interface ProcessTurnResponse {
   session_complete: boolean;
   vocab_words_seen: string[];
   safeguarding_served?: boolean;
+  // ── F25 arc state (drives the learner's 4-dot progress + screens) ──
+  beat?: "prepare" | "roleplay" | "complete";
+  micro_stage_index?: number;
+  micro_stages_completed?: boolean[];
 }
 
 /**
@@ -751,6 +781,7 @@ export const processTurnService = async (
       session_complete: false,
       vocab_words_seen: [],
       safeguarding_served: true,
+      ...beatSnapshot(session),
     };
     return new ApiResponse(200, "Safeguarding response served", response);
   }
@@ -770,6 +801,33 @@ export const processTurnService = async (
       scenarioForPrompt = adaptScenario(scenarioFile, "en");
     }
   }
+
+  // ── 5a. Mode controller (F26) — server decides the mode + L1 ratio
+  // for THIS turn from observable signals, BEFORE Gemini runs, so the
+  // reply is generated already calibrated. Overrides the AI's instinct.
+  const modeDecision = decideMode({
+    level: learnerProfile.esolLevel,
+    message: input.message,
+    recentScores: session.turn_scores ?? [],
+    recentModes: session.teaching_mode_sequence ?? [],
+  });
+  learnerProfile.currentMode = upperMode(modeDecision.mode);
+  learnerProfile.modeDirective = modeDecision.modeDirective;
+  learnerProfile.l1RatioGuidance = modeDecision.l1RatioGuidance;
+
+  // ── 5b. Arc position (F25) — tell the AI which beat + micro-stage to
+  // drive so it sets microStageComplete at the right moment.
+  const currentBeat: Beat = (session.beat as Beat) ?? "prepare";
+  const currentStageIdx = session.micro_stage_index ?? 0;
+  learnerProfile.beat = currentBeat;
+  learnerProfile.microStageNumber = Math.min(
+    currentStageIdx + 1,
+    MICRO_STAGE_COUNT,
+  );
+  learnerProfile.microStageLabel = microStageLabel(
+    scenarioForPrompt?.microStages,
+    currentStageIdx,
+  );
 
   const assembled = assemblePrompt(learnerProfile, scenarioForPrompt);
 
@@ -823,6 +881,7 @@ export const processTurnService = async (
       mode: "anchor",
       session_complete: false,
       vocab_words_seen: [],
+      ...beatSnapshot(session),
     };
     return new ApiResponse(200, "Fallback reply served", fallback);
   }
@@ -885,6 +944,7 @@ export const processTurnService = async (
       session_complete: false,
       vocab_words_seen: [],
       safeguarding_served: true,
+      ...beatSnapshot(session),
     };
     return new ApiResponse(
       200,
@@ -916,6 +976,16 @@ export const processTurnService = async (
     timestamp: new Date(),
   } as any);
 
+  // F26 — reconcile the controller's directed mode with the mode Gemini
+  // reported. We record the MORE SUPPORTIVE of the two: if either the
+  // server's observable-signal read OR the model's own read says
+  // "anchor", the recorded mode is anchor. Support ratchets down only
+  // when both agree it's safe.
+  const reconciledMode = reconcileMode(
+    modeDecision.mode,
+    lowerMode(geminiOutput.mode),
+  );
+
   // Push the per-turn rollups (brief Function 7 To-Do 5 spec).
   session.turn_scores = [
     ...(session.turn_scores ?? []),
@@ -923,7 +993,7 @@ export const processTurnService = async (
   ];
   session.teaching_mode_sequence = [
     ...(session.teaching_mode_sequence ?? []),
-    lowerMode(geminiOutput.mode),
+    reconciledMode,
   ];
   // Roll the turn's vocabulary into the session doc inline. The vocab
   // LEDGER write stays async (queue below), but session.vocabIntroduced
@@ -938,8 +1008,26 @@ export const processTurnService = async (
     }
     session.vocabIntroduced = Array.from(seenVocab);
   }
-  // Update the current session mode for ACL / UI.
-  session.sessionMode = upperMode(geminiOutput.mode);
+  // Update the current session mode for ACL / UI (the reconciled mode).
+  session.sessionMode = upperMode(reconciledMode);
+
+  // F25 — advance the three-beat arc from this turn's signals. Pure
+  // state machine (no gating): microStageComplete fills the current
+  // dot, session_complete fills them all + moves to COMPLETE.
+  const nextBeat = advanceBeat(
+    {
+      beat: currentBeat,
+      microStageIndex: currentStageIdx,
+      microStagesCompleted: session.micro_stages_completed,
+    },
+    {
+      microStageComplete: !!geminiOutput.microStageComplete,
+      sessionComplete: !!geminiOutput.session_complete,
+    },
+  );
+  session.beat = nextBeat.beat;
+  session.micro_stage_index = nextBeat.microStageIndex;
+  session.micro_stages_completed = nextBeat.microStagesCompleted;
 
   if (geminiOutput.session_complete) {
     session.completedAt = new Date();
@@ -1040,9 +1128,12 @@ export const processTurnService = async (
 
   const response: ProcessTurnResponse = {
     reply: geminiOutput.reply,
-    mode: lowerMode(geminiOutput.mode),
+    mode: reconciledMode,
     session_complete: geminiOutput.session_complete,
     vocab_words_seen: geminiOutput.vocabulary_items_used,
+    beat: nextBeat.beat,
+    micro_stage_index: nextBeat.microStageIndex,
+    micro_stages_completed: nextBeat.microStagesCompleted,
   };
   return new ApiResponse(200, "Turn processed", response);
 };
