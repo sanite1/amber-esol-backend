@@ -11,6 +11,10 @@ import {
   transcribeSpeech,
   voiceCapabilities,
 } from "../services/voice.service";
+import { Types } from "mongoose";
+import User from "../models/User";
+import AuditLog from "../models/AuditLog";
+import { buildStage3NegotiationScript } from "../services/rarpa.service";
 
 /** Hard cap on TTS input length — guards billing + abuse. */
 const TTS_MAX_CHARS = 2000;
@@ -178,6 +182,103 @@ export const getVoiceCapabilities: ExpressFunction = async (req, res, next) => {
     return res
       .status(200)
       .json(new ApiResponse(200, "Voice capabilities", voiceCapabilities()));
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/esol/session/goals — F30 learner-facing Stage 3 negotiation.
+ *
+ * Returns the learner's own Stage 3 objectives, the L1 negotiation
+ * script (the same warm "do you agree?" framing recorded at placement),
+ * and whether the learner has already agreed.
+ */
+export const getMyGoals: ExpressFunction = async (req, res, next) => {
+  try {
+    const ctx = pullContext(req);
+    if (!ctx) return next(new ApiError(403, "Auth + org context required"));
+
+    const learner = await User.findById(ctx.learnerId)
+      .select("stage3_objectives l1Language")
+      .lean();
+    const objectives = (learner?.stage3_objectives ?? []) as Array<{
+      id: string;
+      skill_domain: string;
+      description: string;
+      target_level?: string | null;
+    }>;
+    const l1Language = (learner?.l1Language as string) ?? "english";
+    const negotiation_script = buildStage3NegotiationScript(
+      objectives as never,
+      l1Language,
+    );
+
+    const agreement = await AuditLog.findOne({
+      learner_id: new Types.ObjectId(ctx.learnerId),
+      action: "rarpa_stage3_negotiated",
+      actor_type: "learner",
+    })
+      .sort({ timestamp: -1 })
+      .lean();
+
+    return res.status(200).json(
+      new ApiResponse(200, "Goals", {
+        objectives,
+        negotiation_script,
+        l1_language: l1Language,
+        agreed_at:
+          agreement?.timestamp instanceof Date
+            ? agreement.timestamp.toISOString()
+            : null,
+      }),
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/esol/session/goals/agree — the learner confirms their Stage 3
+ * objectives in their L1. Records an immutable learner-actor negotiation
+ * evidence row (RARPA Stage 3).
+ */
+export const agreeMyGoals: ExpressFunction = async (req, res, next) => {
+  try {
+    const ctx = pullContext(req);
+    if (!ctx) return next(new ApiError(403, "Auth + org context required"));
+
+    const rawNote = (req.body as { note?: unknown })?.note;
+    const note = typeof rawNote === "string" ? rawNote.slice(0, 500) : null;
+
+    const learner = await User.findById(ctx.learnerId)
+      .select("stage3_objectives orgId")
+      .lean();
+    const objectiveIds = (
+      (learner?.stage3_objectives ?? []) as Array<{ id: string }>
+    ).map((o) => o.id);
+
+    await AuditLog.create({
+      timestamp: new Date(),
+      actor_type: "learner",
+      actor_id: new Types.ObjectId(ctx.learnerId),
+      org_id: (learner?.orgId as Types.ObjectId | null) ?? null,
+      learner_id: new Types.ObjectId(ctx.learnerId),
+      action: "rarpa_stage3_negotiated",
+      before_state: null,
+      after_state: {
+        agreed: true,
+        learner_note: note,
+        objective_ids: objectiveIds,
+        source: "learner_confirmation",
+      },
+      reason:
+        "Learner reviewed and agreed their Stage 3 objectives in their first language (RARPA Stage 3 negotiation)",
+    });
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, "Goals agreed", { agreed: true }));
   } catch (err) {
     next(err);
   }

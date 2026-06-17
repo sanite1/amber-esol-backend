@@ -12,6 +12,8 @@ import {
   synthesizeTts,
   transcribeStt,
   getVoiceCapabilities,
+  getMyGoals,
+  agreeMyGoals,
 } from "../controllers/aiSession.controller";
 
 /**
@@ -105,6 +107,26 @@ router.post(
   requireOrgContext,
   aiTurnLimiter,
   transcribeStt,
+);
+
+/**
+ * Stage 3 learner negotiation (F30).
+ *   GET  /goals       — the learner's objectives + L1 negotiation script
+ *   POST /goals/agree — the learner confirms them in their L1
+ */
+router.get(
+  "/goals",
+  isAuthenticated,
+  requireEsolLearner,
+  requireOrgContext,
+  getMyGoals,
+);
+router.post(
+  "/goals/agree",
+  isAuthenticated,
+  requireEsolLearner,
+  requireOrgContext,
+  agreeMyGoals,
 );
 
 export default router;

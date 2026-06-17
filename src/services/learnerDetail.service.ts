@@ -39,6 +39,7 @@ import LevelChange from "../models/LevelChange";
 import SafeguardingAlert from "../models/SafeguardingAlert";
 import TeacherReview from "../models/TeacherReview";
 import AuditLog from "../models/AuditLog";
+import EvidenceRecord from "../models/EvidenceRecord";
 import { assertLearnerAccess } from "./esolLearner.service";
 
 // ─────────────────────────────────────────────────────────────────────
@@ -314,6 +315,9 @@ export const getLearnerDetailService = async (
   const total_glh =
     Math.round((total_ai_hours + imported_hours + teacher_contact_hours) * 10) /
     10;
+  // F29 — claim-driving GLH excludes AI tutor time.
+  const claimable_glh =
+    Math.round((imported_hours + teacher_contact_hours) * 10) / 10;
 
   const cohortBand = learner.cohort_status as string | null | undefined;
   const status: "active" | "inactive" | "dormant" | "unknown" = cohortBand
@@ -356,6 +360,47 @@ export const getLearnerDetailService = async (
       return (ax.times_encountered ?? 0) - (bx.times_encountered ?? 0);
     });
 
+  // ── 5b. Evidence chain summary (F29) — grouped by beat + data_point
+  // with capture counts + how many are human-confirmed. The org admin's
+  // audit-defensibility view: what evidence exists and what still needs
+  // a human sign-off (the honesty gate).
+  const evidenceAgg = await EvidenceRecord.aggregate([
+    { $match: { learnerId: learnerObjectId } },
+    {
+      $group: {
+        _id: {
+          beat: "$beat",
+          data_point: "$data_point",
+          human_confirm: "$human_confirm",
+        },
+        count: { $sum: 1 },
+        confirmed: { $sum: { $cond: ["$human_confirmed", 1, 0] } },
+        rarpa_stage: { $first: "$rarpa_stage" },
+        ilr_fields: { $first: "$ilr_fields" },
+        last_captured: { $max: "$captured_at" },
+      },
+    },
+    { $sort: { "_id.beat": 1, "_id.data_point": 1 } },
+  ]);
+
+  const evidenceRecords = evidenceAgg.map((r: any) => ({
+    beat: r._id.beat as string,
+    data_point: r._id.data_point as string,
+    human_confirm: !!r._id.human_confirm,
+    count: r.count as number,
+    confirmed: r.confirmed as number,
+    rarpa_stage: (r.rarpa_stage as string) ?? "",
+    ilr_fields: (r.ilr_fields as string[]) ?? [],
+    last_captured:
+      r.last_captured instanceof Date ? r.last_captured.toISOString() : null,
+  }));
+  const evidenceTotal = evidenceRecords.reduce((s, r) => s + r.count, 0);
+  // Pending = needs a human confirm (human_confirm=true) and not all
+  // captured instances are confirmed yet.
+  const evidencePending = evidenceRecords
+    .filter((r) => r.human_confirm)
+    .reduce((s, r) => s + Math.max(0, r.count - r.confirmed), 0);
+
   // ── 6. Compose the response ───────────────────────────────────────
   return new ApiResponse(200, "Learner detail retrieved", {
     learner: {
@@ -374,6 +419,7 @@ export const getLearnerDetailService = async (
       imported_hours,
       teacher_contact_hours,
       total_glh,
+      claimable_glh,
       scenarios_passed: sessionAgg.scenarios_passed,
       last_active:
         sessionAgg.last_active instanceof Date
@@ -414,6 +460,11 @@ export const getLearnerDetailService = async (
     },
     level_progression: levelProgression,
     safeguarding_alert_count: safeguardingAlertCount,
+    evidence_chain: {
+      total: evidenceTotal,
+      pending_confirmation: evidencePending,
+      records: evidenceRecords,
+    },
     teacher_reviews: teacherReviews,
     audit_log_entries: {
       rows: auditEntries,

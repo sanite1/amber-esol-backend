@@ -84,6 +84,13 @@ export interface GlhBreakdown {
   ai_glh: number;
   pre_platform_glh: number;
   teacher_contact_glh: number;
+  /**
+   * Claim-driving GLH = pre_platform + teacher_contact (EXCLUDES AI
+   * time, F29). `total_glh` includes AI time and is for display only;
+   * this is the figure a funding claim is built on until the GLA
+   * opinion lands. Mirrors `computeIlrLearnerGlh.claimable_glh`.
+   */
+  claimable_glh: number;
   /** ratio_teacher_to_total as a 0..1 number (UI multiplies by 100). */
   ratio_teacher_to_total: number;
 }
@@ -233,6 +240,8 @@ const buildBreakdown = (
     pre_platform_glh: round1dp(prePlatformGlh),
     teacher_contact_glh: round1dp(teacherContactGlh),
     total_glh: round1dp(total),
+    // F29 — claim figure excludes AI time.
+    claimable_glh: round1dp(prePlatformGlh + teacherContactGlh),
     // Ratio at three decimal places (the UI's "12.4%" needs the
     // extra precision to round cleanly at one decimal).
     ratio_teacher_to_total: total > 0 ? round3dp(teacherContactGlh / total) : 0,
