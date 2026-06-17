@@ -176,6 +176,10 @@ export interface LearnerProfileForPrompt {
   microStageNumber?: number;
   /** Label of the micro-stage currently in play. */
   microStageLabel?: string;
+
+  // ── F27 developmentally-late forms ─────────────────────────────────
+  /** Long-horizon grammar forms for this level — recycle, never fail. */
+  longHorizonForms?: string[];
 }
 
 export interface ScenarioForPrompt {
@@ -311,6 +315,15 @@ const buildLayer5LearnerProfile = (
       ? `\n- THIS TURN'S DIRECTIVE: ${learner.modeDirective ?? ""}\n- L1 ratio this turn: ${learner.l1RatioGuidance ?? ""}`
       : "";
 
+  // F27 — developmentally-late forms are RECYCLED, never failed. If the
+  // learner drops one of these, model the correct form back (recast) and
+  // keep the conversation moving; do NOT score it down or flag it as an
+  // error. These naturally emerge late and on their own timeline.
+  const longHorizonBlock =
+    learner.longHorizonForms && learner.longHorizonForms.length
+      ? `\n- Recycle-don't-fail forms at this level (recast gently if dropped, never penalise): ${learner.longHorizonForms.join(", ")}`
+      : "";
+
   return `# Layer 5 — Learner Profile
 
 LEARNER PROFILE:
@@ -320,7 +333,7 @@ ${summaries}
 - Skill weakness flags: ${learner.skillWeaknessFlags.join(", ") || "none"}
 - Vocabulary to reinforce this session (weave naturally into dialogue): ${vocab}
 - Current mode: ${learner.currentMode}
-- Where we are in the roleplay: ${arc}${directiveBlock}
+- Where we are in the roleplay: ${arc}${directiveBlock}${longHorizonBlock}
 - Advancement ceremony pending: ${
     learner.advancementCeremony
       ? `YES — celebrate the learner's promotion to ${learner.advancementCeremony.toLevel} in their L1 in your first reply, briefly and warmly.`

@@ -73,6 +73,39 @@ const getLevel = (level: unknown): ICurriculumLevel | null => {
 
 const getActiveVersion = (): string | null => loadedVersion;
 
+/**
+ * Encounters required before a vocabulary item can be marked
+ * `retained`, for the given level (F27). Reads
+ * `CurriculumLevel.retentionEncounters.min` — the floor of the level's
+ * spaced-reinforcement band. Returns null when the level isn't seeded,
+ * so the caller keeps its own default.
+ */
+const getRetentionMinEncounters = (level: unknown): number | null => {
+  const doc = getLevel(level);
+  const min = doc?.retentionEncounters?.min;
+  return typeof min === "number" && Number.isFinite(min) && min > 0
+    ? min
+    : null;
+};
+
+/**
+ * Developmentally-late ("long-horizon") grammar forms for a level —
+ * 3SG-s, articles, subject-verb inversion, etc. These are RECYCLED,
+ * never marked as failed learning (F27 / Bridge Method). Empty array
+ * when the level isn't seeded.
+ */
+const getLongHorizonForms = (level: unknown): string[] => {
+  const doc = getLevel(level);
+  return Array.isArray(doc?.longHorizonForms) ? doc!.longHorizonForms : [];
+};
+
+/** Case-insensitive membership test against the level's long-horizon set. */
+const isLongHorizonForm = (level: unknown, form: string): boolean => {
+  const f = (form ?? "").trim().toLowerCase();
+  if (!f) return false;
+  return getLongHorizonForms(level).some((lhf) => lhf.toLowerCase() === f);
+};
+
 const __resetForTests = (): void => {
   cache = new Map();
   loadedVersion = null;
@@ -82,6 +115,9 @@ const CurriculumLevelService = {
   loadAll,
   getLevel,
   getActiveVersion,
+  getRetentionMinEncounters,
+  getLongHorizonForms,
+  isLongHorizonForm,
   normaliseNqfLevel,
   __resetForTests,
 };

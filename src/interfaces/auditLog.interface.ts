@@ -104,7 +104,12 @@ export type AuditAction =
   // shot: only written the first time `org_onboarding_completed_at`
   // flips from null; subsequent POST /onboarding/complete calls are
   // idempotent no-ops with no second audit row.
-  | "org_onboarding_completed";
+  | "org_onboarding_completed"
+  // AI Tutor Build Brief F30 — Stage 3 objectives presented to the
+  // learner in their L1 for negotiation/agreement at placement. The
+  // immutable audit row IS the RARPA Stage 3 evidence of that
+  // negotiation.
+  | "rarpa_stage3_negotiated";
 
 export interface IAuditLog extends Document {
   _id: Types.ObjectId;

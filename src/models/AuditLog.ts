@@ -131,6 +131,8 @@ const auditLogSchema = new Schema<IAuditLog>(
         // Phase 2 / Final Addendum §13 (BE-G) — org_admin completed
         // (or explicitly skipped) the ROI-calculator onboarding embed.
         "org_onboarding_completed",
+        // AI Tutor Build Brief F30 — Stage 3 L1 negotiation evidence
+        "rarpa_stage3_negotiated",
       ],
       required: true,
     },

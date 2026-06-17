@@ -4,7 +4,9 @@
  * User, AISession, scenarios and the curriculum — this helper is the
  * single reconciliation point, so its behaviour is pinned here.
  */
-import { normaliseNqfLevel } from "../services/curriculumLevel.service";
+import CurriculumLevelService, {
+  normaliseNqfLevel,
+} from "../services/curriculumLevel.service";
 
 describe("normaliseNqfLevel", () => {
   it("accepts code form, any case", () => {
@@ -26,5 +28,31 @@ describe("normaliseNqfLevel", () => {
     expect(normaliseNqfLevel(null)).toBeNull();
     expect(normaliseNqfLevel(undefined)).toBeNull();
     expect(normaliseNqfLevel(3)).toBeNull();
+  });
+});
+
+/**
+ * F27 curriculum helpers — degraded-cache safety. With no level docs
+ * loaded (the unit-test process never calls loadAll), these must return
+ * safe nulls/empties so the vocab ledger + prompt builder fall back to
+ * their defaults rather than throwing.
+ */
+describe("F27 curriculum helpers (empty cache)", () => {
+  beforeAll(() => CurriculumLevelService.__resetForTests());
+
+  it("getRetentionMinEncounters returns null when the level isn't seeded", () => {
+    expect(CurriculumLevelService.getRetentionMinEncounters("e1")).toBeNull();
+    expect(
+      CurriculumLevelService.getRetentionMinEncounters("bogus"),
+    ).toBeNull();
+  });
+
+  it("getLongHorizonForms returns [] when the level isn't seeded", () => {
+    expect(CurriculumLevelService.getLongHorizonForms("e2")).toEqual([]);
+  });
+
+  it("isLongHorizonForm is false for empty input and unseeded levels", () => {
+    expect(CurriculumLevelService.isLongHorizonForm("e2", "")).toBe(false);
+    expect(CurriculumLevelService.isLongHorizonForm("e2", "3SG-s")).toBe(false);
   });
 });

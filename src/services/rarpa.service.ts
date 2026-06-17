@@ -1,6 +1,8 @@
 import { randomUUID } from "crypto";
+import { Types } from "mongoose";
 
 import ApiError from "../errors/apiError";
+import AuditLog from "../models/AuditLog";
 import User from "../models/User";
 import { IUser, IStage3Objective } from "../interfaces/user.interface";
 import {
@@ -9,6 +11,7 @@ import {
   ILR_CODE_TO_DOMAIN,
   ForSkillsDomain,
 } from "./esolSkills";
+import CurriculumLevelService from "./curriculumLevel.service";
 import logger from "../config/logger";
 
 /**
@@ -96,6 +99,41 @@ const prettyLevel = (level: EsolLevel): string => {
 const render = (template: string, level: EsolLevel): string =>
   template.replace("{level}", prettyLevel(level));
 
+/**
+ * Pull a level-appropriate can-do objective from the seeded curriculum
+ * bank (F30) for the given anchor, instead of the generic template.
+ *
+ *   Rt → rarpaObjectives.reading
+ *   Wt → rarpaObjectives.writing
+ *   Sc / Lr → rarpaObjectives.speakingListening (the curriculum groups
+ *             speaking + listening; we offset the index so a learner
+ *             weak in BOTH gets two distinct statements rather than the
+ *             same one twice)
+ *
+ * Returns null when the level isn't seeded or the relevant bank is
+ * empty — the caller then falls back to DOMAIN_TEMPLATES so a missing
+ * curriculum never blocks placement.
+ */
+const curriculumObjective = (
+  level: EsolLevel,
+  anchor: "Rt" | "Wt" | "Lr" | "Sc",
+): string | null => {
+  const doc = CurriculumLevelService.getLevel(level);
+  const bank = doc?.rarpaObjectives;
+  if (!bank) return null;
+  const arr =
+    anchor === "Rt"
+      ? bank.reading
+      : anchor === "Wt"
+        ? bank.writing
+        : bank.speakingListening;
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  // Sc → first statement; Lr → second if present, else first.
+  const idx = anchor === "Lr" && arr.length > 1 ? 1 : 0;
+  const text = arr[idx];
+  return typeof text === "string" && text.trim().length > 0 ? text : null;
+};
+
 // ─────────────────────────────────────────────────────────────────────
 // Public API
 // ─────────────────────────────────────────────────────────────────────
@@ -141,7 +179,11 @@ export const buildStage3ObjectivesForPlacement = (
     objectives.push({
       id: randomUUID(),
       skill_domain: anchor,
-      description: render(DOMAIN_TEMPLATES[anchor], esol_level),
+      // Prefer the seeded curriculum can-do statement; fall back to the
+      // generic template when the level isn't seeded (F30).
+      description:
+        curriculumObjective(esol_level, anchor) ??
+        render(DOMAIN_TEMPLATES[anchor], esol_level),
       set_at: now,
       set_from: "placement_assessment",
       target_level: esol_level,
@@ -223,7 +265,82 @@ export const createStage3ObjectivesFromPlacement = async (
     "Stage 3 objectives rewritten from placement",
   );
 
+  // F30 — record the L1 negotiation of these objectives as immutable
+  // RARPA Stage 3 evidence. Best-effort: a failure here must not fail
+  // placement (the objectives are already saved + the placement_completed
+  // audit row exists).
+  await recordStage3Negotiation(learner, fresh).catch((err) =>
+    logger.error(
+      { err, learnerId: learner_id },
+      "Stage 3 L1 negotiation evidence write failed (objectives still saved)",
+    ),
+  );
+
   return learner.stage3_objectives ?? [];
+};
+
+// ─────────────────────────────────────────────────────────────────────
+// F30 — Stage 3 L1 negotiation evidence
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Build the short, warm script (in the learner's L1) that presents the
+ * Stage 3 objectives for agreement. The learner-facing negotiation UI
+ * (Phase 6) renders this; the text is also captured in the audit row so
+ * a RARPA reviewer can see exactly what the learner was shown and in
+ * which language. Falls back to English for any non-MVP language.
+ */
+export const buildStage3NegotiationScript = (
+  objectives: IStage3Objective[],
+  l1Language: string,
+): string => {
+  const goals = objectives.map((o) => `• ${o.description}`).join("\n");
+  const lc = (l1Language ?? "english").toLowerCase();
+  switch (lc) {
+    case "arabic":
+    case "ar":
+      return `هذه هي أهدافك التعليمية. هل توافق عليها، أم تريد تغيير شيء؟\n${goals}`;
+    case "cantonese":
+    case "yue":
+    case "zh":
+      return `呢啲係你嘅學習目標。你同意嗎，定係想改啲嘢?\n${goals}`;
+    case "turkish":
+    case "tr":
+      return `Bunlar senin öğrenme hedeflerin. Kabul ediyor musun, yoksa bir şeyi değiştirmek ister misin?\n${goals}`;
+    default:
+      return `These are your learning goals. Do you agree with them, or would you like to change anything?\n${goals}`;
+  }
+};
+
+/**
+ * Write the immutable Stage 3 negotiation evidence row. The AuditLog IS
+ * the evidence — append-only, queryable by learner + action, surfaced in
+ * the org admin's "what happened?" view and the learner's RARPA folder.
+ */
+export const recordStage3Negotiation = async (
+  learner: IUser,
+  objectives: IStage3Objective[],
+): Promise<void> => {
+  const l1Language = (learner.l1Language as string) ?? "english";
+  const script = buildStage3NegotiationScript(objectives, l1Language);
+  await AuditLog.create({
+    timestamp: new Date(),
+    actor_type: "system",
+    actor_id: null,
+    org_id: (learner.orgId as Types.ObjectId | null) ?? null,
+    learner_id: learner._id,
+    action: "rarpa_stage3_negotiated",
+    before_state: null,
+    after_state: {
+      l1_language: l1Language,
+      negotiation_script: script,
+      objective_ids: objectives.map((o) => o.id),
+      objective_descriptions: objectives.map((o) => o.description),
+      objective_count: objectives.length,
+    },
+    reason:
+      "Stage 3 objectives presented to the learner in their first language for negotiation and agreement (RARPA Stage 3 evidence)",
+  });
 };
 
 /**

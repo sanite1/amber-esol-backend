@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 
 import VocabLedger from "../models/VocabLedger";
 import logger from "../config/logger";
+import CurriculumLevelService from "./curriculumLevel.service";
 
 /**
  * Vocabulary ledger writer + reinforcement-target reader — brief
@@ -30,7 +31,9 @@ import logger from "../config/logger";
 // Tunables
 // ─────────────────────────────────────────────────────────────────────
 
-/** Encounters required before retention becomes possible. */
+/** Encounters required before retention becomes possible — the
+ *  fallback when the learner's level isn't seeded in CurriculumLevel.
+ *  The live value is the level's `retentionEncounters.min` (F27). */
 const RETENTION_MIN_ENCOUNTERS = 5;
 /** Minimum turn_score on the retention-trigger turn. */
 const RETENTION_MIN_TURN_SCORE = 0.7;
@@ -60,6 +63,10 @@ export interface UpdateLedgerForTurnArgs {
    *  topic / level and lets org admins scope by orgId. Existing rows
    *  keep their values ($ifNull). */
   context?: VocabLedgerContext;
+  /** Encounters required before `retained` can flip true. Resolved by
+   *  the caller from the learner's level (F27); falls back to
+   *  RETENTION_MIN_ENCOUNTERS when absent. */
+  retention_min_encounters?: number;
 }
 
 export interface VocabLedgerContext {
@@ -101,6 +108,11 @@ const upsertWord = async (
   const learnerObjectId = toObjectId(args.learner_id);
   const now = new Date();
   const ctx = args.context ?? {};
+  const retentionMin =
+    typeof args.retention_min_encounters === "number" &&
+    args.retention_min_encounters > 0
+      ? args.retention_min_encounters
+      : RETENTION_MIN_ENCOUNTERS;
 
   await VocabLedger.updateOne(
     { learnerId: learnerObjectId, word },
@@ -142,7 +154,7 @@ const upsertWord = async (
                   { $eq: ["$retained", true] },
                   {
                     $and: [
-                      { $gte: ["$$newCount", RETENTION_MIN_ENCOUNTERS] },
+                      { $gte: ["$$newCount", retentionMin] },
                       {
                         $gte: [
                           args.current_turn_score,
@@ -197,6 +209,13 @@ export const updateLedgerForTurn = async (
     ),
   );
 
+  // Resolve the level's retention threshold ONCE for the turn (F27).
+  // `context.esolLevel` carries the learner's level on the queue
+  // payload; null/unseeded → the function falls back to the default.
+  const retention_min_encounters =
+    CurriculumLevelService.getRetentionMinEncounters(context?.esolLevel) ??
+    undefined;
+
   let updated = 0;
   let skipped = 0;
   for (const word of words) {
@@ -208,6 +227,7 @@ export const updateLedgerForTurn = async (
         scenario_id,
         stage3_objective_id,
         context,
+        retention_min_encounters,
       });
       updated += 1;
     } catch (err) {

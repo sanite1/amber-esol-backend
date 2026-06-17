@@ -33,7 +33,11 @@ import {
 import { SchemaType } from "@google-cloud/vertexai";
 import { generateTurn, ConversationTurn } from "./gemini.service";
 import { generateSessionSummary } from "./geminiAI.service";
-import { updateLedgerForTurn } from "./vocabLedger.service";
+import {
+  updateLedgerForTurn,
+  getReinforcementTargets,
+} from "./vocabLedger.service";
+import CurriculumLevelService from "./curriculumLevel.service";
 import { encryptSafeguardingRaw } from "../lib/safeguardingCrypto";
 import { validateGeminiTurnOutput } from "../utils/geminiOutputValidator";
 import { IGeminiTurnOutput } from "../interfaces/geminiTurnOutput.interface";
@@ -351,23 +355,15 @@ const buildLearnerProfile = async (
     .map((s) => (s as any).assessmentSummary)
     .filter((s): s is string => typeof s === "string" && s.length > 0);
 
-  // Top 6 vocab items due for reinforcement. Phase-10 stub: most-
-  // recently-introduced words for this learner with masteryScore < 0.8.
-  // Real spaced-repetition replaces this when Function 10 lands.
-  const dueVocab = await VocabLedger.find({
-    learnerId: learner._id,
-    $or: [
-      { masteryScore: { $lt: 0.8 } },
-      { masteryScore: { $exists: false } },
-      { masteryScore: null },
-    ],
-  })
-    .sort({ introducedAt: -1 })
-    .limit(6)
-    .select("word")
-    .lean();
-
-  const vocabularyToReinforce: string[] = dueVocab.map((v) => (v as any).word);
+  // Top 6 vocab items due for reinforcement (F27). Use the canonical
+  // spaced-reinforcement selector — un-retained words ordered by
+  // due-ness (least-encountered first, then oldest-seen first). This
+  // retires the legacy stub that sorted by `introducedAt` and filtered
+  // on a `masteryScore` field the ledger never populates (so it
+  // surfaced the most RECENTLY introduced words, the opposite of what
+  // spaced repetition wants).
+  const dueTargets = await getReinforcementTargets(learner._id, 6);
+  const vocabularyToReinforce: string[] = dueTargets.map((t) => t.word);
 
   // Current mode — last entry in teaching_mode_sequence, else fall back
   // to the uppercase sessionMode. Gemini wants lowercase.
@@ -377,8 +373,10 @@ const buildLearnerProfile = async (
       ? lowerMode(seq[seq.length - 1])
       : lowerMode(session.sessionMode ?? "bridge");
 
+  const esolLevel = normaliseLevel(learner.esolLevel);
+
   return {
-    esolLevel: normaliseLevel(learner.esolLevel),
+    esolLevel,
     l1Language: learner.l1Language ?? "english",
     vocabularyToReinforce,
     recentSessionSummaries,
@@ -390,6 +388,8 @@ const buildLearnerProfile = async (
         : currentMode === "immersion"
           ? "IMMERSION"
           : "BRIDGE",
+    // F27 — developmentally-late forms for this level, recycled never failed.
+    longHorizonForms: CurriculumLevelService.getLongHorizonForms(esolLevel),
     // advancement ceremony comes from Function 12 (level-change flow);
     // null for now means "no celebration this turn".
     advancementCeremony: null,
