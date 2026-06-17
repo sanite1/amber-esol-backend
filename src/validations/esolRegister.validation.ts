@@ -47,18 +47,18 @@ const dobAt16Plus = (value: string, helpers: any) => {
 const UK_POSTCODE_REGEX = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s*[0-9][A-Z]{2}$/i;
 
 const L1_LANGUAGES = [
+  // ── MVP (AI Tutor Brief §3): Arabic, Cantonese, Turkish, English ──
   "arabic",
+  "cantonese",
+  "turkish",
+  "english",
+  // ── Deferred — still ACCEPTED (so existing learners and the
+  //    teacher-matching language data don't break), but the learner
+  //    picker no longer offers them; revive by re-listing in the
+  //    frontend SELECTABLE_LANGUAGES / MVP_LEARNER_LANGUAGES gates. ──
   "somali",
   "dari",
   "pashto",
-  "cantonese",
-  "english",
-  // Phase 5 / Final Addendum §5 (BE-F) — Bengali + Urdu added to
-  // match the frontend's LANGUAGES coverage. Front-of-house chrome
-  // for these langs ships in AiTutorSession.tsx; the placement
-  // assessment still degrades to English until the question bank
-  // JSON gains *_bn / *_ur fields (documented inline at
-  // src/modules/esol/pages/PlacementAssessment.tsx).
   "bengali",
   "urdu",
 ];
