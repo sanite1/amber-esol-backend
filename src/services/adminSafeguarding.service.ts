@@ -40,6 +40,7 @@ import ApiResponse from "../errors/apiResponse";
 import SafeguardingAlert from "../models/SafeguardingAlert";
 import Organisation from "../models/Organisation";
 import { ISafeguardingAlert } from "../interfaces/safeguardingAlert.interface";
+import { decryptSafeguardingRaw } from "../lib/safeguardingCrypto";
 
 // ─────────────────────────────────────────────────────────────────────
 // Constants
@@ -515,8 +516,20 @@ export const getAdminSafeguardingAlertService = async (
     throw new ApiError(404, "Safeguarding alert not found");
   }
 
+  // F22 — decrypt the raw disclosure for this AUTHORISED single-alert
+  // read only (this endpoint is Amber-admin gated). The plaintext is
+  // never persisted and never appears in the list view; it exists in
+  // the response solely so a reviewer can action the referral.
+  // `disclosure_text` is null when no key was configured at capture
+  // (then the raw remains in the append-only TurnLog) or decryption
+  // fails. The hash stays available for correlation either way.
+  const disclosureText = alert.rawInputEncrypted
+    ? decryptSafeguardingRaw(alert.rawInputEncrypted)
+    : null;
+
   return new ApiResponse(200, "Safeguarding alert retrieved", {
     alert: toBriefResponse(alert),
+    disclosure_text: disclosureText,
   });
 };
 

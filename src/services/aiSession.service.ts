@@ -34,6 +34,7 @@ import { SchemaType } from "@google-cloud/vertexai";
 import { generateTurn, ConversationTurn } from "./gemini.service";
 import { generateSessionSummary } from "./geminiAI.service";
 import { updateLedgerForTurn } from "./vocabLedger.service";
+import { encryptSafeguardingRaw } from "../lib/safeguardingCrypto";
 import { validateGeminiTurnOutput } from "../utils/geminiOutputValidator";
 import { IGeminiTurnOutput } from "../interfaces/geminiTurnOutput.interface";
 
@@ -400,6 +401,13 @@ interface SafeguardingTriggerArgs {
   /** "keyword" = SafeguardingDetector fired pre-Gemini;
    *  "ai_only" = Gemini flagged but detector didn't (secondary check). */
   source: "keyword" | "ai_only";
+  /**
+   * Pre-computed encrypted raw disclosure (keyword path passes this so
+   * the same ciphertext that's stored here is also the basis for
+   * redacting TurnLog). When omitted (ai_only path), the helper
+   * encrypts internally. `null` = no key configured → not stored.
+   */
+  rawInputEncrypted?: string | null;
 }
 
 /**
@@ -447,6 +455,16 @@ const recordSafeguardingTrigger = async (
   const triggerCategory =
     mapCategoryToBankKey(scanCategory) ?? scanCategory ?? null;
 
+  // Encrypt the raw disclosure for at-rest storage on the alert. The
+  // keyword path pre-computes this (so the same ciphertext drives the
+  // TurnLog redaction); the ai_only path lets us encrypt here. null
+  // when no key is configured — then nothing extra is stored and the
+  // raw remains in the append-only TurnLog.
+  const rawInputEncrypted =
+    args.rawInputEncrypted !== undefined
+      ? args.rawInputEncrypted
+      : encryptSafeguardingRaw(message);
+
   let alertDoc: any = null;
   try {
     alertDoc = await SafeguardingAlert.create({
@@ -455,6 +473,7 @@ const recordSafeguardingTrigger = async (
       sessionId: session._id,
       alertLevel,
       messageContentHash,
+      rawInputEncrypted,
       triggerCategory,
       triggerSource: source,
       status: "open",
@@ -644,14 +663,27 @@ export const processTurnService = async (
     learner.l1Language ?? "en",
   );
 
+  // Encrypt the raw disclosure up front when the scan triggered, so the
+  // SAME ciphertext is stored on the SafeguardingAlert AND used to
+  // decide whether to redact TurnLog. When no key is configured this is
+  // null → we keep the raw in TurnLog (append-only) so it's never lost.
+  const encryptedRaw = scan.triggered
+    ? encryptSafeguardingRaw(input.message)
+    : null;
+
   // Always TurnLog the message — capture the audit trail BEFORE
   // Gemini runs, regardless of which path serves the reply.
-  // The actual served_path is filled in below.
+  // The actual served_path is filled in below. For a triggered
+  // disclosure we redact the plaintext here when it's been encrypted
+  // onto the alert — no cleartext copy of a disclosure in the DB.
   const turnLog = await TurnLog.create({
     session_id: session._id,
     learner_id: learner._id,
     org_id: session.orgId,
-    message: input.message,
+    message:
+      scan.triggered && encryptedRaw
+        ? "[safeguarding disclosure — raw text encrypted on SafeguardingAlert]"
+        : input.message,
     safeguarding_scan: {
       triggered: scan.triggered,
       category: scan.category,
@@ -676,7 +708,9 @@ export const processTurnService = async (
       learner.l1Language,
     );
 
-    // Record the alert + audit + notify the DSL.
+    // Record the alert + audit + notify the DSL. Pass the pre-computed
+    // ciphertext so the alert stores exactly what we redacted from
+    // TurnLog above.
     await recordSafeguardingTrigger({
       session,
       learner,
@@ -685,6 +719,7 @@ export const processTurnService = async (
       scanCategory: scan.category,
       detectorMatchedPattern: scan.matched_pattern,
       source: "keyword",
+      rawInputEncrypted: encryptedRaw,
     });
 
     const response: ProcessTurnResponse = {

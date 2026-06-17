@@ -38,6 +38,14 @@ export interface ISafeguardingAlert extends Document {
   alertLevel: SafeguardingAlertLevel;
   /** SHA-256 hex (64 chars). Brief calls this message_content_hash. */
   messageContentHash: string;
+  /**
+   * F22 hardening — the raw disclosure text, ENCRYPTED at rest
+   * (safeguardingCrypto / cryptr). Cleartext never touches the DB; an
+   * authorised DSL read decrypts on demand. Null when no encryption key
+   * is configured (the raw then stays in the append-only TurnLog and a
+   * boot warning fires) or for the secondary ai_only path.
+   */
+  rawInputEncrypted?: string | null;
   triggerCategory?: string;
   triggerSource?: SafeguardingAlertSource;
   claudeReasoning?: string;

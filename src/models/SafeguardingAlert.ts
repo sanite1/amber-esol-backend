@@ -3,31 +3,58 @@ import { ISafeguardingAlert } from "../interfaces/safeguardingAlert.interface";
 
 const safeguardingAlertSchema = new Schema<ISafeguardingAlert>(
   {
-    learnerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    orgId: { type: Schema.Types.ObjectId, ref: "Organisation", required: true },
+    // ── Immutable disclosure core (F22) ───────────────────────────
+    // These describe WHAT was disclosed and are append-only: once the
+    // alert exists they can never change. `immutable: true` makes
+    // Mongoose silently ignore any update to them. Only the review /
+    // status lifecycle fields further down are mutable.
+    learnerId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      immutable: true,
+    },
+    orgId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organisation",
+      required: true,
+      immutable: true,
+    },
     sessionId: {
       type: Schema.Types.ObjectId,
       ref: "AISession",
       required: true,
+      immutable: true,
     },
     alertLevel: {
       type: String,
       enum: ["low", "medium", "high", "critical"],
       required: true,
+      immutable: true,
     },
     /**
-     * SHA-256 hex of the original learner message. Brief Function 10
-     * field name is `message_content_hash`; the Mongoose property is
-     * `messageContentHash`. NEVER store the cleartext — that lives in
-     * TurnLog only. A regression here would be a privacy incident.
+     * SHA-256 hex of the original learner message. Lets a reviewer
+     * correlate alert → TurnLog without duplicating content. Immutable.
      */
     messageContentHash: {
       type: String,
       required: true,
+      immutable: true,
       match: [
         /^[0-9a-f]{64}$/,
         "messageContentHash must be a 64-char lower-hex SHA-256 digest",
       ],
+    },
+    /**
+     * Raw disclosure text, ENCRYPTED at rest (safeguardingCrypto). NOT
+     * cleartext — decrypt only on an authorised DSL read. Null when no
+     * encryption key is configured (raw then stays in TurnLog) or on
+     * the ai_only path. Immutable once written.
+     */
+    rawInputEncrypted: {
+      type: String,
+      default: null,
+      immutable: true,
     },
     triggerCategory: {
       type: String,
@@ -41,11 +68,13 @@ const safeguardingAlertSchema = new Schema<ISafeguardingAlert>(
         "mental_health_crisis",
       ],
       default: null,
+      immutable: true,
     },
     triggerSource: {
       type: String,
       enum: ["keyword", "ai_only"],
       default: null,
+      immutable: true,
     },
     claudeReasoning: { type: String },
     reviewedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
