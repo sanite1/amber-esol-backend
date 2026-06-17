@@ -38,6 +38,7 @@ import { Types } from "mongoose";
 import Organisation from "../models/Organisation";
 import User from "../models/User";
 import AISession from "../models/AISession";
+import Stage5Review from "../models/Stage5Review";
 import ComplianceConfig from "../models/ComplianceConfig";
 import ComplianceConfigService from "../services/ComplianceConfigService";
 import {
@@ -405,7 +406,27 @@ describe("buildIlrRows integration", () => {
     expect(out.aim_invalid_rows).toHaveLength(1);
   });
 
-  it("I6 — L2 + passed → CompStatus 2, Outcome 1, LearnActEndDate set", async () => {
+  it("I6a — honesty gate: L2 + passed but NO human-confirmed Stage 5 → held as continuing", async () => {
+    // The AI pass alone must NOT export as achieved. Without a
+    // confirmed Stage 5 review the row stays CompStatus 1 / Outcome
+    // null, with a suppression note explaining the gate.
+    await seedConfig();
+    const org = await createOrg();
+    const learner = await createLearner({ orgId: org._id, esolLevel: "l2" });
+    await seedSession(learner._id, org._id, {
+      passed: true,
+      completedAt: new Date("2026-05-15T10:00:00Z"),
+    });
+
+    const out = await buildIlrRows(org._id.toString(), ACADEMIC_YEAR);
+    const row = out.rows[0];
+    expect(row.CompStatus).toBe(1);
+    expect(row.Outcome).toBeNull();
+    expect(row.LearnActEndDate).toBeNull();
+    expect(row._suppression_notes.join(" ")).toMatch(/honesty gate/i);
+  });
+
+  it("I6b — L2 + passed + human-confirmed Stage 5 → CompStatus 2, Outcome 1, LearnActEndDate set", async () => {
     await seedConfig();
     const org = await createOrg();
     const learner = await createLearner({ orgId: org._id, esolLevel: "l2" });
@@ -413,6 +434,13 @@ describe("buildIlrRows integration", () => {
     await seedSession(learner._id, org._id, {
       passed: true,
       completedAt: completed,
+    });
+    // Human sign-off: an org admin has confirmed the L2 Stage 5 review.
+    await Stage5Review.create({
+      learner_id: learner._id,
+      org_id: org._id,
+      level_completed: "l2",
+      org_admin_confirmed_at: new Date("2026-05-16T09:00:00Z"),
     });
 
     const out = await buildIlrRows(org._id.toString(), ACADEMIC_YEAR);

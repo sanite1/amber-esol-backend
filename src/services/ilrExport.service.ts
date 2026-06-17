@@ -48,6 +48,7 @@ import { Types } from "mongoose";
 import User from "../models/User";
 import AISession from "../models/AISession";
 import Organisation from "../models/Organisation";
+import Stage5Review from "../models/Stage5Review";
 import { createHash } from "crypto";
 import ApiError from "../errors/apiError";
 import ComplianceConfigService from "./ComplianceConfigService";
@@ -461,6 +462,12 @@ interface BuildRowArgs {
   academicYear: string;
   aimSeqNumber: number;
   teacherContactHours: number;
+  // HONESTY GATE (AI Tutor Build Brief F29 / ESOL Framework §5): an
+  // AI-driven pass may NOT be exported to the ILR as achieved until a
+  // human has confirmed the summative achievement via a Stage 5
+  // review. True only when this learner has a Stage5Review for the
+  // terminal level with org_admin_confirmed_at set.
+  humanConfirmedAchievement: boolean;
 }
 
 /**
@@ -492,7 +499,14 @@ interface BuildRowArgs {
  *     proxy and document the choice.
  */
 const buildRowForSession = (args: BuildRowArgs): IlrRow => {
-  const { learner, session, config, aimSeqNumber, teacherContactHours } = args;
+  const {
+    learner,
+    session,
+    config,
+    aimSeqNumber,
+    teacherContactHours,
+    humanConfirmedAchievement,
+  } = args;
   const rules = config.rules ?? {};
 
   // ── Per-row warnings + skip signal (Function 13 To-Do 2) ───────
@@ -568,10 +582,18 @@ const buildRowForSession = (args: BuildRowArgs): IlrRow => {
 
   // Terminal state — three cases:
   //   1. Learner deactivated → withdrawn (CompStatus 3, Outcome 3)
-  //   2. Learner at L2 with session.passed → achieved
-  //      (CompStatus 2, Outcome 1, LearnActEndDate set)
+  //   2. Learner at L2 with session.passed AND a human-confirmed
+  //      Stage 5 review → achieved (CompStatus 2, Outcome 1, end date)
   //   3. Otherwise continuing (CompStatus 1, Outcome null,
   //      LearnActEndDate null)
+  //
+  // THE HONESTY GATE (F29 / Framework §5): the AI's `session.passed`
+  // is FORMATIVE evidence only. It can never, on its own, export as
+  // achieved — a human must have confirmed the summative achievement
+  // (Stage 5 review, org_admin_confirmed_at). Unevidenced/AI-only
+  // "achieved" records are exactly what an ASF audit would clawback,
+  // so we withhold the achievement and stay "continuing" until the
+  // human gate is met, recording WHY in the suppression notes.
   let compStatus = 1;
   let outcome: number | null = null;
   let actEndDate: string | null = null;
@@ -586,9 +608,19 @@ const buildRowForSession = (args: BuildRowArgs): IlrRow => {
     (learner.esolLevel ?? "").toLowerCase() === "l2" &&
     session.passed === true
   ) {
-    compStatus = 2;
-    outcome = 1;
-    actEndDate = formatIlrDate(session.completedAt) ?? null;
+    if (humanConfirmedAchievement) {
+      compStatus = 2;
+      outcome = 1;
+      actEndDate = formatIlrDate(session.completedAt) ?? null;
+    } else {
+      // Honesty gate: AI pass present but no human Stage 5 sign-off.
+      // Hold as continuing — never export AI-only achievement.
+      suppressionNotes.push(
+        "Achievement withheld (honesty gate): AI session passed but no " +
+          "human-confirmed Stage 5 review. Exported as continuing until a " +
+          "teacher/org-admin confirms achievement.",
+      );
+    }
   }
 
   if (addHoursNote) suppressionNotes.push(addHoursNote);
@@ -772,6 +804,34 @@ export const buildIlrRows = async (
     sessionsByLearner.get(key)!.push(s);
   }
 
+  // ── 2b. Human-confirmed achievements (the honesty gate) ──────────
+  // Load every Stage 5 review for these learners that an org admin has
+  // CONFIRMED. A learner is eligible to export as "achieved" only if a
+  // confirmed review exists for the level they have reached. This is
+  // the human gate that makes an ILR achievement audit-defensible —
+  // the AI's pass flag alone is never enough (F29 / Framework §5).
+  const confirmedReviews = await Stage5Review.find({
+    learner_id: { $in: learnerIds },
+    org_admin_confirmed_at: { $ne: null },
+  })
+    .select("learner_id level_completed")
+    .lean();
+  // Map learnerId → Set of confirmed level codes ("l2", "l1", …).
+  const confirmedLevelsByLearner = new Map<string, Set<string>>();
+  for (const r of confirmedReviews) {
+    const key = (r.learner_id as Types.ObjectId).toString();
+    const lvl = String(
+      (r as { level_completed?: string }).level_completed ?? "",
+    )
+      .trim()
+      .toLowerCase();
+    if (!lvl) continue;
+    if (!confirmedLevelsByLearner.has(key)) {
+      confirmedLevelsByLearner.set(key, new Set());
+    }
+    confirmedLevelsByLearner.get(key)!.add(lvl);
+  }
+
   // ── 3. Compose rows ──────────────────────────────────────────────
   const rows: IlrRow[] = [];
   for (const learner of learners) {
@@ -781,6 +841,14 @@ export const buildIlrRows = async (
     // monotonically increasing across each learner's aim records.
     let seq = 1;
     const teacherContactHours = learner.glh_teacher_contact ?? 0;
+    // Honesty gate: has a human confirmed achievement at the level the
+    // learner has reached? (e.g. esolLevel "l2" needs a confirmed
+    // Stage 5 review with level_completed "l2".)
+    const learnerKey = (learner._id as Types.ObjectId).toString();
+    const learnerLevel = (learner.esolLevel ?? "").trim().toLowerCase();
+    const humanConfirmedAchievement =
+      learnerLevel.length > 0 &&
+      (confirmedLevelsByLearner.get(learnerKey)?.has(learnerLevel) ?? false);
     for (const session of learnerSessions) {
       const row = buildRowForSession({
         learner,
@@ -789,6 +857,7 @@ export const buildIlrRows = async (
         academicYear,
         aimSeqNumber: seq,
         teacherContactHours,
+        humanConfirmedAchievement,
       });
       rows.push(row);
       seq += 1;
