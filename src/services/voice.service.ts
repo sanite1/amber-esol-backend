@@ -37,12 +37,41 @@ const ttsEnabled = (): boolean => process.env.VOICE_TTS_ENABLED === "true";
 // STT defaults OFF — the brief is explicit it's opt-in.
 const sttEnabled = (): boolean => process.env.VOICE_STT_ENABLED === "true";
 
+/**
+ * F32 dev mock. When VOICE_MOCK=true (and we are NOT in production)
+ * transcribeSpeech returns a canned transcript without touching Google,
+ * so the spoken-turn flow can be rehearsed + tested offline. Still
+ * requires sttEnabled() — the mock never turns the feature on by itself.
+ */
+export const voiceMockEnabled = (): boolean =>
+  process.env.VOICE_MOCK === "true" && process.env.NODE_ENV !== "production";
+
+const MOCK_TRANSCRIPT =
+  "I would like to book an appointment with the doctor please";
+const MOCK_WORD_CONFIDENCES: Array<{ word: string; confidence: number }> = [
+  { word: "I", confidence: 0.95 },
+  { word: "would", confidence: 0.92 },
+  { word: "like", confidence: 0.94 },
+  { word: "to", confidence: 0.9 },
+  { word: "book", confidence: 0.88 },
+  { word: "an", confidence: 0.85 },
+  { word: "appointment", confidence: 0.58 },
+  { word: "with", confidence: 0.9 },
+  { word: "the", confidence: 0.91 },
+  { word: "doctor", confidence: 0.87 },
+  { word: "please", confidence: 0.9 },
+];
+
 const VOICE_LOCATION = process.env.VOICE_LOCATION || "europe-west4";
-// EU regional endpoints (data residency). Overridable for other regions.
+// EU MULTIREGION endpoints (data residency). Overridable per region.
+// NOTE: the v1 Speech client only supports the multiregion hosts
+// (eu-speech / us-speech). Region-specific hosts like
+// europe-west4-speech.googleapis.com belong to the v2 API and answer
+// v1 calls with UNIMPLEMENTED — verified against the live service.
 const TTS_ENDPOINT =
   process.env.VOICE_TTS_ENDPOINT || "eu-texttospeech.googleapis.com";
 const STT_ENDPOINT =
-  process.env.VOICE_STT_ENDPOINT || `${VOICE_LOCATION}-speech.googleapis.com`;
+  process.env.VOICE_STT_ENDPOINT || "eu-speech.googleapis.com";
 
 // ── Voice selection per locale ─────────────────────────────────────────
 
@@ -200,9 +229,24 @@ export const synthesizeSpeech = async (
 
 // ── Public: STT ──────────────────────────────────────────────────────────
 
+export interface TranscriptionWord {
+  word: string;
+  confidence: number;
+}
+
 export interface TranscriptionResult {
   transcript: string;
+  /** Utterance-level recogniser confidence (0..1), null when Google
+   *  did not report one. F32 — feeds the pronunciation fallback. */
+  confidence: number | null;
+  /** Per-word confidences (enableWordConfidence). Empty when absent. */
+  words: TranscriptionWord[];
 }
+
+const clamp01 = (n: unknown): number | null => {
+  if (typeof n !== "number" || !Number.isFinite(n)) return null;
+  return Math.min(1, Math.max(0, n));
+};
 
 /**
  * Transcribe a short learner utterance. Opt-in (VOICE_STT_ENABLED) and
@@ -211,6 +255,11 @@ export interface TranscriptionResult {
  *
  * `audioBase64` is the raw recording; `encoding`/`sampleRateHertz` come
  * from the client recorder (WEBM_OPUS at 48000 is the browser default).
+ *
+ * F32: also returns the recogniser's confidence + per-word confidences
+ * (enableWordConfidence) so the pronunciation assessor has a fallback
+ * signal when Gemini audio assessment is unavailable. Existing callers
+ * that only read `transcript` keep working unchanged.
  */
 export const transcribeSpeech = async (
   audioBase64: string,
@@ -219,6 +268,15 @@ export const transcribeSpeech = async (
 ): Promise<TranscriptionResult | null> => {
   if (!sttEnabled()) return null;
   if (!audioBase64) return null;
+
+  // Dev mock — canned transcript, no Google call, no client init.
+  if (voiceMockEnabled()) {
+    return {
+      transcript: MOCK_TRANSCRIPT,
+      confidence: 0.86,
+      words: MOCK_WORD_CONFIDENCES.map((w) => ({ ...w })),
+    };
+  }
 
   const locale = voiceLocaleFor(language);
   if (!locale) return null;
@@ -237,17 +295,40 @@ export const transcribeSpeech = async (
         encoding: opts?.encoding ?? "WEBM_OPUS",
         sampleRateHertz: opts?.sampleRateHertz ?? 48000,
         enableAutomaticPunctuation: false,
+        // F32 — per-word confidence feeds the pronunciation fallback.
+        enableWordConfidence: true,
         // Chirp 2 is the target model (best L2/accented coverage);
         // configurable so a deploy can pin the exact model name.
         model: process.env.VOICE_STT_MODEL || "default",
       },
     });
-    const transcript = (response?.results ?? [])
+    const results: any[] = response?.results ?? [];
+    const transcript = results
       .map((r: any) => r.alternatives?.[0]?.transcript ?? "")
       .join(" ")
       .trim();
     if (!transcript) return null;
-    return { transcript };
+
+    // Utterance confidence: mean of the per-result alternative
+    // confidences that Google reported (null if none did).
+    const altConfs = results
+      .map((r: any) => clamp01(r.alternatives?.[0]?.confidence))
+      .filter((c): c is number => c !== null);
+    const confidence =
+      altConfs.length > 0
+        ? altConfs.reduce((s, c) => s + c, 0) / altConfs.length
+        : null;
+
+    const words: TranscriptionWord[] = [];
+    for (const r of results) {
+      for (const w of r.alternatives?.[0]?.words ?? []) {
+        const word = typeof w?.word === "string" ? w.word.trim() : "";
+        const conf = clamp01(w?.confidence);
+        if (word && conf !== null) words.push({ word, confidence: conf });
+      }
+    }
+
+    return { transcript, confidence, words };
   } catch (err) {
     logger.error(
       { err: (err as Error).message, locale },

@@ -87,7 +87,20 @@ interface VocabRow {
 interface RecentSessionTurn {
   role: "learner" | "tutor";
   text: string;
+  // ── F32 speaking turns (learner rows only) ──────────────────────────
+  /** True when the turn arrived as audio via /turn-voice. */
+  spoken?: boolean;
+  pronunciation_score?: number | null;
+  pronunciation_clarity?: string | null;
 }
+
+/** The subset of an AISession turn subdoc that flattenTurns reads. */
+type TurnSubdocForFlatten = {
+  originalInput?: string;
+  deepSeekResponse?: string;
+  input_mode?: string;
+  pronunciation?: { score?: number; clarity?: string } | null;
+};
 
 interface RecentSession {
   _id: string;
@@ -186,13 +199,24 @@ export interface TeacherLearnerDetailResponse {
  * sequential rows so a screen-reader reads the conversation
  * naturally.
  */
-const flattenTurns = (
-  turns: Array<{ originalInput?: string; deepSeekResponse?: string }>,
-): RecentSessionTurn[] => {
+const flattenTurns = (turns: TurnSubdocForFlatten[]): RecentSessionTurn[] => {
   const out: RecentSessionTurn[] = [];
   for (const t of turns) {
     if (typeof t.originalInput === "string" && t.originalInput.length > 0) {
-      out.push({ role: "learner", text: t.originalInput });
+      // F32 — spoken flag + pronunciation summary on learner rows only.
+      const spoken = t.input_mode === "voice";
+      const p = spoken && t.pronunciation ? t.pronunciation : null;
+      out.push({
+        role: "learner",
+        text: t.originalInput,
+        spoken,
+        pronunciation_score:
+          typeof p?.score === "number" && Number.isFinite(p.score)
+            ? p.score
+            : null,
+        pronunciation_clarity:
+          typeof p?.clarity === "string" ? p.clarity : null,
+      });
     }
     if (
       typeof t.deepSeekResponse === "string" &&
@@ -383,11 +407,7 @@ export const getTeacherLearnerDetailService = async (
   const recent_sessions: RecentSession[] = recentSessionsRaw.map((s) => {
     const sid = (s._id as Types.ObjectId).toString();
     const flattened = flattenTurns(
-      (
-        s as {
-          turns?: Array<{ originalInput?: string; deepSeekResponse?: string }>;
-        }
-      ).turns ?? [],
+      (s as { turns?: TurnSubdocForFlatten[] }).turns ?? [],
     );
     const fullTurnCount = turnCountById.get(sid) ?? flattened.length / 2;
     return {

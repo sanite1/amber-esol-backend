@@ -77,3 +77,44 @@ describe("F28 TTS still no-ops on an unvoiced language even if enabled", () => {
     expect(await synthesizeSpeech("   ", "english")).toBeNull();
   });
 });
+
+describe("F32 VOICE_MOCK transcription", () => {
+  const prevStt = process.env.VOICE_STT_ENABLED;
+  const prevMock = process.env.VOICE_MOCK;
+  const prevEnv = process.env.NODE_ENV;
+  afterEach(() => {
+    if (prevStt === undefined) delete process.env.VOICE_STT_ENABLED;
+    else process.env.VOICE_STT_ENABLED = prevStt;
+    if (prevMock === undefined) delete process.env.VOICE_MOCK;
+    else process.env.VOICE_MOCK = prevMock;
+    if (prevEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevEnv;
+  });
+
+  it("returns the canned transcript + confidences without Google when STT is on", async () => {
+    process.env.VOICE_STT_ENABLED = "true";
+    process.env.VOICE_MOCK = "true";
+    process.env.NODE_ENV = "test";
+    const r = await transcribeSpeech("AAAA", "english");
+    expect(r).not.toBeNull();
+    expect(r!.transcript).toBe(
+      "I would like to book an appointment with the doctor please",
+    );
+    expect(r!.confidence).toBe(0.86);
+    expect(r!.words.length).toBeGreaterThan(0);
+    expect(r!.words.every((w) => typeof w.confidence === "number")).toBe(true);
+  });
+
+  it("mock is ignored when STT is disabled (mock never turns the feature on)", async () => {
+    delete process.env.VOICE_STT_ENABLED;
+    process.env.VOICE_MOCK = "true";
+    expect(await transcribeSpeech("AAAA", "english")).toBeNull();
+  });
+
+  it("mock is ignored in production (falls through to the real path, which has no locale for somali → null)", async () => {
+    process.env.VOICE_STT_ENABLED = "true";
+    process.env.VOICE_MOCK = "true";
+    process.env.NODE_ENV = "production";
+    expect(await transcribeSpeech("AAAA", "somali")).toBeNull();
+  });
+});

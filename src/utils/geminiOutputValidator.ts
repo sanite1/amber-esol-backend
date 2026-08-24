@@ -89,6 +89,18 @@ export const geminiTurnOutputSchema = z
       ])
       .nullable()
       .default(null),
+    // ── F32 speaking turns ────────────────────────────────────────
+    // The tutor sets this when it asks the learner to say ONE short
+    // phrase aloud. Optional, default null — a typed-only deploy never
+    // sees it and a turn must never fail for omitting it.
+    speaking_prompt: z
+      .object({
+        expects_speech: z.boolean().default(false),
+        target_phrase: z.string().nullable().default(null),
+      })
+      .strip()
+      .nullable()
+      .default(null),
   })
   // .strip() (the Zod default) drops unknown keys silently rather than
   // erroring. Explicit here for the next reader who wonders why we

@@ -2,26 +2,40 @@
   "scenario_id": "s1_gp_appointment",
   "title": {
     "en": "Booking a GP appointment",
-    "ar": "",
-    "so": "",
-    "fa": "",
-    "zh": ""
+    "ar": "حجز موعد مع طبيب العائلة",
+    "so": "Ballansashada dhakhtarka guud",
+    "fa": "گرفتن وقت ملاقات با داکتر",
+    "zh": "預約家庭醫生",
+    "tr": "Aile hekiminden randevu alma"
   },
-  "nqf_level_range": { "min": "e1", "max": "e3" },
+  "nqf_level_range": {
+    "min": "e1",
+    "max": "e3"
+  },
   "skill_codes": ["Sc", "Lr", "Rw"],
   "stage3_objective_domains": ["Sc", "Lr", "Rt"],
   "vocabulary_set": [
     {
       "word": "appointment",
       "definition_en": "A planned time to see someone, like a doctor.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "I have an appointment with the doctor at three o'clock.",
       "reinforcement_weight": 1.0
     },
     {
       "word": "TODO_vocab_2_through_20",
       "definition_en": "REPLACE: 19 more vocabulary items required. See SCENARIO_AUTHORING.md.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "",
       "reinforcement_weight": 0.5
     }

@@ -1,4 +1,8 @@
 import { Types, Document } from "mongoose";
+import {
+  PronunciationAssessment,
+  SpeakingPrompt,
+} from "./pronunciation.interface";
 
 export type AISessionMode = "BRIDGE" | "ANCHOR" | "IMMERSION";
 
@@ -23,6 +27,18 @@ export interface IAISessionTurn {
   claudeAssessment?: string;
   safeguardingScore?: number;
   timestamp: Date;
+
+  // ── F32 speaking turns ─────────────────────────────────────────────
+  /** "voice" only when audio went through /turn-voice. Default "text". */
+  input_mode?: "text" | "voice";
+  /** Assessment of the spoken turn; null for typed turns. */
+  pronunciation?: PronunciationAssessment | null;
+  /** SpeakingPrompt the tutor set in this reply; null otherwise. */
+  speaking_prompt?: SpeakingPrompt | null;
+  /** Gemini's content score before the pronunciation blend. */
+  content_score?: number | null;
+  /** Recording length in seconds (voice only). */
+  audio_seconds?: number | null;
 }
 
 export interface IAISession extends Document {
@@ -83,6 +99,10 @@ export interface IAISession extends Document {
   micro_stage_index?: number;
   /** One flag per progress dot (length 4); true once that stage is done. */
   micro_stages_completed?: boolean[];
+
+  // ── F32 speaking turns (rollups set in persistSessionOnEnd) ────────
+  spoken_turns?: number;
+  pronunciation_avg?: number | null;
 }
 
 export interface ICreateAISessionRequest {

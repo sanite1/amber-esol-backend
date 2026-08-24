@@ -2,27 +2,41 @@
   "scenario_id": "s2_payslip",
   "title": {
     "en": "Understanding your payslip",
-    "ar": "",
-    "so": "",
-    "fa": "",
-    "zh": ""
+    "ar": "فهم قسيمة راتبك",
+    "so": "Fahamka warqadda mushahaarkaaga",
+    "fa": "فهمیدن فیش معاش شما",
+    "zh": "睇明你嘅糧單",
+    "tr": "Maaş bordronuzu anlama"
   },
   "_dev_note_level_range": "Widened from max:l1 → max:l2 in Dec to unblock L2 testing while proper L2 content is authored. The vocab and roleplay below were authored at e2–l1 difficulty; an L2 learner will find them easy. Revert to max:l1 when a real L2 scenario ships.",
-  "nqf_level_range": { "min": "e2", "max": "l2" },
+  "nqf_level_range": {
+    "min": "e2",
+    "max": "l2"
+  },
   "skill_codes": ["Rt", "Rw", "Sc"],
   "stage3_objective_domains": ["Rt", "Sc"],
   "vocabulary_set": [
     {
       "word": "payslip",
       "definition_en": "A document from your employer that shows what you earned and what was taken off.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "I check my payslip every month to see my tax and National Insurance.",
       "reinforcement_weight": 1.0
     },
     {
       "word": "TODO_vocab_2_through_20",
       "definition_en": "REPLACE: 19 more vocabulary items required. Likely candidates for this scenario: 'gross pay', 'net pay', 'tax', 'National Insurance', 'pension', 'deduction', 'overtime', 'hourly rate', 'salary', 'tax code', 'P60', 'P45', 'HMRC', 'employer', 'employee', 'minimum wage', 'holiday pay', 'sick pay'.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "",
       "reinforcement_weight": 0.5
     }

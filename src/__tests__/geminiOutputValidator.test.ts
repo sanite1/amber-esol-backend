@@ -211,3 +211,49 @@ describe("geminiTurnOutputSchema — safeParse surface", () => {
     }
   });
 });
+
+describe("validateGeminiTurnOutput — F32 speaking_prompt", () => {
+  it("defaults speaking_prompt to null when omitted (typed-only deploys unaffected)", () => {
+    const out = validateGeminiTurnOutput(VALID);
+    expect(out.speaking_prompt).toBeNull();
+  });
+
+  it("accepts an explicit null", () => {
+    const out = validateGeminiTurnOutput({ ...VALID, speaking_prompt: null });
+    expect(out.speaking_prompt).toBeNull();
+  });
+
+  it("accepts a speaking prompt with a target phrase", () => {
+    const out = validateGeminiTurnOutput({
+      ...VALID,
+      speaking_prompt: {
+        expects_speech: true,
+        target_phrase: "I would like an appointment",
+      },
+    });
+    expect(out.speaking_prompt).toEqual({
+      expects_speech: true,
+      target_phrase: "I would like an appointment",
+    });
+  });
+
+  it("accepts expects_speech=false with a null phrase", () => {
+    const out = validateGeminiTurnOutput({
+      ...VALID,
+      speaking_prompt: { expects_speech: false, target_phrase: null },
+    });
+    expect(out.speaking_prompt).toEqual({
+      expects_speech: false,
+      target_phrase: null,
+    });
+  });
+
+  it("rejects a malformed speaking_prompt (wrong types)", () => {
+    expect(() =>
+      validateGeminiTurnOutput({
+        ...VALID,
+        speaking_prompt: { expects_speech: "yes", target_phrase: 42 },
+      }),
+    ).toThrow(/speaking_prompt/);
+  });
+});

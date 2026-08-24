@@ -10,6 +10,22 @@ const turnSchema = new Schema(
     claudeAssessment: { type: String },
     safeguardingScore: { type: Number, min: 0, max: 1 },
     timestamp: { type: Date, required: true, default: Date.now },
+
+    // ── F32 speaking turns ───────────────────────────────────────────
+    // How the learner's input arrived. "voice" ONLY when audio actually
+    // went through /turn-voice — typed answers never earn speaking credit.
+    input_mode: { type: String, enum: ["text", "voice"], default: "text" },
+    // PronunciationAssessment (see interfaces/pronunciation.interface.ts)
+    // for a spoken turn; null for typed turns. No audio is stored.
+    pronunciation: { type: Schema.Types.Mixed, default: null },
+    // SpeakingPrompt the tutor set in THIS reply (asks the learner to
+    // say a phrase aloud next turn); null otherwise.
+    speaking_prompt: { type: Schema.Types.Mixed, default: null },
+    // Gemini's raw content score before the pronunciation blend. The
+    // blended value is what lands in session.turn_scores.
+    content_score: { type: Number, default: null },
+    // Recording length in seconds as reported by the client (voice only).
+    audio_seconds: { type: Number, default: null },
   },
   { _id: false },
 );
@@ -124,6 +140,12 @@ const aiSessionSchema = new Schema<IAISession>(
       type: [Boolean],
       default: () => [false, false, false, false],
     },
+
+    // ── F32 speaking turns (session rollups, set in persistSessionOnEnd) ─
+    /** Number of learner turns that arrived as audio via /turn-voice. */
+    spoken_turns: { type: Number, default: 0 },
+    /** Mean pronunciation score across spoken turns; null if none. */
+    pronunciation_avg: { type: Number, default: null },
   },
   {
     timestamps: true,

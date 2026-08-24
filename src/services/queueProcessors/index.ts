@@ -7,6 +7,7 @@ import {
   recordTurnEvidence,
   recordSessionCompleteEvidence,
 } from "../evidenceChain.service";
+import { PronunciationAssessment } from "../../interfaces/pronunciation.interface";
 import { sendSafeguardingAlertEmail } from "../notifications/safeguardingAlertEmail.service";
 import { sendProgressionReadyEmail } from "../notifications/progressionReadyEmail.service";
 import { sendProgressionConfirmedEmail } from "../notifications/progressionConfirmedEmail.service";
@@ -175,6 +176,19 @@ export const processEsolSession = async (
           typeof payload.recastApplied === "boolean"
             ? (payload.recastApplied as boolean)
             : undefined,
+        // F32 speaking turns — pass through as-is (validated upstream).
+        inputMode:
+          payload.inputMode === "voice" || payload.inputMode === "text"
+            ? (payload.inputMode as "text" | "voice")
+            : undefined,
+        pronunciation:
+          payload.pronunciation && typeof payload.pronunciation === "object"
+            ? (payload.pronunciation as PronunciationAssessment)
+            : null,
+        targetPhrase:
+          typeof payload.targetPhrase === "string"
+            ? (payload.targetPhrase as string)
+            : null,
       });
 
       if (payload.sessionComplete === true) {

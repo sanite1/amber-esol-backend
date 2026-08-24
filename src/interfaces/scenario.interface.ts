@@ -79,6 +79,8 @@ export interface MultilingualText {
   so: string;
   fa: string;
   zh: string;
+  /** Turkish — MVP bank language; optional so older data files parse. */
+  tr?: string;
 }
 
 /**

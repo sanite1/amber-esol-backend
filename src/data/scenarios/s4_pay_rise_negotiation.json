@@ -2,153 +2,257 @@
   "scenario_id": "s4_pay_rise_negotiation",
   "title": {
     "en": "Negotiating a pay rise",
-    "ar": "",
-    "so": "",
-    "fa": "",
-    "zh": ""
+    "ar": "التفاوض على زيادة الراتب",
+    "so": "Ka xaajoodka kordhinta mushahaarka",
+    "fa": "مذاکره برای افزایش معاش",
+    "zh": "傾加人工",
+    "tr": "Maaş artışı için pazarlık yapma"
   },
   "_authoring_note": "Native L2 scenario authored Dec to fill the L2 content gap. Difficulty hallmarks: formal/informal register switching, conditional and modal hedging language, persuasive argumentation, indirect questions, awareness of UK workplace power dynamics. Translations left blank — needs L1 author pass before production. Cultural notes are accurate as of UK employment landscape, but content team should verify pay-band and tax figures haven't drifted before any pilot.",
-  "nqf_level_range": { "min": "l1", "max": "l2" },
+  "nqf_level_range": {
+    "min": "l1",
+    "max": "l2"
+  },
   "skill_codes": ["Sc", "Sd", "Ws", "Rt"],
   "stage3_objective_domains": ["Sc", "Sd"],
   "vocabulary_set": [
     {
       "word": "remuneration",
       "definition_en": "A formal word for the money and benefits you receive for working.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "I'd like to discuss my remuneration package in light of the new responsibilities I've taken on.",
       "reinforcement_weight": 1.0
     },
     {
       "word": "raise",
       "definition_en": "An increase in your salary. British English also uses 'pay rise'.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "I haven't had a raise in two years despite consistently meeting my targets.",
       "reinforcement_weight": 1.0
     },
     {
       "word": "appraisal",
       "definition_en": "A formal meeting where your manager reviews your performance.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "My annual appraisal is in two weeks — I want to be prepared to discuss salary.",
       "reinforcement_weight": 0.9
     },
     {
       "word": "benchmark",
       "definition_en": "A standard or reference point you compare against.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "According to industry benchmarks, my role typically pays £4,000 more than I'm earning.",
       "reinforcement_weight": 0.9
     },
     {
       "word": "leverage",
       "definition_en": "An advantage or strong position you can use to get what you want.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "Having a competing offer gives you real leverage in salary negotiations.",
       "reinforcement_weight": 0.8
     },
     {
       "word": "tangible",
       "definition_en": "Real and measurable; the opposite of vague.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "Bring tangible examples of your impact — numbers, deadlines met, problems solved.",
       "reinforcement_weight": 0.9
     },
     {
       "word": "contribution",
       "definition_en": "The work and value you add to a team or company.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "I'd like to discuss how my contribution this year aligns with my current salary band.",
       "reinforcement_weight": 1.0
     },
     {
       "word": "scope",
       "definition_en": "The range of things included in a job or project.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "The scope of my role has expanded significantly since I was hired.",
       "reinforcement_weight": 0.8
     },
     {
       "word": "to advocate",
       "definition_en": "To speak up for something you believe in.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "You have to advocate for yourself — your manager won't necessarily notice unprompted.",
       "reinforcement_weight": 0.8
     },
     {
       "word": "counteroffer",
       "definition_en": "A different offer made in response to one you've received.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "When I gave notice, my employer made a counteroffer of an extra £3,000.",
       "reinforcement_weight": 0.8
     },
     {
       "word": "pay band",
       "definition_en": "A range of salaries for a particular level or grade of job.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "I'm at the bottom of my pay band — there's room to move up without a promotion.",
       "reinforcement_weight": 0.9
     },
     {
       "word": "cost of living",
       "definition_en": "How much money you need for basic things like rent, food, energy.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "With the cost of living rising, my real income has fallen even though my salary hasn't.",
       "reinforcement_weight": 0.9
     },
     {
       "word": "to outline",
       "definition_en": "To describe the main points of something briefly.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "Could I outline a few projects I've led this year before we discuss the figures?",
       "reinforcement_weight": 0.8
     },
     {
       "word": "to revisit",
       "definition_en": "To come back to a topic or decision and consider it again.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "Could we revisit my salary at the six-month review?",
       "reinforcement_weight": 0.8
     },
     {
       "word": "incremental",
       "definition_en": "Happening in small steps rather than all at once.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "I'd accept an incremental raise now if there's a path to a larger one in six months.",
       "reinforcement_weight": 0.7
     },
     {
       "word": "non-monetary",
       "definition_en": "Not about money — things like flexible hours, more holiday, training budget.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "If the budget is tight, are there non-monetary benefits we could discuss?",
       "reinforcement_weight": 0.7
     },
     {
       "word": "discretion",
       "definition_en": "The freedom to make a decision based on your own judgement.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "I understand this is at your discretion — I'm asking you to consider it.",
       "reinforcement_weight": 0.7
     },
     {
       "word": "to escalate",
       "definition_en": "To take a problem to someone more senior.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "If we can't reach an agreement, I may need to escalate this to HR.",
       "reinforcement_weight": 0.6
     },
     {
       "word": "to articulate",
       "definition_en": "To express an idea clearly in words.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "Before the meeting, I want to articulate my case in three clear points.",
       "reinforcement_weight": 0.8
     },
     {
       "word": "succinct",
       "definition_en": "Said clearly in few words; brief but complete.",
-      "translations": { "ar": "", "so": "", "fa": "", "zh": "" },
+      "translations": {
+        "ar": "",
+        "so": "",
+        "fa": "",
+        "zh": ""
+      },
       "example_sentence": "Keep your opening succinct — managers tune out when the case takes ten minutes.",
       "reinforcement_weight": 0.7
     }

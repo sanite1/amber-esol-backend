@@ -133,6 +133,20 @@
       "rarpa_stage": "n/a (delivery evidence)",
       "human_confirm": false,
       "note": "Delivered learning time; attendance log reconciles against planned hours."
+    },
+    {
+      "data_point": "pronunciation_score",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 4 (formative)",
+      "human_confirm": true,
+      "note": "AI intelligibility assessment of a spoken learner turn (method gemini_audio or stt_confidence). Supporting evidence for Sc; moderate by listening to the learner in a contact session."
+    },
+    {
+      "data_point": "input_mode",
+      "ilr_fields": [],
+      "rarpa_stage": "Stage 4 (formative)",
+      "human_confirm": false,
+      "note": "Whether the learner turn was spoken (microphone) or typed. Speaking credit requires spoken."
     }
   ],
   "beat_3_complete": [

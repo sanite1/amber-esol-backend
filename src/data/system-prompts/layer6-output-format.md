@@ -46,6 +46,9 @@ Also populate, every turn:
 - `emotional_state` — your read of the learner this turn: `"engaged"`,
   `"neutral"`, `"frustrated"`, `"anxious"`, or `"withdrawn"`. Use
   `null` if you genuinely can't tell.
+- `speaking_prompt` — `{ "expects_speech": true, "target_phrase": "<exact phrase, 12 words or fewer>" }`
+  ONLY when voice input is available (see the learner profile) and you
+  are asking the learner to say one short phrase aloud; otherwise `null`.
 
 ## Session completion
 

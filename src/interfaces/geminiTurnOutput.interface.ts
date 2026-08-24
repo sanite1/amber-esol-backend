@@ -84,6 +84,13 @@ export interface IGeminiTurnOutput {
    *  when the model can't read it. */
   emotional_state?: GeminiEmotionalState | null;
 
+  /** F32 — set when the tutor asks the learner to say ONE short phrase
+   *  aloud (<= 12 words). Null/omitted otherwise. Defaults null. */
+  speaking_prompt?: {
+    expects_speech: boolean;
+    target_phrase: string | null;
+  } | null;
+
   /**
    * ILR skill codes practised in this turn. Subset of the 9 codes
    * declared in `esolSkills.ts` (Sc/Sd/Lr/Rt/Rs/Rw/Wt/Ws/Ww). The

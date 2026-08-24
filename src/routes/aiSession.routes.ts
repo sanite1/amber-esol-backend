@@ -7,6 +7,7 @@ import {
 import { aiTurnLimiter, sessionStartLimiter } from "../config/rateLimiter";
 import {
   processTurn,
+  processVoiceTurn,
   startSession,
   endSession,
   synthesizeTts,
@@ -42,6 +43,20 @@ router.post(
   requireOrgContext,
   aiTurnLimiter,
   processTurn,
+);
+
+/**
+ * POST /api/esol/session/turn-voice — F32 spoken turn. Same chain as
+ * /turn. The ONLY route that can mark a turn as spoken (honest
+ * evidence); audio is transcribed + assessed and never persisted.
+ */
+router.post(
+  "/turn-voice",
+  isAuthenticated,
+  requireEsolLearner,
+  requireOrgContext,
+  aiTurnLimiter,
+  processVoiceTurn,
 );
 
 /**

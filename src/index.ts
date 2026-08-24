@@ -134,6 +134,11 @@ app.use(demoModeHeader);
     stripeWebhook,
   );
 
+  // F32 — spoken turns post base64 audio to /api/esol/session/turn-voice.
+  // Mount a larger JSON parser on that prefix BEFORE the global one; the
+  // global parser skips bodies that are already parsed, so every other
+  // route keeps the default 100kb ceiling.
+  app.use("/api/esol/session", express.json({ limit: "4mb" }));
   app.use(express.json());
 
   // ✅ Wait for DB before registering routes

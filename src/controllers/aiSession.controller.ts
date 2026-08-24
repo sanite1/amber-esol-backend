@@ -5,12 +5,14 @@ import {
   processTurnService,
   startSessionService,
   endSessionService,
+  getPendingSpeakingTarget,
 } from "../services/aiSession.service";
 import {
   synthesizeSpeech,
   transcribeSpeech,
   voiceCapabilities,
 } from "../services/voice.service";
+import { assessPronunciation } from "../services/pronunciation.service";
 import { Types } from "mongoose";
 import User from "../models/User";
 import AuditLog from "../models/AuditLog";
@@ -18,6 +20,8 @@ import { buildStage3NegotiationScript } from "../services/rarpa.service";
 
 /** Hard cap on TTS input length — guards billing + abuse. */
 const TTS_MAX_CHARS = 2000;
+/** Hard cap on a voice-turn audio payload (base64 chars, ~3 MB raw). */
+const VOICE_TURN_MAX_AUDIO_CHARS = 4_000_000;
 
 const pullContext = (req: any): { learnerId: string; orgId: string } | null => {
   const learnerId = req.user?.id?.toString();
@@ -169,6 +173,131 @@ export const transcribeStt: ExpressFunction = async (req, res, next) => {
       new ApiResponse(200, "Transcribed", {
         available: true,
         transcript: result.transcript,
+      }),
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/esol/session/turn-voice — F32 spoken learner turn.
+ *
+ * The ONLY path that marks a turn as spoken. Flow:
+ *   1. STT off               → 200 { available: false }       (nothing consumed)
+ *   2. transcribe; nothing   → 200 { available: true, heard: false }
+ *   3. pending speaking target + level from the session
+ *   4. assessPronunciation (fail safe; may be null)
+ *   5. processTurnService with inputMode "voice"
+ *   6. 200 { available: true, heard: true, ...turnResponse }
+ *
+ * No audio is persisted or logged; only the transcript + assessment
+ * flow onward. Typing is never blocked by this endpoint.
+ */
+export const processVoiceTurn: ExpressFunction = async (req, res, next) => {
+  try {
+    const ctx = pullContext(req);
+    if (!ctx) return next(new ApiError(403, "Auth + org context required"));
+
+    const body = req.body as {
+      session_id?: string;
+      audio_base64?: string;
+      encoding?: string;
+      sample_rate_hertz?: number;
+      mime_type?: string;
+      language?: string;
+      audio_seconds?: number;
+    };
+
+    const sessionId =
+      typeof body.session_id === "string" ? body.session_id : "";
+    if (!sessionId || !Types.ObjectId.isValid(sessionId)) {
+      return next(new ApiError(400, "Valid session_id is required"));
+    }
+    const audioBase64 =
+      typeof body.audio_base64 === "string" ? body.audio_base64 : "";
+    if (audioBase64.length > VOICE_TURN_MAX_AUDIO_CHARS) {
+      return next(
+        new ApiError(
+          400,
+          `audio_base64 exceeds the ${VOICE_TURN_MAX_AUDIO_CHARS} character limit — record a shorter answer`,
+        ),
+      );
+    }
+
+    // 1. Voice gating — the whole feature hides behind VOICE_STT_ENABLED.
+    if (!voiceCapabilities().stt) {
+      return res.status(200).json(
+        new ApiResponse(200, "Speech input unavailable", {
+          available: false,
+        }),
+      );
+    }
+
+    const encoding = body.encoding || "WEBM_OPUS";
+    const sampleRateHertz =
+      typeof body.sample_rate_hertz === "number" &&
+      Number.isFinite(body.sample_rate_hertz)
+        ? body.sample_rate_hertz
+        : 48000;
+    const mimeType = body.mime_type || "audio/webm";
+    const language = body.language || "english";
+    const audioSeconds =
+      typeof body.audio_seconds === "number" &&
+      Number.isFinite(body.audio_seconds)
+        ? Math.max(0, body.audio_seconds)
+        : null;
+
+    // 2. Transcribe. Nothing heard → no turn consumed, no TurnLog.
+    const stt = await transcribeSpeech(audioBase64, language, {
+      encoding,
+      sampleRateHertz,
+    });
+    const transcript = (stt?.transcript ?? "").trim();
+    if (!stt || !transcript) {
+      return res.status(200).json(
+        new ApiResponse(200, "Nothing heard", {
+          available: true,
+          heard: false,
+        }),
+      );
+    }
+
+    // 3. What did the tutor ask them to say (if anything)?
+    const { targetPhrase, esolLevel } = await getPendingSpeakingTarget(
+      sessionId,
+      ctx.learnerId,
+    );
+
+    // 4. Pronunciation assessment — fail safe, may be null.
+    const pronunciation = await assessPronunciation({
+      audioBase64,
+      mimeType,
+      transcript,
+      sttConfidence: stt.confidence ?? null,
+      words: stt.words ?? [],
+      targetPhrase,
+      esolLevel,
+      tracking: { sessionId, orgId: ctx.orgId, learnerId: ctx.learnerId },
+    });
+
+    // 5. The regular turn pipeline, marked as spoken.
+    const turn = await processTurnService({
+      sessionId,
+      message: transcript,
+      learnerId: ctx.learnerId,
+      orgId: ctx.orgId,
+      inputMode: "voice",
+      pronunciation,
+      audioSeconds,
+    });
+
+    // 6. Same envelope as /turn, plus the voice flags.
+    return res.status(200).json(
+      new ApiResponse(200, turn.message, {
+        available: true,
+        heard: true,
+        ...(turn.data ?? {}),
       }),
     );
   } catch (err) {

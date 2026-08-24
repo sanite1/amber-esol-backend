@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 
 import EvidenceRecord, { EvidenceBeat } from "../models/EvidenceRecord";
+import { PronunciationAssessment } from "../interfaces/pronunciation.interface";
 import {
   getEvidenceMapping,
   getEvidenceMappingVersion,
@@ -114,6 +115,13 @@ export interface TurnEvidenceArgs {
   vocabularyItemsUsed?: string[];
   mode?: string;
   recastApplied?: boolean;
+  // ── F32 speaking turns ─────────────────────────────────────────────
+  /** "voice" only when audio went through /turn-voice. */
+  inputMode?: "text" | "voice";
+  /** Pronunciation assessment of the spoken turn (voice only). */
+  pronunciation?: PronunciationAssessment | null;
+  /** Phrase the tutor asked for, if any (pending speaking target). */
+  targetPhrase?: string | null;
 }
 
 /**
@@ -122,6 +130,10 @@ export interface TurnEvidenceArgs {
  * recast uptake. Each becomes one mapped EvidenceRecord. `turn_score`
  * carries human_confirm=true (self-scored by the model — supporting
  * evidence only, moderated at Stage 5); the rest are formative signals.
+ *
+ * F32: `input_mode` is written for every turn that declares one, and
+ * `pronunciation_score` (human_confirm=true) only for spoken turns
+ * that carry an assessment. No audio is ever written.
  */
 export const recordTurnEvidence = async (
   args: TurnEvidenceArgs,
@@ -151,6 +163,23 @@ export const recordTurnEvidence = async (
     });
   if (typeof args.recastApplied === "boolean")
     points.push({ data_point: "recast_uptake", value: args.recastApplied });
+  // F32 — honest evidence: input_mode on every declared turn; the
+  // pronunciation_score only when the turn was actually spoken.
+  if (args.inputMode === "text" || args.inputMode === "voice")
+    points.push({ data_point: "input_mode", value: args.inputMode });
+  if (args.inputMode === "voice" && args.pronunciation) {
+    const p = args.pronunciation;
+    points.push({
+      data_point: "pronunciation_score",
+      value: {
+        score: p.score,
+        clarity: p.clarity,
+        method: p.method,
+        target_phrase: p.target_phrase ?? args.targetPhrase ?? null,
+        unclear_words: p.unclear_words ?? [],
+      },
+    });
+  }
 
   for (const p of points) {
     await recordEvidence({ ...base, data_point: p.data_point, value: p.value });

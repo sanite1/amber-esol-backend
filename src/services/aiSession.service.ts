@@ -37,6 +37,10 @@ import {
   updateLedgerForTurn,
   getReinforcementTargets,
 } from "./vocabLedger.service";
+import {
+  recordTurnEvidence,
+  recordSessionCompleteEvidence,
+} from "./evidenceChain.service";
 import CurriculumLevelService from "./curriculumLevel.service";
 import { encryptSafeguardingRaw } from "../lib/safeguardingCrypto";
 import { validateGeminiTurnOutput } from "../utils/geminiOutputValidator";
@@ -113,6 +117,17 @@ const TURN_RESPONSE_SCHEMA = {
       enum: ["engaged", "neutral", "frustrated", "anxious", "withdrawn"],
       nullable: true,
     },
+    // F32 — set when the tutor asks the learner to say a phrase aloud.
+    // Optional (validator defaults null); kept out of `required`.
+    speaking_prompt: {
+      type: SchemaType.OBJECT,
+      nullable: true,
+      properties: {
+        expects_speech: { type: SchemaType.BOOLEAN },
+        target_phrase: { type: SchemaType.STRING, nullable: true },
+      },
+      required: ["expects_speech", "target_phrase"],
+    },
   },
   required: [
     "reply",
@@ -128,6 +143,11 @@ const TURN_RESPONSE_SCHEMA = {
 } as const;
 import { EsolLevel } from "../interfaces/placementQuestion.interface";
 import { IScenarioFile } from "../interfaces/scenario.interface";
+import {
+  PronunciationAssessment,
+  SpeakingPrompt,
+} from "../interfaces/pronunciation.interface";
+import { voiceCapabilities } from "./voice.service";
 import ComplianceConfigService from "./ComplianceConfigService";
 import logger from "../config/logger";
 
@@ -330,6 +350,21 @@ const beatSnapshot = (
 });
 
 /**
+ * F32 — on the early-return paths (safeguarding + Gemini fallback) a
+ * spoken turn still needs its transcript echoed so the client can render
+ * the learner's bubble. No scores, no speaking prompt on these paths.
+ */
+const voiceEcho = (
+  input: ProcessTurnInput,
+): Pick<
+  ProcessTurnResponse,
+  "input_mode" | "transcript" | "speaking_prompt"
+> =>
+  input.inputMode === "voice"
+    ? { input_mode: "voice", transcript: input.message, speaking_prompt: null }
+    : { input_mode: "text", speaking_prompt: null };
+
+/**
  * Layer 5 builder — pulls the per-session learner state Gemini needs
  * to calibrate this turn. Pure-ish (one DB read for vocab); no Gemini
  * call, no side effects on the learner doc.
@@ -393,6 +428,13 @@ const buildLearnerProfile = async (
     // advancement ceremony comes from Function 12 (level-change flow);
     // null for now means "no celebration this turn".
     advancementCeremony: null,
+    // F32 — voice gating: when STT is off the tutor must never ask the
+    // learner to say things aloud. processTurnService fills inputMode /
+    // pronunciation / pendingSpeakingTarget per turn.
+    voiceInputAvailable: voiceCapabilities().stt,
+    inputMode: "text",
+    pronunciation: null,
+    pendingSpeakingTarget: null,
   };
 };
 
@@ -646,14 +688,22 @@ const recordSafeguardingTrigger = async (
 // Public entry point
 // ─────────────────────────────────────────────────────────────────────
 
-interface ProcessTurnInput {
+export interface ProcessTurnInput {
   sessionId: string;
   message: string;
   learnerId: string;
   orgId: string;
+  // ── F32 speaking turns ─────────────────────────────────────────────
+  /** "voice" ONLY when the controller received audio via /turn-voice.
+   *  Defaults to "text". Typed answers never earn speaking credit. */
+  inputMode?: "text" | "voice";
+  /** Assessment of the spoken turn (voice only; may be null on failure). */
+  pronunciation?: PronunciationAssessment | null;
+  /** Recording length in seconds as reported by the client (voice only). */
+  audioSeconds?: number | null;
 }
 
-interface ProcessTurnResponse {
+export interface ProcessTurnResponse {
   reply: string;
   mode: "anchor" | "bridge" | "immersion";
   session_complete: boolean;
@@ -663,7 +713,100 @@ interface ProcessTurnResponse {
   beat?: "prepare" | "roleplay" | "complete";
   micro_stage_index?: number;
   micro_stages_completed?: boolean[];
+  // ── F32 speaking turns ─────────────────────────────────────────────
+  input_mode?: "text" | "voice";
+  /** Voice only — the transcript the turn was built from. */
+  transcript?: string;
+  /** Voice only — the pronunciation assessment. */
+  pronunciation?: PronunciationAssessment | null;
+  /** The tutor's speaking prompt for the NEXT learner turn, or null. */
+  speaking_prompt?: SpeakingPrompt | null;
+  /** Blended turn score (content + pronunciation on voice turns). */
+  turn_score?: number;
 }
+
+/** 0.7 content / 0.3 pronunciation blend on spoken turns (F32). */
+const PRONUNCIATION_BLEND_WEIGHT = 0.3;
+const round2 = (n: number): number => Math.round(n * 100) / 100;
+
+/**
+ * Normalise Gemini's skill codes onto the canonical IlrSkillCode set and
+ * apply the F32 honesty rules: a spoken turn always evidences Sc; a typed
+ * turn that followed a speaking prompt earns no speaking credit (Sc/Sd
+ * stripped). Dedupes and drops drifted codes ("Sp" etc.).
+ */
+export const deriveTurnSkillCodes = (args: {
+  codes: string[];
+  inputMode: "text" | "voice";
+  pendingSpeakingTarget: string | null;
+}): IlrSkillCode[] => {
+  const valid = new Set<IlrSkillCode>();
+  for (const raw of args.codes ?? []) {
+    if (typeof raw !== "string") continue;
+    const c = raw.trim() as IlrSkillCode;
+    if (c in ILR_CODE_TO_DOMAIN) valid.add(c);
+  }
+  if (args.inputMode === "voice") {
+    valid.add("Sc");
+  } else if (args.pendingSpeakingTarget) {
+    valid.delete("Sc");
+    valid.delete("Sd");
+  }
+  return Array.from(valid);
+};
+
+/**
+ * The phrase the tutor asked the learner to say aloud on its LAST reply,
+ * or null when the last reply did not expect speech. Reads the turn
+ * subdoc's `speaking_prompt` (F32).
+ */
+export const pendingSpeakingTargetFromTurns = (
+  turns: Array<{ speaking_prompt?: SpeakingPrompt | null }> | undefined,
+): string | null => {
+  if (!turns || turns.length === 0) return null;
+  const last = turns[turns.length - 1];
+  const sp = last?.speaking_prompt;
+  if (!sp || !sp.expects_speech) return null;
+  const phrase =
+    typeof sp.target_phrase === "string" ? sp.target_phrase.trim() : "";
+  return phrase.length > 0 ? phrase : null;
+};
+
+/**
+ * Helper for the voice controller: load the session's pending speaking
+ * target (+ level) without running a turn. Ownership is enforced; any
+ * problem returns nulls so the voice path stays fail safe.
+ */
+export const getPendingSpeakingTarget = async (
+  sessionId: string,
+  learnerId: string,
+): Promise<{ targetPhrase: string | null; esolLevel: string | null }> => {
+  try {
+    if (!sessionId || !Types.ObjectId.isValid(sessionId))
+      return { targetPhrase: null, esolLevel: null };
+    const session = await AISession.findById(sessionId)
+      .select("learnerId esolLevel turns.speaking_prompt")
+      .lean();
+    if (!session || String(session.learnerId) !== String(learnerId))
+      return { targetPhrase: null, esolLevel: null };
+    return {
+      targetPhrase: pendingSpeakingTargetFromTurns(
+        (
+          session as {
+            turns?: Array<{ speaking_prompt?: SpeakingPrompt | null }>;
+          }
+        ).turns,
+      ),
+      esolLevel: (session as { esolLevel?: string | null }).esolLevel ?? null,
+    };
+  } catch (err) {
+    logger.warn(
+      { err: err instanceof Error ? err.message : String(err), sessionId },
+      "getPendingSpeakingTarget failed — continuing without a target",
+    );
+    return { targetPhrase: null, esolLevel: null };
+  }
+};
 
 /**
  * POST /api/esol/session/turn — the per-turn AI tutor handler.
@@ -782,6 +925,7 @@ export const processTurnService = async (
       vocab_words_seen: [],
       safeguarding_served: true,
       ...beatSnapshot(session),
+      ...voiceEcho(input),
     };
     return new ApiResponse(200, "Safeguarding response served", response);
   }
@@ -790,6 +934,23 @@ export const processTurnService = async (
 
   // ── 4. Build Layer 5 (dynamic learner profile) ───────────────────
   const learnerProfile = await buildLearnerProfile(learner, session);
+
+  // F32 — how this turn arrived + what the tutor asked for last time.
+  // `inputMode` is "voice" ONLY when the controller received audio via
+  // /turn-voice; a typed answer to a speaking prompt is TYPED here.
+  const inputMode: "text" | "voice" =
+    input.inputMode === "voice" ? "voice" : "text";
+  const pronunciation: PronunciationAssessment | null =
+    inputMode === "voice" && input.pronunciation ? input.pronunciation : null;
+  const pendingSpeakingTarget = pendingSpeakingTargetFromTurns(
+    session.turns as unknown as Array<{
+      speaking_prompt?: SpeakingPrompt | null;
+    }>,
+  );
+  learnerProfile.inputMode = inputMode;
+  learnerProfile.pronunciation = pronunciation;
+  learnerProfile.pendingSpeakingTarget =
+    inputMode === "text" ? pendingSpeakingTarget : null;
 
   // ── 5. Load scenario + assemble prompt ───────────────────────────
   let scenarioForPrompt: ScenarioForPrompt | undefined;
@@ -882,6 +1043,7 @@ export const processTurnService = async (
       session_complete: false,
       vocab_words_seen: [],
       ...beatSnapshot(session),
+      ...voiceEcho(input),
     };
     return new ApiResponse(200, "Fallback reply served", fallback);
   }
@@ -945,6 +1107,7 @@ export const processTurnService = async (
       vocab_words_seen: [],
       safeguarding_served: true,
       ...beatSnapshot(session),
+      ...voiceEcho(input),
     };
     return new ApiResponse(
       200,
@@ -965,6 +1128,38 @@ export const processTurnService = async (
   // message into AISession.turns; the audit test in
   // src/__tests__/safeguarding.test.ts catches that regression.
 
+  // F32 — score + skill-code derivation.
+  //   contentScore = Gemini's self-rating of the content.
+  //   finalScore   = on a spoken turn with an assessment, 0.7 content +
+  //                  0.3 pronunciation; otherwise the content score.
+  //   skill codes  = canonical union; Sc forced on spoken turns, Sc/Sd
+  //                  stripped on a typed answer to a speaking prompt.
+  const contentScore = geminiOutput.turn_score;
+  const finalScore =
+    inputMode === "voice" && pronunciation
+      ? round2(
+          (1 - PRONUNCIATION_BLEND_WEIGHT) * contentScore +
+            PRONUNCIATION_BLEND_WEIGHT * pronunciation.score,
+        )
+      : contentScore;
+  const turnSkillCodes = deriveTurnSkillCodes({
+    codes: geminiOutput.skill_codes_used,
+    inputMode,
+    pendingSpeakingTarget,
+  });
+  const speakingPrompt: SpeakingPrompt | null =
+    geminiOutput.speaking_prompt &&
+    typeof geminiOutput.speaking_prompt === "object"
+      ? {
+          expects_speech: !!geminiOutput.speaking_prompt.expects_speech,
+          target_phrase:
+            typeof geminiOutput.speaking_prompt.target_phrase === "string" &&
+            geminiOutput.speaking_prompt.target_phrase.trim()
+              ? geminiOutput.speaking_prompt.target_phrase.trim()
+              : null,
+        }
+      : null;
+
   // Append the turn to the session document.
   const newTurnIndex = session.turns?.length ?? 0;
   session.turns.push({
@@ -974,7 +1169,29 @@ export const processTurnService = async (
     deepSeekResponse: geminiOutput.reply, // legacy field name; stores the AI tutor's reply
     claudeAssessment: JSON.stringify(geminiOutput), // full validated output for audit
     timestamp: new Date(),
+    // F32 — no audio is stored, only the mode + assessment + prompt.
+    input_mode: inputMode,
+    pronunciation,
+    speaking_prompt: speakingPrompt,
+    content_score: contentScore,
+    audio_seconds:
+      inputMode === "voice" &&
+      typeof input.audioSeconds === "number" &&
+      Number.isFinite(input.audioSeconds)
+        ? input.audioSeconds
+        : null,
   } as any);
+
+  // F32 — persist the canonical skill-code union on the session (this
+  // was never appended per turn before; persistSessionOnEnd only deduped).
+  session.skill_codes_covered = Array.from(
+    new Set<string>(
+      [...(session.skill_codes_covered ?? []), ...turnSkillCodes].filter(
+        (c): c is IlrSkillCode =>
+          typeof c === "string" && c in ILR_CODE_TO_DOMAIN,
+      ),
+    ),
+  );
 
   // F26 — reconcile the controller's directed mode with the mode Gemini
   // reported. We record the MORE SUPPORTIVE of the two: if either the
@@ -987,10 +1204,9 @@ export const processTurnService = async (
   );
 
   // Push the per-turn rollups (brief Function 7 To-Do 5 spec).
-  session.turn_scores = [
-    ...(session.turn_scores ?? []),
-    geminiOutput.turn_score,
-  ];
+  // F32 — the BLENDED score lands in turn_scores (content_score on the
+  // turn subdoc keeps Gemini's raw value for audit).
+  session.turn_scores = [...(session.turn_scores ?? []), finalScore];
   session.teaching_mode_sequence = [
     ...(session.teaching_mode_sequence ?? []),
     reconciledMode,
@@ -1076,6 +1292,20 @@ export const processTurnService = async (
         turnIndex: newTurnIndex,
       },
     })
+    // The degraded-mode queue wrapper RESOLVES with a stub job (id null)
+    // when it drops the enqueue — a DEFINITIVE drop, so writing the
+    // ledger inline cannot double-count. Convert it to a rejection.
+    .then((job) => {
+      if ((job as { id?: unknown } | null)?.id == null) {
+        throw new Error("update_vocab enqueue dropped (Redis degraded)");
+      }
+    })
+    // NOTE: unlike capture-evidence below, there is NO timeout race here.
+    // A HUNG enqueue is not a definitive drop: updateLedgerForTurn
+    // increments times_encountered (not idempotent), so a timeout
+    // fallback could double-count a word if the parked job flushed
+    // later and inflate retention. Losing one turn's vocab on a hung
+    // Redis is the safer failure.
     .catch(async (err) => {
       logger.error(
         { err },
@@ -1098,27 +1328,97 @@ export const processTurnService = async (
       }
     });
 
-  esolSessionQueue
-    .add("capture-evidence", {
-      sessionId: session._id.toString(),
-      learnerId: input.learnerId,
-      orgId: input.orgId,
-      action: "capture_evidence",
-      payload: {
-        turnIndex: newTurnIndex,
-        skillCodesUsed: geminiOutput.skill_codes_used,
-        turnScore: geminiOutput.turn_score,
-        mode: reconciledMode,
-        // F29 evidence-chain inputs (beat_2 + beat_3 capture).
-        vocabularyItemsUsed: geminiOutput.vocabulary_items_used,
-        recastApplied: geminiOutput.recastApplied,
-        sessionComplete: geminiOutput.session_complete,
-        sessionSummary: geminiOutput.session_summary ?? null,
-      },
+  const evidencePayload = {
+    turnIndex: newTurnIndex,
+    skillCodesUsed: turnSkillCodes,
+    turnScore: finalScore,
+    mode: reconciledMode,
+    // F29 evidence-chain inputs (beat_2 + beat_3 capture).
+    vocabularyItemsUsed: geminiOutput.vocabulary_items_used,
+    recastApplied: geminiOutput.recastApplied,
+    sessionComplete: geminiOutput.session_complete,
+    sessionSummary: geminiOutput.session_summary ?? null,
+    // F32 speaking turns — honest evidence: input_mode on every turn,
+    // pronunciation_score only when audio actually came through.
+    inputMode,
+    pronunciation,
+    targetPhrase: pendingSpeakingTarget,
+  };
+  // A flapping Redis (for example an exhausted Upstash request quota)
+  // can leave the enqueue promise PENDING forever — ioredis parks the
+  // command in its offline queue, so .catch alone never fires and the
+  // turn's evidence would be silently lost. Race the enqueue against a
+  // short timeout and treat a hang like a failure: recordEvidence is an
+  // idempotent $setOnInsert upsert on (sessionId, beat, data_point,
+  // turnIndex), so if the parked job flushes later it writes nothing new.
+  const EVIDENCE_ENQUEUE_TIMEOUT_MS = 5_000;
+  const evidenceEnqueue = esolSessionQueue.add("capture-evidence", {
+    sessionId: session._id.toString(),
+    learnerId: input.learnerId,
+    orgId: input.orgId,
+    action: "capture_evidence",
+    payload: evidencePayload,
+  });
+  Promise.race([
+    evidenceEnqueue,
+    new Promise((_resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error("capture_evidence enqueue timed out")),
+        EVIDENCE_ENQUEUE_TIMEOUT_MS,
+      );
+      timer.unref?.();
+      // Clear the timer when the enqueue settles either way.
+      evidenceEnqueue.then(
+        () => clearTimeout(timer),
+        () => clearTimeout(timer),
+      );
+    }),
+  ])
+    // The degraded-mode queue wrapper RESOLVES with a stub job whose id
+    // is null when it drops an enqueue (see makeQueue in src/queues).
+    // Treat that resolved drop exactly like a rejection.
+    .then((job) => {
+      if ((job as { id?: unknown } | null)?.id == null) {
+        throw new Error("capture_evidence enqueue dropped (Redis degraded)");
+      }
     })
-    .catch((err) =>
-      logger.error({ err }, "Failed to enqueue capture_evidence job"),
-    );
+    .catch(async (err) => {
+      logger.error(
+        { err },
+        "Failed to enqueue capture_evidence job — writing evidence inline",
+      );
+      // Inline fallback (same shape the worker uses) so the evidence
+      // chain does not silently lose a turn when Redis is down.
+      try {
+        await recordTurnEvidence({
+          learnerId: input.learnerId,
+          orgId: input.orgId,
+          sessionId: session._id.toString(),
+          turnIndex: evidencePayload.turnIndex,
+          turnScore: evidencePayload.turnScore,
+          skillCodesUsed: evidencePayload.skillCodesUsed,
+          vocabularyItemsUsed: evidencePayload.vocabularyItemsUsed,
+          mode: evidencePayload.mode,
+          recastApplied: evidencePayload.recastApplied,
+          inputMode: evidencePayload.inputMode,
+          pronunciation: evidencePayload.pronunciation,
+          targetPhrase: evidencePayload.targetPhrase,
+        });
+        if (evidencePayload.sessionComplete) {
+          await recordSessionCompleteEvidence({
+            learnerId: input.learnerId,
+            orgId: input.orgId,
+            sessionId: session._id.toString(),
+            sessionSummary: evidencePayload.sessionSummary,
+          });
+        }
+      } catch (inlineErr) {
+        logger.error(
+          { err: inlineErr },
+          "Inline capture_evidence fallback also failed",
+        );
+      }
+    });
 
   // If session ended, the session-end workflow (Function 7 To-Do 6)
   // is wired here in a follow-up. For now the assessmentSummary write
@@ -1139,6 +1439,13 @@ export const processTurnService = async (
     beat: nextBeat.beat,
     micro_stage_index: nextBeat.microStageIndex,
     micro_stages_completed: nextBeat.microStagesCompleted,
+    // F32 speaking turns.
+    input_mode: inputMode,
+    speaking_prompt: speakingPrompt,
+    turn_score: finalScore,
+    ...(inputMode === "voice"
+      ? { transcript: input.message, pronunciation }
+      : {}),
   };
   return new ApiResponse(200, "Turn processed", response);
 };
@@ -1172,34 +1479,54 @@ const isPathwayOverrideExpired = (setAt: Date): boolean => {
  * opening message is NOT a Gemini call — it's deterministic so a
  * learner can always start a session even if Gemini is down.
  *
- * Translations cover the 5 MVP languages the scenario bank speaks.
- * Other wizard languages fall back to English; the scenario's title
- * carries the localised text the learner will recognise.
+ * Shape (the PREPARE beat is an L1 beat by design, Layer 2 scenario
+ * arc): greet and name the scenario IN THE LEARNER'S LANGUAGE first,
+ * then give the English name of the scenario, because the English term
+ * is itself part of what the session teaches. Falls back to plain
+ * English when the language has no template or the title has no
+ * translation yet.
  */
 const buildOpeningMessage = (
   firstName: string,
-  scenarioTitle: { en: string; ar: string; so: string; fa: string; zh: string },
+  scenarioTitle: {
+    en: string;
+    ar: string;
+    so: string;
+    fa: string;
+    zh: string;
+    tr?: string;
+  },
   l1Language: string,
 ): string => {
   const lc = (l1Language ?? "english").toLowerCase();
+  const en = scenarioTitle.en;
   switch (lc) {
     case "arabic":
     case "ar":
-      return `مرحباً ${firstName} — اليوم سنتدرب على ${scenarioTitle.ar || scenarioTitle.en}. هل أنت مستعد؟`;
+      if (!scenarioTitle.ar) break;
+      return `مرحباً ${firstName} — اليوم سنتدرب على "${scenarioTitle.ar}". بالإنجليزية: "${en}". هل أنت مستعد؟`;
     case "somali":
     case "so":
-      return `Hello ${firstName} — maanta waxaan ku tababaranaynaa ${scenarioTitle.so || scenarioTitle.en}. Diyaar ma tahay?`;
+      if (!scenarioTitle.so) break;
+      return `Hello ${firstName} — maanta waxaan ku tababaranaynaa "${scenarioTitle.so}". Ingiriisiga: "${en}". Diyaar ma tahay?`;
     case "dari":
     case "fa":
     case "fa-af":
-      return `سلام ${firstName} — امروز ${scenarioTitle.fa || scenarioTitle.en} را تمرین می‌کنیم. آماده‌اید؟`;
+      if (!scenarioTitle.fa) break;
+      return `سلام ${firstName} — امروز "${scenarioTitle.fa}" را تمرین می‌کنیم. به انگلیسی: "${en}". آماده‌اید؟`;
     case "cantonese":
     case "zh":
     case "yue":
-      return `你好 ${firstName} — 今日我哋會練習 ${scenarioTitle.zh || scenarioTitle.en}。準備好未?`;
+      if (!scenarioTitle.zh) break;
+      return `你好 ${firstName} — 今日我哋會練習「${scenarioTitle.zh}」。英文係 "${en}"。準備好未?`;
+    case "turkish":
+    case "tr":
+      if (!scenarioTitle.tr) break;
+      return `Merhaba ${firstName} — bugün "${scenarioTitle.tr}" konusunu çalışacağız. İngilizcesi: "${en}". Hazır mısın?`;
     default:
-      return `Hi ${firstName} — today we will practise "${scenarioTitle.en}". Are you ready?`;
+      break;
   }
+  return `Hi ${firstName} — today we will practise "${en}". Are you ready?`;
 };
 
 /**
@@ -1602,9 +1929,27 @@ export const persistSessionOnEnd = async (
         );
       }
 
+      // ── 7b. F32 speaking rollups from the turn subdocs ───────────
+      const spokenTurns = (session.turns ?? []).filter(
+        (t) => t.input_mode === "voice",
+      );
+      const pronScores = spokenTurns
+        .map((t) => t.pronunciation?.score)
+        .filter(
+          (s): s is number => typeof s === "number" && Number.isFinite(s),
+        );
+      const pronunciationAvg =
+        pronScores.length > 0
+          ? Math.round(
+              (pronScores.reduce((s, x) => s + x, 0) / pronScores.length) * 100,
+            ) / 100
+          : null;
+
       // ── 8. Write the updated session ─────────────────────────────
       session.end_time = endTime;
       session.duration_mins = durationMins;
+      session.spoken_turns = spokenTurns.length;
+      session.pronunciation_avg = pronunciationAvg;
       session.skill_codes_covered = dedupedSkills;
       session.vocabIntroduced = dedupedVocab;
       session.final_score = finalScore;

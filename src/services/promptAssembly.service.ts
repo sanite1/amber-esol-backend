@@ -4,6 +4,7 @@ import { resolve } from "path";
 
 import ApiError from "../errors/apiError";
 import { EsolLevel } from "../interfaces/placementQuestion.interface";
+import { PronunciationAssessment } from "../interfaces/pronunciation.interface";
 import logger from "../config/logger";
 import { DEFAULT_MICRO_STAGES } from "./sessionBeat.service";
 
@@ -180,6 +181,16 @@ export interface LearnerProfileForPrompt {
   // ── F27 developmentally-late forms ─────────────────────────────────
   /** Long-horizon grammar forms for this level — recycle, never fail. */
   longHorizonForms?: string[];
+
+  // ── F32 speaking turns ─────────────────────────────────────────────
+  /** Whether the learner's client can send spoken turns (VOICE_STT_ENABLED). */
+  voiceInputAvailable: boolean;
+  /** How THIS turn's input arrived. Defaults to "text". */
+  inputMode?: "text" | "voice";
+  /** Pronunciation assessment of this spoken turn (voice only). */
+  pronunciation?: PronunciationAssessment | null;
+  /** The phrase the tutor asked for last turn, when the learner typed instead. */
+  pendingSpeakingTarget?: string | null;
 }
 
 export interface ScenarioForPrompt {
@@ -324,6 +335,8 @@ const buildLayer5LearnerProfile = (
       ? `\n- Recycle-don't-fail forms at this level (recast gently if dropped, never penalise): ${learner.longHorizonForms.join(", ")}`
       : "";
 
+  const speakingBlock = buildSpeakingBlock(learner);
+
   return `# Layer 5 — Learner Profile
 
 LEARNER PROFILE:
@@ -338,7 +351,51 @@ ${summaries}
     learner.advancementCeremony
       ? `YES — celebrate the learner's promotion to ${learner.advancementCeremony.toLevel} in their L1 in your first reply, briefly and warmly.`
       : "no"
-  }`;
+  }${speakingBlock}`;
+};
+
+/**
+ * F32 — speaking-turn block appended to Layer 5. Tells the tutor
+ * whether the learner CAN speak (voice gating), how THIS turn arrived,
+ * what the pronunciation assessor heard on a spoken turn, and — on a
+ * typed turn that followed a speaking prompt — that no speaking credit
+ * applies and one gentle mic invitation is allowed.
+ */
+const buildSpeakingBlock = (learner: LearnerProfileForPrompt): string => {
+  const lines: string[] = [];
+
+  if (learner.voiceInputAvailable) {
+    lines.push(
+      "- Voice input available: yes. When a micro stage calls for speaking, you may ask the learner to say ONE short phrase aloud (<= 12 words). When you do, set speaking_prompt.expects_speech=true and speaking_prompt.target_phrase to the exact phrase. Otherwise leave speaking_prompt null.",
+    );
+  } else {
+    lines.push(
+      "- Voice input available: no. Never ask the learner to say or repeat anything aloud; ask them to write it instead. Leave speaking_prompt null.",
+    );
+  }
+
+  const spoken = learner.inputMode === "voice";
+  lines.push(
+    `- This turn's input was: ${spoken ? "SPOKEN (machine transcribed)" : "TYPED"}.`,
+  );
+
+  if (spoken && learner.pronunciation) {
+    const p = learner.pronunciation;
+    const unclear = p.unclear_words.length
+      ? `[${p.unclear_words.join(", ")}]`
+      : "[none]";
+    lines.push(
+      `- Pronunciation of what they said: score ${p.score}/1 (${p.clarity}). Unclear words: ${unclear}. Tutor note: ${p.note_for_tutor} Give ONE short, kind pronunciation note in your reply (praise if clear), then continue the roleplay.`,
+    );
+  }
+
+  if (!spoken && learner.pendingSpeakingTarget) {
+    lines.push(
+      `- You asked the learner to say "${learner.pendingSpeakingTarget}" aloud but they typed instead. Do not award speaking credit. Once, gently invite them to try it with the microphone, then continue normally; never nag.`,
+    );
+  }
+
+  return `\n${lines.join("\n")}`;
 };
 
 // ─────────────────────────────────────────────────────────────────────

@@ -141,3 +141,65 @@ describe("F29 recordSessionCompleteEvidence", () => {
     expect(rows.map((r) => r.data_point)).toEqual(["session_complete"]);
   });
 });
+
+describe("F32 recordTurnEvidence — speaking turns", () => {
+  it("writes input_mode for a typed turn and NO pronunciation_score", async () => {
+    const { learnerId, orgId, sessionId } = ids();
+    await recordTurnEvidence({
+      learnerId,
+      orgId,
+      sessionId,
+      turnIndex: 0,
+      turnScore: 0.8,
+      inputMode: "text",
+      pronunciation: null,
+      targetPhrase: "say this",
+    });
+    const rows = await EvidenceRecord.find({ sessionId }).lean();
+    const byPoint = Object.fromEntries(rows.map((r) => [r.data_point, r]));
+    expect(byPoint.input_mode).toBeDefined();
+    expect(byPoint.input_mode.value).toBe("text");
+    expect(byPoint.input_mode.human_confirm).toBe(false);
+    expect(byPoint.pronunciation_score).toBeUndefined();
+  });
+
+  it("writes pronunciation_score (human_confirm=true) only for spoken turns", async () => {
+    const { learnerId, orgId, sessionId } = ids();
+    await recordTurnEvidence({
+      learnerId,
+      orgId,
+      sessionId,
+      turnIndex: 0,
+      turnScore: 0.8,
+      inputMode: "voice",
+      pronunciation: {
+        score: 0.82,
+        clarity: "clear",
+        unclear_words: ["appointment"],
+        tip_for_learner: "Nice.",
+        note_for_tutor: "Clear.",
+        target_phrase: null,
+        method: "stt_confidence",
+      },
+      targetPhrase: "book an appointment",
+    });
+    const rows = await EvidenceRecord.find({ sessionId }).lean();
+    const byPoint = Object.fromEntries(rows.map((r) => [r.data_point, r]));
+    expect(byPoint.input_mode.value).toBe("voice");
+    expect(byPoint.pronunciation_score).toBeDefined();
+    expect(byPoint.pronunciation_score.human_confirm).toBe(true);
+    expect(byPoint.pronunciation_score.human_confirmed).toBe(false);
+    expect(byPoint.pronunciation_score.rarpa_stage).toBe("Stage 4 (formative)");
+    expect(byPoint.pronunciation_score.value).toEqual({
+      score: 0.82,
+      clarity: "clear",
+      method: "stt_confidence",
+      target_phrase: "book an appointment",
+      unclear_words: ["appointment"],
+    });
+    // Tip / note / audio never reach the evidence chain.
+    expect(JSON.stringify(byPoint.pronunciation_score.value)).not.toMatch(
+      /tip_for_learner|note_for_tutor|audio/,
+    );
+  });
+});
