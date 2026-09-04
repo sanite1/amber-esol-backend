@@ -298,9 +298,12 @@ app.use(demoModeHeader);
   // ── Initialise WebSocket ──
   initSocketIO(server);
 
-  app.use("/api", generalLimiter);
-
+  // Health FIRST, before the rate limiter: hosting health probes and
+  // uptime monitors must get an answer even when Redis (the limiter's
+  // store) is flapping — a hung probe marks the whole deploy failed.
   app.use("/api/health", healthRoutes);
+
+  app.use("/api", generalLimiter);
   app.use("/api/jobs", jobsRoutes);
   app.use("/api/admin/cache", adminCacheRoutes);
   app.use("/api/admin/users", adminUsersRoutes);

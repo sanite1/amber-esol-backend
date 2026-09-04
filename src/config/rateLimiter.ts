@@ -156,7 +156,35 @@ class LazyRedisStore implements Store {
 
   async increment(key: string): Promise<IncrementResponse> {
     try {
-      return await this.resolve().increment(key);
+      // Time-box the store call. A flapping Redis connection parks
+      // commands in ioredis's offline queue where they neither resolve
+      // nor reject — without this race every request behind the
+      // limiter (including /api/* health probes) hangs forever. The
+      // timeout message carries the REDIS_UNAVAILABLE marker so the
+      // catch below routes it to the in-memory fallback.
+      const STORE_TIMEOUT_MS = 1_500;
+      // Promise.resolve: the Store interface permits synchronous
+      // increments, so normalise before racing.
+      const attempt = Promise.resolve(this.resolve().increment(key));
+      return await Promise.race([
+        attempt,
+        new Promise<never>((_resolve, reject) => {
+          const timer = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "REDIS_UNAVAILABLE: rate-limit store timed out — falling back",
+                ),
+              ),
+            STORE_TIMEOUT_MS,
+          );
+          timer.unref?.();
+          attempt.then(
+            () => clearTimeout(timer),
+            () => clearTimeout(timer),
+          );
+        }),
+      ]);
     } catch (err) {
       // Swallow Redis-unavailable errors and retry through the
       // fallback — never 500 the user just because counters are sad.
