@@ -92,7 +92,9 @@ import FALACache from "./services/falaCache.service";
 import { cacheRefreshQueue } from "./queues";
 import { demoModeHeader } from "./middlewares/demoMode";
 
-const PORT = 4000;
+// Hosts like Render inject the port to bind via PORT; 4000 stays the
+// local dev default so nothing changes on developer machines.
+const PORT = Number(process.env.PORT) || 4000;
 
 const app = express();
 const server = createServer(app);
