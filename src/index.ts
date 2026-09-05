@@ -2,7 +2,7 @@ import express, { raw } from "express";
 import dotenv from "dotenv";
 dotenv.config();
 import cors from "cors";
-import { createServer } from "http";
+import { createServer, get as httpGet } from "http";
 import { connectDb } from "./config/db";
 import { globalErrorHandler } from "./middlewares/globalErrorHandler";
 import ApiError from "./errors/apiError";
@@ -452,7 +452,22 @@ app.use(demoModeHeader);
   }
 
   // ── Use server.listen instead of app.listen for Socket.IO ──
-  server.listen(PORT, () => {
-    logger.info({ port: PORT }, "Server listening");
+  // Bind IPv4 wildcard explicitly: Node's default is the IPv6 wildcard
+  // ("::"), which some hosts' proxies (Render) cannot reach over IPv4 —
+  // the port scan sees the socket, the health probe times out, and the
+  // deploy is marked failed although the app is healthy.
+  server.listen(PORT, "0.0.0.0", () => {
+    logger.info({ port: PORT, host: "0.0.0.0" }, "Server listening");
+    // Self-probe over IPv4 loopback so the deploy log itself shows
+    // whether the process answers HTTP where the host's proxy connects.
+    httpGet(`http://127.0.0.1:${PORT}/api/health`, (res) => {
+      logger.info(
+        { status: res.statusCode },
+        "Self probe /api/health answered",
+      );
+      res.resume();
+    }).on("error", (err) =>
+      logger.error({ err: err.message }, "Self probe /api/health FAILED"),
+    );
   });
 })();
