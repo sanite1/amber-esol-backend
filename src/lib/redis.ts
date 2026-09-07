@@ -133,7 +133,11 @@ const buildOptions = (url: string): RedisOptions => {
     // immediately rather than as cryptic timeouts on first use.
     enableReadyCheck: true,
     // Sensible default reconnect strategy: exponential backoff capped at 5s.
-    retryStrategy: (times: number) => Math.min(times * 200, 5000),
+    // Backoff capped at 30s with jitter. The old cap (5s) meant ~20
+    // sockets re-handshaking TLS every 5s against a dead Redis — enough
+    // to starve a 0.1-CPU host's event loop and fail HTTP health probes.
+    retryStrategy: (times: number) =>
+      Math.min(times * 1000, 30000) + Math.floor(Math.random() * 1000),
   };
 
   // Explicit TLS for rediss:// URLs. ioredis would infer this, but being

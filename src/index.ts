@@ -97,6 +97,11 @@ import { demoModeHeader } from "./middlewares/demoMode";
 const PORT = Number(process.env.PORT) || 4000;
 
 const app = express();
+// One proxy hop (Render's edge) forwards requests to us. Without this,
+// req.ip is the proxy for every visitor, so rate limits share a single
+// bucket and audit rows record the proxy address. Comments elsewhere
+// (roiCalculatorSubmit) already assumed this was set.
+app.set("trust proxy", 1);
 const server = createServer(app);
 
 const corsOption = {
@@ -456,6 +461,10 @@ app.use(demoModeHeader);
   // ("::"), which some hosts' proxies (Render) cannot reach over IPv4 —
   // the port scan sees the socket, the health probe times out, and the
   // deploy is marked failed although the app is healthy.
+  // Render's Node guidance: keep-alive and header timeouts above the
+  // proxy's own, so the edge never sees us drop a reused connection.
+  server.keepAliveTimeout = 120_000;
+  server.headersTimeout = 121_000;
   server.listen(PORT, "0.0.0.0", () => {
     logger.info({ port: PORT, host: "0.0.0.0" }, "Server listening");
     // Self-probe over IPv4 loopback so the deploy log itself shows
