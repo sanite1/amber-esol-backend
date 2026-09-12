@@ -2,6 +2,7 @@ import { ExpressAdapter } from "@bull-board/express";
 import { createBullBoard } from "@bull-board/api";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { allQueues } from "../queues";
+import logger from "../config/logger";
 
 /**
  * Configure the Bull Board UI for all eight Project Silk queues.
@@ -24,10 +25,25 @@ export const createBullBoardAdapter = (): ExpressAdapter => {
   const adapter = new ExpressAdapter();
   adapter.setBasePath("/admin/queues");
 
-  createBullBoard({
-    queues: Object.values(allQueues).map((q) => new BullMQAdapter(q)),
-    serverAdapter: adapter,
-  });
+  // When Redis is unconfigured or degraded, makeQueue() hands back a
+  // no-op STUB rather than a real BullMQ Queue (see src/queues). The
+  // BullMQ adapter throws on anything that isn't a real Queue, and this
+  // runs during boot — an unguarded throw here takes the whole server
+  // down before it can listen, turning a degraded dependency into a
+  // total outage. Skip what we can't adapt and serve the rest.
+  const adapters = [];
+  for (const q of Object.values(allQueues)) {
+    try {
+      adapters.push(new BullMQAdapter(q));
+    } catch (err) {
+      logger.warn(
+        { queue: (q as { name?: string })?.name, err: (err as Error).message },
+        "Bull Board: skipping queue that is not a live BullMQ queue (Redis degraded)",
+      );
+    }
+  }
+
+  createBullBoard({ queues: adapters, serverAdapter: adapter });
 
   return adapter;
 };

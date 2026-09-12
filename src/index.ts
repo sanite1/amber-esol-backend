@@ -205,8 +205,10 @@ app.use(demoModeHeader);
   //
   // The only hard-failure case lives inside initRedis itself: missing
   // REDIS_URL in production. That's a deploy mistake we still crash on.
+  let redisReady = false;
   try {
     const ok = await initRedis();
+    redisReady = ok;
     if (!ok) {
       logger.warn(
         "Redis unavailable — continuing in degraded mode " +
@@ -307,6 +309,12 @@ app.use(demoModeHeader);
   // uptime monitors must get an answer even when Redis (the limiter's
   // store) is flapping — a hung probe marks the whole deploy failed.
   app.use("/api/health", healthRoutes);
+  // Same router at the bare paths hosting platforms probe by default
+  // (Render's health check, k8s-style /healthz). A probe pointed at the
+  // wrong path would otherwise hit the 404 handler, and a 404 fails the
+  // check even though the app is perfectly healthy.
+  app.use("/health", healthRoutes);
+  app.use("/healthz", healthRoutes);
 
   app.use("/api", generalLimiter);
   app.use("/api/jobs", jobsRoutes);
@@ -444,7 +452,11 @@ app.use(demoModeHeader);
   // In production, workers run as a separate process via `npm run workers`.
   // For local development, attach them to this process so a single
   // `npm run dev` starts everything. Disable with INLINE_WORKERS=false.
-  if (process.env.INLINE_WORKERS !== "false") {
+  // Gate on Redis actually being usable. Attaching 9 BullMQ workers to a
+  // dead/over-quota Redis produces a permanent reconnect + rejected-command
+  // storm (~20 TLS sockets, ~90 errors/sec) that starves a small shared
+  // CPU and makes the whole service miss HTTP health probes.
+  if (process.env.INLINE_WORKERS !== "false" && redisReady) {
     try {
       const { startWorkers } = await import("./workers");
       startWorkers();
@@ -454,6 +466,12 @@ app.use(demoModeHeader);
         "Inline worker startup failed — server will continue without workers",
       );
     }
+  } else if (!redisReady) {
+    logger.warn(
+      "Inline workers NOT started: Redis is unavailable. Queue jobs will " +
+        "not run until Redis recovers and the service restarts; the " +
+        "inline evidence/vocab fallbacks still keep learner data intact.",
+    );
   }
 
   // ── Use server.listen instead of app.listen for Socket.IO ──
