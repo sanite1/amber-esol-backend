@@ -211,9 +211,9 @@ export const processTurn = async (params: {
       responseSchema: RESPONSE_SCHEMA as any,
       temperature: 0.7,
       // 2.5-flash thinking tokens count against this budget — see the
-      // placement scorer note. 1024 risked mid-JSON truncation on the
-      // core tutor turn.
-      maxOutputTokens: 2048,
+      // placement scorer note. 2048 still truncated real turns mid-JSON
+      // (reasoning ate the budget), so match the main turn path's 8192.
+      maxOutputTokens: 8192,
     },
     safetySettings: [
       // Lower thresholds — we WANT to receive flagged content so we can

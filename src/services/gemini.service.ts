@@ -34,7 +34,14 @@ import logger from "../config/logger";
 const DEFAULT_TIMEOUT_MS = 30_000; // 30 s per call
 const RETRY_DELAY_MS = 1_000; // brief: 1 s after first failure
 const DEFAULT_TEMPERATURE = 0.7;
-const DEFAULT_MAX_OUTPUT_TOKENS = 2_048;
+// gemini-2.5-flash is a THINKING model: its internal reasoning tokens
+// are billed and counted against maxOutputTokens alongside the visible
+// answer. At 2048 the reasoning regularly consumed most of the budget
+// and the JSON body was cut off mid-string ("...ne kadar para), failing
+// JSON.parse and dropping the learner onto the ANCHOR fallback reply.
+// This is a CAP, not a reservation — we still pay only for tokens
+// actually generated, so the headroom costs nothing on normal turns.
+const DEFAULT_MAX_OUTPUT_TOKENS = 8_192;
 
 // ─────────────────────────────────────────────────────────────────────
 // Public types
@@ -244,8 +251,22 @@ const callOnce = async (
     startedAt,
   );
 
-  const rawText =
-    result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const candidate = result.response?.candidates?.[0];
+  const rawText = candidate?.content?.parts?.[0]?.text ?? "";
+
+  // Name the cause rather than letting it surface as an unexplained
+  // "non-JSON body" downstream: on a thinking model the reasoning can
+  // exhaust maxOutputTokens and cut the JSON off mid-string.
+  if (candidate?.finishReason === "MAX_TOKENS") {
+    logger.error(
+      {
+        session_id: args.tracking.sessionId,
+        max_output_tokens: args.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
+        raw_text_length: rawText.length,
+      },
+      "Gemini response TRUNCATED (MAX_TOKENS) — thinking budget exhausted maxOutputTokens; raise it",
+    );
+  }
 
   const usage = result.response?.usageMetadata;
   return {
@@ -436,6 +457,11 @@ export const generateTurn = async <T = unknown>(
             session_id: args.tracking.sessionId,
             latency_ms: Date.now() - startedAt,
             err,
+            // The body itself is the only thing that explains WHY the
+            // turn fell back (markdown fence, refusal text, truncation).
+            // Without it every fallback looks identical in the logs.
+            raw_body_snippet: (err.rawBody ?? "").slice(0, 500),
+            raw_body_length: (err.rawBody ?? "").length,
           },
           "gemini call returned non-JSON body",
         );
