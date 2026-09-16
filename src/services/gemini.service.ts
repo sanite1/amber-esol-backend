@@ -42,6 +42,11 @@ const DEFAULT_TEMPERATURE = 0.7;
 // This is a CAP, not a reservation — we still pay only for tokens
 // actually generated, so the headroom costs nothing on normal turns.
 const DEFAULT_MAX_OUTPUT_TOKENS = 8_192;
+// Soft cap on internal reasoning tokens (Gemini 2.5 range: 1-24,576;
+// 0 disables thinking entirely). 1024 leaves ~7k of the output budget
+// for the actual reply while keeping enough reasoning for pedagogical
+// judgement on a tutor turn.
+const DEFAULT_THINKING_BUDGET = 1_024;
 
 // ─────────────────────────────────────────────────────────────────────
 // Public types
@@ -76,6 +81,9 @@ export interface GenerateTurnArgs {
   maxOutputTokens?: number;
   /** Override the default 30 s timeout. */
   timeoutMs?: number;
+  /** Soft cap on the model's internal reasoning tokens. 0 disables
+   *  thinking. Defaults to DEFAULT_THINKING_BUDGET. */
+  thinkingBudget?: number;
   /** Tracking + billing context. Always passed; the wrapper logs and
    *  writes AIUsage regardless of whether the call is a real session
    *  or a system probe (system probes pass nulls). */
@@ -230,7 +238,19 @@ const callOnce = async (
       }),
       temperature: args.temperature ?? DEFAULT_TEMPERATURE,
       maxOutputTokens: args.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
-    },
+      // Cap the model's internal reasoning. Gemini 2.5's DEFAULT thinking
+      // budget is "auto, up to 8,192 tokens" — the same size as our whole
+      // output budget — and thinking is spent from that same pool, so an
+      // uncapped turn can reason until nothing is left for the answer and
+      // the JSON arrives truncated mid-string. Capping guarantees the
+      // reply always has room. Not in this SDK's GenerationConfig type
+      // (it predates thinking models) but the request object is forwarded
+      // to the API verbatim, verified against the live endpoint: 553
+      // thinking tokens uncapped vs 230 at budget 256.
+      thinkingConfig: {
+        thinkingBudget: args.thinkingBudget ?? DEFAULT_THINKING_BUDGET,
+      },
+    } as never,
     // cachedContent ties the static prefix to a Vertex cache resource.
     // When undefined, the call proceeds without caching.
     ...(args.cachedContentId &&
