@@ -34,7 +34,18 @@ import logger from "../config/logger";
  *   The singleton boundary in this module makes that migration mechanical.
  */
 
-export const MODEL_NAME = "gemini-2.5-flash";
+/**
+ * Active model. Overridable via GEMINI_MODEL so the Gemini 2.5 -> 3
+ * migration can be rolled out (and rolled BACK) by env var rather than a
+ * code deploy.
+ *
+ * Retirement timeline for the current default (Google, Sept 2026 notice):
+ *   2026-10-20  public retirement — projects already calling the model
+ *               keep working; new/inactive projects are blocked.
+ *   2027-03-31  hard shutdown for EU data-residency zones.
+ * Migration targets: gemini-3.5-flash / 3.7-flash / 3.8-flash.
+ */
+export const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 // Accept brief-mandated names (GOOGLE_CLOUD_*) and pre-existing names (GCP_*)
 // so existing dev .env files keep working while we migrate naming.

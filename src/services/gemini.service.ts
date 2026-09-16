@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 
 import { geminiClient, MODEL_NAME } from "../lib/gemini";
+import { isGemini3OrLater } from "../lib/geminiModels";
 import AIUsage from "../models/AIUsage";
 import {
   GeminiApiError,
@@ -47,6 +48,9 @@ const DEFAULT_MAX_OUTPUT_TOKENS = 8_192;
 // for the actual reply while keeping enough reasoning for pedagogical
 // judgement on a tutor turn.
 const DEFAULT_THINKING_BUDGET = 1_024;
+// Gemini 3+ equivalent: discrete levels instead of a token count.
+// "low" keeps latency and cost down while leaving the reply budget free.
+const DEFAULT_THINKING_LEVEL = "low";
 
 // ─────────────────────────────────────────────────────────────────────
 // Public types
@@ -82,8 +86,11 @@ export interface GenerateTurnArgs {
   /** Override the default 30 s timeout. */
   timeoutMs?: number;
   /** Soft cap on the model's internal reasoning tokens. 0 disables
-   *  thinking. Defaults to DEFAULT_THINKING_BUDGET. */
+   *  thinking. Gemini 2.5 and earlier only. */
   thinkingBudget?: number;
+  /** Gemini 3+ thinking control ("low" | "medium" | "high"). Ignored on
+   *  2.5 and earlier, which use thinkingBudget instead. */
+  thinkingLevel?: "low" | "medium" | "high";
   /** Tracking + billing context. Always passed; the wrapper logs and
    *  writes AIUsage regardless of whether the call is a real session
    *  or a system probe (system probes pass nulls). */
@@ -247,9 +254,11 @@ const callOnce = async (
       // (it predates thinking models) but the request object is forwarded
       // to the API verbatim, verified against the live endpoint: 553
       // thinking tokens uncapped vs 230 at budget 256.
-      thinkingConfig: {
-        thinkingBudget: args.thinkingBudget ?? DEFAULT_THINKING_BUDGET,
-      },
+      // Gemini 3+ replaced the token budget with discrete levels and
+      // REJECTS thinkingBudget outright, so branch on the generation.
+      thinkingConfig: isGemini3OrLater(MODEL_NAME)
+        ? { thinkingLevel: args.thinkingLevel ?? DEFAULT_THINKING_LEVEL }
+        : { thinkingBudget: args.thinkingBudget ?? DEFAULT_THINKING_BUDGET },
     } as never,
     // cachedContent ties the static prefix to a Vertex cache resource.
     // When undefined, the call proceeds without caching.
