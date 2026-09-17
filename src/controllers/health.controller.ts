@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { readFileSync } from "fs";
+import { readdirSync, readFileSync } from "fs";
+import { dirname } from "path";
 
 import { pingGemini, MODEL_NAME } from "../lib/gemini";
 import { pingRedis } from "../lib/redis";
@@ -60,10 +61,27 @@ export const checkGeminiHealth = async (
       } catch {
         // fileExists/parsableJson already carry the outcome.
       }
+      // When the file is missing, list what IS in its folder (names only)
+      // so a misnamed upload ("key.json", "x.json.json") is visible at a
+      // glance instead of needing a screenshot of the host's settings.
+      let folderContents: string[] | null = null;
+      if (!fileExists) {
+        try {
+          folderContents = readdirSync(dirname(credPath));
+        } catch {
+          folderContents = null; // folder itself does not exist
+        }
+      }
       credentials = {
         env_var_set: true,
         path: credPath,
         file_exists: fileExists,
+        ...(fileExists
+          ? {}
+          : {
+              folder_exists: folderContents !== null,
+              files_in_folder: folderContents,
+            }),
         parsable_json: parsableJson,
         client_email: clientEmail,
         key_project_id: keyProjectId,
