@@ -21,6 +21,8 @@ const turnSchema = new Schema(
     // SpeakingPrompt the tutor set in THIS reply (asks the learner to
     // say a phrase aloud next turn); null otherwise.
     speaking_prompt: { type: Schema.Types.Mixed, default: null },
+    // F33 — language runs of the reply for per-voice read-aloud.
+    reply_segments: { type: Schema.Types.Mixed, default: null },
     // Gemini's raw content score before the pronunciation blend. The
     // blended value is what lands in session.turn_scores.
     content_score: { type: Number, default: null },

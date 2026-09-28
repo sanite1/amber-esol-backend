@@ -11,7 +11,9 @@ import {
   synthesizeSpeech,
   transcribeSpeech,
   voiceCapabilities,
+  ttsRateForLevel,
 } from "../services/voice.service";
+import { normaliseReplySegments } from "../services/aiSession.service";
 
 describe("F28 voiceLocaleFor", () => {
   it("resolves the MVP languages to their voice locales", () => {
@@ -116,5 +118,54 @@ describe("F32 VOICE_MOCK transcription", () => {
     process.env.VOICE_MOCK = "true";
     process.env.NODE_ENV = "production";
     expect(await transcribeSpeech("AAAA", "somali")).toBeNull();
+  });
+});
+
+describe("F33 read-aloud helpers", () => {
+  it("slows speech for lower levels only", () => {
+    expect(ttsRateForLevel("e1")).toBe(0.85);
+    expect(ttsRateForLevel("e2")).toBe(0.85);
+    expect(ttsRateForLevel("e3")).toBe(0.92);
+    expect(ttsRateForLevel("l1")).toBe(1);
+    expect(ttsRateForLevel(undefined)).toBe(1);
+  });
+
+  it("normaliseReplySegments keeps segments only when they rebuild the reply", () => {
+    const reply = "Good morning. صباح الخير";
+    const good = [
+      { lang: "en", text: "Good morning. " },
+      { lang: "l1", text: "صباح الخير" },
+    ];
+    expect(normaliseReplySegments(good, reply)).toEqual(good);
+    // Drift from the reply text → discard rather than highlight the wrong words.
+    expect(
+      normaliseReplySegments([{ lang: "en", text: "Good morning." }], reply),
+    ).toBeNull();
+    expect(normaliseReplySegments(null, reply)).toBeNull();
+    expect(normaliseReplySegments([], reply)).toBeNull();
+    expect(
+      normaliseReplySegments([{ lang: "xx", text: reply }], reply),
+    ).toBeNull();
+  });
+
+  it("VOICE_MOCK synthesis returns a silent clip without touching GCP", async () => {
+    const prev = {
+      m: process.env.VOICE_MOCK,
+      t: process.env.VOICE_TTS_ENABLED,
+    };
+    process.env.VOICE_MOCK = "true";
+    process.env.VOICE_TTS_ENABLED = "true";
+    try {
+      const out = await synthesizeSpeech("Hello", "english", {
+        speakingRate: 0.85,
+      });
+      expect(out?.contentType).toBe("audio/mpeg");
+      expect(out?.audioBase64.length).toBeGreaterThan(100);
+    } finally {
+      if (prev.m === undefined) delete process.env.VOICE_MOCK;
+      else process.env.VOICE_MOCK = prev.m;
+      if (prev.t === undefined) delete process.env.VOICE_TTS_ENABLED;
+      else process.env.VOICE_TTS_ENABLED = prev.t;
+    }
   });
 });

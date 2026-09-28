@@ -91,6 +91,11 @@ export interface IGeminiTurnOutput {
     target_phrase: string | null;
   } | null;
 
+  /** F33 — the reply as contiguous language runs ("en" = English,
+   *  "l1" = the learner's first language) so read-aloud can switch
+   *  voices. Concatenation must equal `reply`. Null/omitted allowed. */
+  reply_segments?: Array<{ lang: "en" | "l1"; text: string }> | null;
+
   /**
    * ILR skill codes practised in this turn. Subset of the 9 codes
    * declared in `esolSkills.ts` (Sc/Sd/Lr/Rt/Rs/Rw/Wt/Ws/Ww). The

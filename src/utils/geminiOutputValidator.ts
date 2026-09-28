@@ -101,6 +101,12 @@ export const geminiTurnOutputSchema = z
       .strip()
       .nullable()
       .default(null),
+    // F33 — optional language runs; consistency with `reply` is checked
+    // downstream (normaliseReplySegments), not here.
+    reply_segments: z
+      .array(z.object({ lang: z.enum(["en", "l1"]), text: z.string() }).strip())
+      .nullable()
+      .default(null),
   })
   // .strip() (the Zod default) drops unknown keys silently rather than
   // erroring. Explicit here for the next reader who wonders why we

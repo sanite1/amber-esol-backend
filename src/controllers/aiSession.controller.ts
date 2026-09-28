@@ -20,6 +20,8 @@ import { buildStage3NegotiationScript } from "../services/rarpa.service";
 
 /** Hard cap on TTS input length — guards billing + abuse. */
 const TTS_MAX_CHARS = 2000;
+/** A reply rarely has more than a handful of language switches. */
+const TTS_MAX_SEGMENTS = 24;
 /** Hard cap on a voice-turn audio payload (base64 chars, ~3 MB raw). */
 const VOICE_TURN_MAX_AUDIO_CHARS = 4_000_000;
 
@@ -117,11 +119,59 @@ export const synthesizeTts: ExpressFunction = async (req, res, next) => {
     const learnerId = req.user?.id?.toString();
     if (!learnerId) return next(new ApiError(401, "Unauthorized"));
 
-    const body = req.body as { text?: string; language?: string };
+    const body = req.body as {
+      text?: string;
+      language?: string;
+      /** Mixed-language reply split into runs. "l1" resolves to the
+       *  learner's own first language server-side. */
+      segments?: Array<{ lang?: string; text?: string }>;
+      /** Google speakingRate (0.5..1.5); frontend derives it from level. */
+      rate?: number;
+    };
+    const speakingRate =
+      typeof body.rate === "number" && Number.isFinite(body.rate)
+        ? body.rate
+        : undefined;
+
+    // ── Segment mode (F33): one voice per language run ──────────────
+    if (Array.isArray(body.segments) && body.segments.length > 0) {
+      const learner = await User.findById(learnerId)
+        .select("l1Language")
+        .lean<{ l1Language?: string | null }>();
+      const l1 = learner?.l1Language || "english";
+      const capped = body.segments.slice(0, TTS_MAX_SEGMENTS);
+      let anyAudio = false;
+      const out = [];
+      for (const seg of capped) {
+        const segText = (seg?.text ?? "").slice(0, TTS_MAX_CHARS);
+        const lang = seg?.lang === "l1" ? "l1" : "en";
+        const language = lang === "l1" ? l1 : "english";
+        const r = segText.trim()
+          ? await synthesizeSpeech(segText, language, { speakingRate })
+          : null;
+        if (r) anyAudio = true;
+        out.push({ lang, text: segText, audio_base64: r?.audioBase64 ?? null });
+      }
+      if (!anyAudio) {
+        return res
+          .status(200)
+          .json(
+            new ApiResponse(200, "Voice unavailable", { available: false }),
+          );
+      }
+      return res.status(200).json(
+        new ApiResponse(200, "Synthesised", {
+          available: true,
+          content_type: "audio/mpeg",
+          segments: out,
+        }),
+      );
+    }
+
     const text = (body.text ?? "").slice(0, TTS_MAX_CHARS);
     const language = body.language ?? "english";
 
-    const result = await synthesizeSpeech(text, language);
+    const result = await synthesizeSpeech(text, language, { speakingRate });
     if (!result) {
       return res
         .status(200)

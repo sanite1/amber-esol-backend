@@ -128,6 +128,20 @@ const TURN_RESPONSE_SCHEMA = {
       },
       required: ["expects_speech", "target_phrase"],
     },
+    // F33 read-aloud: the reply split into contiguous language runs so
+    // each run can be voiced by the matching TTS voice.
+    reply_segments: {
+      type: SchemaType.ARRAY,
+      nullable: true,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          lang: { type: SchemaType.STRING, enum: ["en", "l1"] },
+          text: { type: SchemaType.STRING },
+        },
+        required: ["lang", "text"],
+      },
+    },
   },
   required: [
     "reply",
@@ -232,6 +246,31 @@ const escalateSafeguardingFailure = async (params: {
  * the learner is practising English so an English nudge is appropriate,
  * and it makes no claim / sets no score. ANCHOR mode keeps support high.
  */
+/**
+ * F33 — accept Gemini's language runs only when they reassemble the
+ * reply (ignoring whitespace). Anything else (missing, empty, drifted)
+ * yields null and the client voices the whole reply with one voice.
+ */
+export const normaliseReplySegments = (
+  segments: unknown,
+  reply: string,
+): Array<{ lang: "en" | "l1"; text: string }> | null => {
+  if (!Array.isArray(segments) || segments.length === 0) return null;
+  const clean: Array<{ lang: "en" | "l1"; text: string }> = [];
+  for (const seg of segments) {
+    const o = seg as { lang?: unknown; text?: unknown };
+    if ((o.lang !== "en" && o.lang !== "l1") || typeof o.text !== "string")
+      return null;
+    if (o.text.trim() === "") continue;
+    clean.push({ lang: o.lang, text: o.text });
+  }
+  if (clean.length === 0) return null;
+  const squash = (t: string) => t.replace(/\s+/g, "");
+  return squash(clean.map((c) => c.text).join("")) === squash(reply)
+    ? clean
+    : null;
+};
+
 const ANCHOR_FALLBACK_REPLY =
   "Sorry — I didn't quite catch that. Could you say it again? Take your time, there's no rush.";
 
@@ -721,6 +760,8 @@ export interface ProcessTurnResponse {
   pronunciation?: PronunciationAssessment | null;
   /** The tutor's speaking prompt for the NEXT learner turn, or null. */
   speaking_prompt?: SpeakingPrompt | null;
+  /** F33 — reply split into "en" / "l1" runs for per-voice read-aloud. */
+  reply_segments?: Array<{ lang: "en" | "l1"; text: string }> | null;
   /** Blended turn score (content + pronunciation on voice turns). */
   turn_score?: number;
 }
@@ -1162,6 +1203,11 @@ export const processTurnService = async (
 
   // Append the turn to the session document.
   const newTurnIndex = session.turns?.length ?? 0;
+  // F33 — language runs for read-aloud (null unless they rebuild the reply).
+  const replySegments = normaliseReplySegments(
+    geminiOutput.reply_segments,
+    geminiOutput.reply,
+  );
   session.turns.push({
     turnIndex: newTurnIndex,
     originalInput: input.message,
@@ -1173,6 +1219,7 @@ export const processTurnService = async (
     input_mode: inputMode,
     pronunciation,
     speaking_prompt: speakingPrompt,
+    reply_segments: replySegments,
     content_score: contentScore,
     audio_seconds:
       inputMode === "voice" &&
@@ -1442,6 +1489,7 @@ export const processTurnService = async (
     // F32 speaking turns.
     input_mode: inputMode,
     speaking_prompt: speakingPrompt,
+    reply_segments: replySegments,
     turn_score: finalScore,
     ...(inputMode === "voice"
       ? { transcript: input.message, pronunciation }

@@ -49,6 +49,13 @@ Also populate, every turn:
 - `speaking_prompt` — `{ "expects_speech": true, "target_phrase": "<exact phrase, 12 words or fewer>" }`
   ONLY when voice input is available (see the learner profile) and you
   are asking the learner to say one short phrase aloud; otherwise `null`.
+- `reply_segments` — ALWAYS set. Split `reply` into contiguous runs and
+  tag each `"en"` (English) or `"l1"` (the learner's first language):
+  `[{ "lang": "l1", "text": "Harika! " }, { "lang": "en", "text": "Let's look at your payslip." }]`.
+  Keep the runs in order and keep every character, including spaces
+  and punctuation, so that joining the texts gives `reply` exactly. A
+  bracketed translation counts as its own run. This drives read-aloud:
+  each run is spoken by a voice for its language.
 
 ## Session completion
 

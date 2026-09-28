@@ -257,3 +257,30 @@ describe("validateGeminiTurnOutput — F32 speaking_prompt", () => {
     ).toThrow(/speaking_prompt/);
   });
 });
+
+describe("F33 reply_segments (read-aloud language runs)", () => {
+  it("defaults to null when omitted", () => {
+    expect(validateGeminiTurnOutput(VALID).reply_segments).toBeNull();
+  });
+
+  it("accepts a well-formed en / l1 split", () => {
+    const out = validateGeminiTurnOutput({
+      ...VALID,
+      reply_segments: [
+        { lang: "en", text: "Good morning. " },
+        { lang: "l1", text: "صباح الخير" },
+      ],
+    });
+    expect(out.reply_segments).toHaveLength(2);
+    expect(out.reply_segments?.[1].lang).toBe("l1");
+  });
+
+  it("rejects an unknown language tag", () => {
+    expect(() =>
+      validateGeminiTurnOutput({
+        ...VALID,
+        reply_segments: [{ lang: "fr", text: "Bonjour" }],
+      }),
+    ).toThrow(/reply_segments/);
+  });
+});

@@ -35,6 +35,8 @@ export interface IAISessionTurn {
   pronunciation?: PronunciationAssessment | null;
   /** SpeakingPrompt the tutor set in this reply; null otherwise. */
   speaking_prompt?: SpeakingPrompt | null;
+  /** F33 — reply language runs for read-aloud (null when unavailable). */
+  reply_segments?: Array<{ lang: "en" | "l1"; text: string }> | null;
   /** Gemini's content score before the pronunciation blend. */
   content_score?: number | null;
   /** Recording length in seconds (voice only). */
