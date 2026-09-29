@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 
 import VocabLedger from "../models/VocabLedger";
 import logger from "../config/logger";
+import { traceEnabled, traceWrite } from "./diagnosticTrace.service";
 import CurriculumLevelService from "./curriculumLevel.service";
 
 /**
@@ -114,6 +115,9 @@ const upsertWord = async (
       ? args.retention_min_encounters
       : RETENTION_MIN_ENCOUNTERS;
 
+  const before = traceEnabled()
+    ? await VocabLedger.findOne({ learnerId: learnerObjectId, word }).lean()
+    : null;
   await VocabLedger.updateOne(
     { learnerId: learnerObjectId, word },
     [
@@ -174,6 +178,22 @@ const upsertWord = async (
     ],
     { upsert: true },
   );
+  if (traceEnabled()) {
+    const after = await VocabLedger.findOne({
+      learnerId: learnerObjectId,
+      word,
+    }).lean();
+    traceWrite({
+      source: "vocab_ledger.upsert_word",
+      collection: "vocab_ledger",
+      docId: (after as { _id?: unknown } | null)?._id as string | undefined,
+      sessionId: ctx.sessionId ?? null,
+      learnerId: learnerObjectId,
+      orgId: ctx.orgId ?? null,
+      before,
+      after,
+    });
+  }
 };
 
 /**

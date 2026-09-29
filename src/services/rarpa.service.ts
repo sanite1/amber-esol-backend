@@ -13,6 +13,7 @@ import {
 } from "./esolSkills";
 import CurriculumLevelService from "./curriculumLevel.service";
 import logger from "../config/logger";
+import { traceWrite } from "./diagnosticTrace.service";
 
 /**
  * RARPA Stage 3 helpers (brief Function 6 To-Do 4).
@@ -251,8 +252,18 @@ export const createStage3ObjectivesFromPlacement = async (
     (o) => o.set_from !== "placement_assessment",
   );
 
+  const beforeObjectives = existing;
   learner.stage3_objectives = [...preserved, ...fresh];
   await learner.save();
+  traceWrite({
+    source: "user.stage3_objectives:placement",
+    collection: "users",
+    docId: learner._id,
+    learnerId: learner._id,
+    orgId: learner.orgId,
+    before: beforeObjectives,
+    after: learner.stage3_objectives,
+  });
 
   logger.info(
     {
@@ -391,6 +402,15 @@ export const createStage3ObjectivesOnLevelChange = async (
   // Append-only — no strip, no replace. The history is the audit.
   learner.stage3_objectives = [...existing, ...fresh];
   await learner.save();
+  traceWrite({
+    source: "user.stage3_objectives:level_change",
+    collection: "users",
+    docId: learner._id,
+    learnerId: learner._id,
+    orgId: learner.orgId,
+    before: existing,
+    after: learner.stage3_objectives,
+  });
 
   logger.info(
     {

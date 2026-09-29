@@ -161,7 +161,12 @@ export const completeOnboardingService = async (
 
   let placement;
   try {
-    placement = await scorePlacementAssessment(assessmentDocs);
+    // No learner id yet at this point (the user row is created after
+    // scoring), so the trace keys on the referral token id.
+    placement = await scorePlacementAssessment(assessmentDocs, {
+      sessionId: `referral:${String(referralRecord._id)}`,
+      orgId: referralRecord.orgId ?? null,
+    });
   } catch (err) {
     logger.error({ err }, "Placement scoring failed — defaulting to Entry 1");
     placement = {

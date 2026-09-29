@@ -250,6 +250,11 @@ export const processTurnService = async (params: {
   let result;
   try {
     result = await geminiProcessTurn({
+      trace: {
+        sessionId: session._id,
+        learnerId: session.learnerId,
+        orgId: session.orgId,
+      },
       learnerInput: params.input,
       scenario,
       learner: {
@@ -547,6 +552,11 @@ export const getTeacherPrepNoteService = async (params: {
     l1Language: learner?.l1Language ?? "",
     topic: session.topic ?? undefined,
     recentSessionSummaries: summaries,
+    trace: {
+      sessionId: session._id,
+      learnerId: session.learnerId,
+      orgId: session.orgId,
+    },
   });
 
   const prepNote = await TeacherPrepNote.create({

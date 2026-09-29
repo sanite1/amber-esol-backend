@@ -33,6 +33,7 @@ import {
 import { SchemaType } from "@google-cloud/vertexai";
 import { generateTurn, ConversationTurn } from "./gemini.service";
 import { generateSessionSummary } from "./geminiAI.service";
+import { traceWrite } from "./diagnosticTrace.service";
 import {
   updateLedgerForTurn,
   getReinforcementTargets,
@@ -1052,6 +1053,7 @@ export const processTurnService = async (
         orgId: input.orgId,
         learnerId: input.learnerId,
       },
+      traceSource: "tutor_turn",
       // Tell Gemini the exact shape to return. Without this, Vertex
       // free-styles JSON (it follows the prompt's instructions but
       // omits fields, renames keys, etc.) and the downstream Zod
@@ -1203,6 +1205,14 @@ export const processTurnService = async (
 
   // Append the turn to the session document.
   const newTurnIndex = session.turns?.length ?? 0;
+  const sessionStatsBefore = {
+    turn_count: newTurnIndex,
+    beat: session.beat,
+    micro_stage_index: session.micro_stage_index,
+    micro_stages_completed: session.micro_stages_completed,
+    completedAt: session.completedAt ?? null,
+    assessmentSummary: session.assessmentSummary ?? null,
+  };
   // F33 — language runs for read-aloud (null unless they rebuild the reply).
   const replySegments = normaliseReplySegments(
     geminiOutput.reply_segments,
@@ -1300,6 +1310,27 @@ export const processTurnService = async (
   }
 
   await session.save();
+  traceWrite({
+    source: "ai_session.turn",
+    collection: "aisessions",
+    docId: session._id,
+    sessionId: session._id,
+    learnerId: input.learnerId,
+    orgId: input.orgId,
+    before: sessionStatsBefore,
+    after: {
+      turn_count: session.turns.length,
+      beat: session.beat,
+      micro_stage_index: session.micro_stage_index,
+      micro_stages_completed: session.micro_stages_completed,
+      completedAt: session.completedAt ?? null,
+      assessmentSummary: session.assessmentSummary ?? null,
+      turn_score: geminiOutput.turn_score,
+      mode: geminiOutput.mode,
+      vocabulary_items_used: geminiOutput.vocabulary_items_used,
+      skill_codes_used: geminiOutput.skill_codes_used,
+    },
+  });
 
   // Enqueue the post-turn work — vocab ledger + evidence capture.
   // Fire-and-forget; we don't block the learner's reply on these.
@@ -1917,6 +1948,17 @@ export const persistSessionOnEnd = async (
         throw new ApiError(404, `AISession ${sessionId} not found`);
       }
 
+      const endStatsBefore = {
+        turn_count: session.turns?.length ?? 0,
+        end_time: session.end_time ?? null,
+        duration_mins: session.duration_mins ?? null,
+        final_score: session.final_score ?? null,
+        passed: session.passed ?? null,
+        completedAt: session.completedAt ?? null,
+        vocabIntroduced: session.vocabIntroduced ?? [],
+        skill_codes_covered: session.skill_codes_covered ?? [],
+      };
+
       // ── 2. duration_mins = (now - start_time) in minutes ─────────
       const endTime = new Date();
       const startTime: Date = session.start_time
@@ -2005,6 +2047,25 @@ export const persistSessionOnEnd = async (
       session.esol_aim_type = aimType;
       if (!session.completedAt) session.completedAt = endTime;
       await session.save();
+      traceWrite({
+        source: "ai_session.end",
+        collection: "aisessions",
+        docId: session._id,
+        sessionId: session._id,
+        learnerId: session.learnerId,
+        orgId: session.orgId,
+        before: endStatsBefore,
+        after: {
+          turn_count: session.turns?.length ?? 0,
+          end_time: endTime,
+          duration_mins: durationMins,
+          final_score: finalScore,
+          passed,
+          completedAt: session.completedAt,
+          vocabIntroduced: dedupedVocab,
+          skill_codes_covered: dedupedSkills,
+        },
+      });
 
       return {
         session_id: session._id.toString(),
@@ -2141,7 +2202,12 @@ export const endSessionService = async (
             `Turn ${i + 1}\nLearner: ${t.originalInput ?? ""}\nTutor: ${t.deepSeekResponse ?? ""}`,
         )
         .join("\n\n");
-      sessionSummary = (await generateSessionSummary(transcript)) || null;
+      sessionSummary =
+        (await generateSessionSummary(transcript, {
+          sessionId: session._id,
+          learnerId: input.learnerId,
+          orgId: input.orgId,
+        })) || null;
       if (sessionSummary) {
         // updateOne (not session.save()) — persistSessionOnEnd already
         // saved this document; writing a single scalar via updateOne
@@ -2150,6 +2216,16 @@ export const endSessionService = async (
           { _id: session._id },
           { $set: { assessmentSummary: sessionSummary } },
         );
+        traceWrite({
+          source: "ai_session.summary",
+          collection: "aisessions",
+          docId: session._id,
+          sessionId: session._id,
+          learnerId: input.learnerId,
+          orgId: input.orgId,
+          before: { assessmentSummary: session.assessmentSummary ?? null },
+          after: { assessmentSummary: sessionSummary },
+        });
       }
     } catch (err) {
       logger.error(
