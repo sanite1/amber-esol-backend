@@ -897,7 +897,34 @@ export const scorePlacement = async (
       // ── 5. Patch User: esolLevel + merged skill_weakness_flags ────
       const learner = await User.findById(attempt.learnerId);
       const beforeLevel = learner?.esolLevel ?? null;
-      if (learner) {
+      // Silk brief section 2: a learner who already has a level keeps it
+      // when scoring was unavailable (the e1 fallback used to overwrite
+      // an Entry 3 learner with Entry 1, confidence 0) and when a re-run
+      // suggests a different level. The suggestion is recorded on the
+      // attempt and in the audit row; the teacher confirms any change
+      // through the level change flow. A first placement applies as is.
+      const levelHeld =
+        beforeLevel !== null && (fellBackToE1 || finalLevel !== beforeLevel);
+      const heldReason = !levelHeld
+        ? null
+        : fellBackToE1
+          ? "scoring_unavailable"
+          : "existing_level_requires_teacher_confirmation";
+      const appliedLevel: EsolLevel = levelHeld
+        ? (beforeLevel as EsolLevel)
+        : finalLevel;
+      if (learner && levelHeld) {
+        logger.warn(
+          {
+            learnerId: attempt.learnerId.toString(),
+            beforeLevel,
+            suggestedLevel: finalLevel,
+            heldReason,
+          },
+          "Placement re-run: existing level held, suggestion recorded for teacher review",
+        );
+      }
+      if (learner && !levelHeld) {
         learner.esolLevel = finalLevel;
         // Keep the learner-facing placement explanation in sync with
         // the latest scored attempt (welcome modal + teacher review
@@ -923,7 +950,10 @@ export const scorePlacement = async (
         action: "placement_completed",
         before_state: { esol_level: beforeLevel },
         after_state: {
-          esol_level: finalLevel,
+          esol_level: appliedLevel,
+          suggested_level: finalLevel,
+          level_held: levelHeld,
+          held_reason: heldReason,
           placement_confidence: suggested.confidence,
           skill_weakness_flags: suggested.skill_weakness_flags,
           attempt_id: attempt._id.toString(),
@@ -980,7 +1010,10 @@ export const scorePlacement = async (
           : undefined;
 
       return {
-        esol_level: finalLevel,
+        esol_level: appliedLevel,
+        suggested_level: finalLevel,
+        level_held: levelHeld,
+        held_reason: heldReason,
         confidence: suggested.confidence,
         rationale: suggested.rationale,
         stage3_objectives,
