@@ -37,6 +37,13 @@ export interface IAISessionTurn {
   speaking_prompt?: SpeakingPrompt | null;
   /** F33 — reply language runs for read-aloud (null when unavailable). */
   reply_segments?: Array<{ lang: "en" | "l1"; text: string }> | null;
+  /** Silk brief section 3 — separate recast proposal, when enabled. */
+  recast?: {
+    has_error: boolean;
+    corrected: string;
+    error_type: string | null;
+    note_en: string | null;
+  } | null;
   /** Gemini's content score before the pronunciation blend. */
   content_score?: number | null;
   /** Recording length in seconds (voice only). */

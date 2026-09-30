@@ -52,6 +52,8 @@ export interface LocalisedText {
  */
 export interface PlacementOption extends LocalisedText {
   id: string;
+  /** Turkish (Silk brief section 2); optional, falls back to English. */
+  text_tr?: string;
 }
 
 /**
@@ -80,6 +82,9 @@ export interface PlacementQuestion {
   question_so: string;
   question_fa: string;
   question_zh: string;
+  /** Turkish (Silk brief section 2). Optional so older bank files still
+   *  validate; the client falls back to English when missing. */
+  question_tr?: string;
 
   options: PlacementOption[];
   /** Must match one of `options[*].id`. Enforced by the validator. */

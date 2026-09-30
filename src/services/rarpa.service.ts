@@ -223,6 +223,17 @@ export const createStage3ObjectivesFromPlacement = async (
   learner_id: string,
   esol_level: EsolLevel,
   skill_weakness_flags: IlrSkillCode[],
+  opts: {
+    /**
+     * Silk brief section 2: a re-run placement used to strip and
+     * replace every placement sourced objective, silently discarding
+     * goals the learner had already agreed. Default false: when the
+     * learner already has ANY objectives they are left untouched and
+     * an audit row records that placement did not change them. A
+     * teacher who wants a fresh set passes true from the Stage 3 view.
+     */
+    replaceExisting?: boolean;
+  } = {},
 ): Promise<IStage3Objective[]> => {
   const learner = await User.findById(learner_id);
   if (!learner) {
@@ -248,6 +259,35 @@ export const createStage3ObjectivesFromPlacement = async (
       ? E[]
       : never
     : never;
+  if (existing.length > 0 && !opts.replaceExisting) {
+    logger.info(
+      { learnerId: learner_id, esol_level, existingCount: existing.length },
+      "Stage 3 objectives already exist — placement left them untouched",
+    );
+    await AuditLog.create({
+      timestamp: new Date(),
+      actor_type: "system",
+      actor_id: null,
+      org_id: learner.orgId ?? null,
+      learner_id: learner._id,
+      action: "placement_goals_preserved",
+      before_state: { objective_ids: existing.map((o) => o.id) },
+      after_state: {
+        objective_ids: existing.map((o) => o.id),
+        placement_level: esol_level,
+        would_have_added: fresh.map((o) => o.description),
+      },
+      reason:
+        "Placement re-run while Stage 3 objectives already existed; existing objectives kept (learner agreement preserved)",
+    }).catch((err) =>
+      logger.error(
+        { err, learnerId: learner_id },
+        "AuditLog write failed for placement_goals_preserved",
+      ),
+    );
+    return existing;
+  }
+
   const preserved = existing.filter(
     (o) => o.set_from !== "placement_assessment",
   );

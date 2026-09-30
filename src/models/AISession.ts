@@ -23,6 +23,8 @@ const turnSchema = new Schema(
     speaking_prompt: { type: Schema.Types.Mixed, default: null },
     // F33 — language runs of the reply for per-voice read-aloud.
     reply_segments: { type: Schema.Types.Mixed, default: null },
+    // Silk brief section 3 — separate recast call result (RECAST_MODE=separate).
+    recast: { type: Schema.Types.Mixed, default: null },
     // Gemini's raw content score before the pronunciation blend. The
     // blended value is what lands in session.turn_scores.
     content_score: { type: Number, default: null },

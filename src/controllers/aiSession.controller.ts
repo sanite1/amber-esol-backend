@@ -417,13 +417,24 @@ export const getMyGoals: ExpressFunction = async (req, res, next) => {
       .sort({ timestamp: -1 })
       .lean();
 
+    // "Agreed" only counts for the objectives the learner actually saw.
+    // Silk brief section 2: the flag used to carry over to a new set of
+    // objectives the learner had never agreed.
+    const agreedIds = new Set<string>(
+      ((agreement?.after_state as { objective_ids?: string[] } | null)
+        ?.objective_ids ?? []) as string[],
+    );
+    const currentIds = objectives.map((o) => o.id);
+    const agreementCoversCurrent =
+      currentIds.length > 0 && currentIds.every((id) => agreedIds.has(id));
+
     return res.status(200).json(
       new ApiResponse(200, "Goals", {
         objectives,
         negotiation_script,
         l1_language: l1Language,
         agreed_at:
-          agreement?.timestamp instanceof Date
+          agreementCoversCurrent && agreement?.timestamp instanceof Date
             ? agreement.timestamp.toISOString()
             : null,
       }),
