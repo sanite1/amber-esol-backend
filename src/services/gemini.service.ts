@@ -144,7 +144,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * Note: the underlying SDK call keeps running — Node has no abort
  * primitive for it — but the caller stops waiting at the deadline.
  */
-const withTimeout = async <T>(
+export const withTimeout = async <T>(
   promise: Promise<T>,
   ms: number,
   startedAt: number,

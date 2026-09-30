@@ -28,6 +28,7 @@ export type AuditAction =
   | "pathway_override_expired"
   | "level_change_confirmed"
   | "placement_completed"
+  | "placement_goals_preserved"
   | "stage5_review_generated"
   // Function 17 — Stage 5 review opened on level-change confirmation
   | "stage5_review_initiated"
