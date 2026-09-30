@@ -32,6 +32,7 @@ import {
   adaptScenario,
   loadScenarioById,
   tutorTemperature,
+  tutorThinkingBudget,
   TURN_RESPONSE_SCHEMA,
 } from "../services/aiSession.service";
 import { proposeRecast, recastMode } from "../services/recast.service";
@@ -107,6 +108,7 @@ const runCase = async (c: TutorEvalCase): Promise<RunResult> => {
         conversationHistory: c.history,
         userMessage: c.learnerInput,
         temperature: tutorTemperature(),
+        thinkingBudget: tutorThinkingBudget(),
         responseSchema: TURN_RESPONSE_SCHEMA as unknown as Record<
           string,
           unknown

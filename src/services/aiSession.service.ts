@@ -47,6 +47,14 @@ import { proposeRecast, recastMode, type RecastResult } from "./recast.service";
  * next identical input. Lower by default; override with TUTOR_TEMPERATURE
  * while the eval harness compares settings.
  */
+/** Reasoning budget for the tutor turn. The wrapper default is 1024;
+ *  Silk brief section 5 measures whether a smaller budget is faster
+ *  without hurting the eval report. */
+export const tutorThinkingBudget = (): number => {
+  const v = Number(process.env.TUTOR_THINKING_BUDGET);
+  return Number.isFinite(v) && v >= 0 && v <= 8192 ? Math.round(v) : 1024;
+};
+
 export const tutorTemperature = (): number => {
   const v = Number(process.env.TUTOR_TEMPERATURE);
   return Number.isFinite(v) && v >= 0 && v <= 2 ? v : 0.3;
@@ -434,16 +442,20 @@ const buildLearnerProfile = async (
 ): Promise<LearnerProfileForPrompt> => {
   // Recent session summaries — last 3 completed sessions for this
   // learner, newest first. Excludes the current session.
-  const recent = await AISession.find({
-    learnerId: learner._id,
-    _id: { $ne: session._id },
-    completedAt: { $ne: null },
-    assessmentSummary: { $ne: null },
-  })
-    .sort({ completedAt: -1 })
-    .limit(3)
-    .select("assessmentSummary")
-    .lean();
+  // Both reads are independent: run them together (section 5).
+  const [recent, dueTargets] = await Promise.all([
+    AISession.find({
+      learnerId: learner._id,
+      _id: { $ne: session._id },
+      completedAt: { $ne: null },
+      assessmentSummary: { $ne: null },
+    })
+      .sort({ completedAt: -1 })
+      .limit(3)
+      .select("assessmentSummary")
+      .lean(),
+    getReinforcementTargets(learner._id, 6),
+  ]);
 
   const recentSessionSummaries: string[] = recent
     .map((s) => (s as any).assessmentSummary)
@@ -456,7 +468,6 @@ const buildLearnerProfile = async (
   // on a `masteryScore` field the ledger never populates (so it
   // surfaced the most RECENTLY introduced words, the opposite of what
   // spaced repetition wants).
-  const dueTargets = await getReinforcementTargets(learner._id, 6);
   const vocabularyToReinforce: string[] = dueTargets.map((t) => t.word);
 
   // Current mode — last entry in teaching_mode_sequence, else fall back
@@ -885,8 +896,24 @@ export const processTurnService = async (
     );
   }
 
+  // Silk brief section 5: per stage timings, traced with the turn.
+  const stageStart = Date.now();
+  const stageMs: Record<string, number> = {};
+  let stageMark = stageStart;
+  const mark = (name: string) => {
+    const now = Date.now();
+    stageMs[name] = now - stageMark;
+    stageMark = now;
+  };
+
   // ── 1. Load session + ownership check ────────────────────────────
-  const session = await AISession.findById(input.sessionId);
+  // Session and learner are independent lookups; fetch them together
+  // (Silk brief section 5: every sequential round trip to Atlas is
+  // ~150 to 300 ms on Render).
+  const [session, learner] = await Promise.all([
+    AISession.findById(input.sessionId),
+    User.findById(input.learnerId),
+  ]);
   if (!session) {
     throw new ApiError(404, `AISession ${input.sessionId} not found`);
   }
@@ -909,10 +936,11 @@ export const processTurnService = async (
     );
   }
 
-  const learner = await User.findById(input.learnerId);
   if (!learner) {
     throw new ApiError(404, "Learner not found");
   }
+
+  mark("load");
 
   // ── 2. Pre-Gemini safeguarding scan ──────────────────────────────
   const scan = SafeguardingDetector.scan(
@@ -993,6 +1021,8 @@ export const processTurnService = async (
 
   // ── 3. (Done — TurnLog captured above) ───────────────────────────
 
+  mark("safeguarding");
+
   // ── 4. Build Layer 5 (dynamic learner profile) ───────────────────
   const learnerProfile = await buildLearnerProfile(learner, session);
 
@@ -1056,6 +1086,8 @@ export const processTurnService = async (
   // ── 6. Conversation history from prior turns ─────────────────────
   const conversationHistory = buildConversationHistory(session);
 
+  mark("prompt");
+
   // ── 7. Call Gemini ───────────────────────────────────────────────
   let geminiOutput: IGeminiTurnOutput;
   let rawReplyText: string;
@@ -1076,6 +1108,7 @@ export const processTurnService = async (
   try {
     const result = await generateTurn<IGeminiTurnOutput>({
       temperature: tutorTemperature(),
+      thinkingBudget: tutorThinkingBudget(),
       systemPrompt: assembled.systemPrompt,
       conversationHistory,
       userMessage: input.message,
@@ -1124,6 +1157,8 @@ export const processTurnService = async (
     };
     return new ApiResponse(200, "Fallback reply served", fallback);
   }
+
+  mark("gemini");
 
   // ── 8. (Validation already inside generateTurn via Zod) ──────────
 
@@ -1359,6 +1394,12 @@ export const processTurnService = async (
   }
 
   await session.save();
+  mark("commit");
+  stageMs.total = Date.now() - stageStart;
+  logger.info(
+    { session_id: session._id.toString(), stage_ms: stageMs },
+    "turn stage timings",
+  );
   traceWrite({
     source: "ai_session.turn",
     collection: "aisessions",
@@ -1381,6 +1422,8 @@ export const processTurnService = async (
       turn_score_mode: turnScoreMode(),
       recast_separate: separateRecast,
       recast_mode: recastMode(),
+      stage_ms: stageMs,
+      thinking_budget: tutorThinkingBudget(),
       mode: geminiOutput.mode,
       vocabulary_items_used: geminiOutput.vocabulary_items_used,
       skill_codes_used: geminiOutput.skill_codes_used,
@@ -1711,6 +1754,9 @@ interface StartSessionInput {
   orgId: string;
 }
 
+/** An in progress session with turns is resumed if touched within this window. */
+export const RESUME_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 export const startSessionService = async (
   input: StartSessionInput,
 ): Promise<ApiResponse> => {
@@ -1795,6 +1841,48 @@ export const startSessionService = async (
   // ── 4 + 5. Idempotent session creation ──────────────────────────
   // Coarse minute window: a double-click within the same minute
   // produces the same key and returns the cached session.
+  // Silk brief section 4: opening a scenario used to create a new
+  // session every time (the seed account had 47 in progress). If the
+  // learner already has a live session on this scenario with at least
+  // one turn, resume it. Untouched sessions older than a day are left
+  // alone and a fresh one starts.
+  const resumeCutoff = new Date(Date.now() - RESUME_WINDOW_MS);
+  const resumable = await AISession.findOne({
+    learnerId: learner._id,
+    scenario_id: input.scenarioId,
+    session_source: "ai_tutor",
+    completedAt: null,
+    "turns.0": { $exists: true },
+    updatedAt: { $gte: resumeCutoff },
+  })
+    .sort({ updatedAt: -1 })
+    .select("_id turns")
+    .lean();
+  if (resumable) {
+    logger.info(
+      {
+        learnerId: input.learnerId,
+        scenarioId: input.scenarioId,
+        sessionId: resumable._id.toString(),
+      },
+      "session start: resuming the learner's in progress session",
+    );
+    return new ApiResponse(200, "Resuming existing session", {
+      session_id: resumable._id.toString(),
+      resumed: true,
+      turn_count: (resumable.turns ?? []).length,
+      opening_message: "",
+      scenario_title: scenarioFile.title.en,
+      unread_messages: unreadMessages.map((m: any) => ({
+        id: m._id?.toString?.() ?? null,
+        teacher_id: m.teacher_id?.toString?.() ?? null,
+        message_text: m.message_text,
+        language: m.language,
+        created_at: m.createdAt,
+      })),
+    });
+  }
+
   const startMinute = Math.floor(Date.now() / 60000);
   const idemKey = createHash("sha256")
     .update(
@@ -1914,6 +2002,8 @@ export const startSessionService = async (
     outcome.hit ? "Resuming existing session" : "Session started",
     {
       session_id: sessionId,
+      resumed: false,
+      turn_count: 0,
       opening_message: openingMessage,
       scenario_title: scenarioFile.title.en,
       unread_messages: unreadMessages.map((m: any) => ({

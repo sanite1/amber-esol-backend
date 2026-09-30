@@ -242,8 +242,16 @@ export const refreshService = async (data: IRefreshTokenRequest) => {
   };
 
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "5h" });
+  // Silk brief section 4: sign ins "expired within six days" because the
+  // refresh token was never rotated, so every login had a hard 7 day
+  // wall however active the learner was. Issue a fresh one on each
+  // refresh; the window now slides while the learner keeps using Amber.
+  const refreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
 
-  return new ApiResponse(200, "Token refreshed successfully", { accessToken });
+  return new ApiResponse(200, "Token refreshed successfully", {
+    accessToken,
+    refreshToken,
+  });
 };
 
 /* ── Verify Email ── */
