@@ -593,13 +593,63 @@ export const generateTeacherPrepNote = async (input: {
 
 /* ── Final session summary ── */
 
-const SESSION_SUMMARY_SYSTEM_PROMPT = `You are an ESOL teacher producing a final session summary (3-5 sentences) covering: overall engagement, vocabulary introduced, recommended focus next session. British English, constructive tone.`;
+const SESSION_SUMMARY_SYSTEM_PROMPT = `You are an ESOL teacher producing a final session summary (3-5 sentences) for the learner's record. Cover: what the learner actually did, vocabulary introduced, and the recommended focus for next session. British English, constructive but honest tone.
+
+The message begins with a SESSION OUTCOME block computed by the platform (passed, score, number of turns, duration). It is the record of truth. Rules:
+- If passed is false, say plainly that the session did not reach the pass mark and what was missing. Do not use words such as "excellent", "great", "confident" or "strong" about the session as a whole.
+- If there were fewer than 4 learner turns, describe the session as short and do not draw conclusions about engagement or progress.
+- Praise only what appears in the transcript. Never invent progress.
+- Do not repeat the numbers in the outcome block; interpret them.`;
+
+/** Outcome fields the platform computed for the session. The summary
+ *  model must see these so its tone matches the record (Silk brief
+ *  section 1: positive summaries appeared on failed sessions). */
+export interface SessionOutcomeForSummary {
+  passed: boolean;
+  final_score: number;
+  turn_count: number;
+  duration_mins: number;
+  pass_threshold?: number | null;
+}
+
+/** Sessions this short get a fixed summary rather than a model call:
+ *  there is nothing to assess and the model was inventing engagement. */
+export const MIN_TURNS_FOR_MODEL_SUMMARY = 2;
+
+export const shortSessionSummary = (o: SessionOutcomeForSummary): string =>
+  `Session ended after ${o.turn_count} ${o.turn_count === 1 ? "turn" : "turns"} (${o.duration_mins} min). Too short to assess progress; it does not count as a completed scenario. Next session: continue the same scenario and aim for at least four exchanges.`;
+
+export const buildSessionSummaryMessage = (
+  transcript: string,
+  outcome: SessionOutcomeForSummary,
+): string =>
+  [
+    "SESSION OUTCOME (computed by the platform)",
+    `passed: ${outcome.passed ? "true" : "false"}${
+      outcome.pass_threshold != null
+        ? ` (pass mark ${outcome.pass_threshold})`
+        : ""
+    }`,
+    `score: ${outcome.final_score.toFixed(2)}`,
+    `learner turns: ${outcome.turn_count}`,
+    `duration: ${outcome.duration_mins} min`,
+    "",
+    "TRANSCRIPT",
+    transcript,
+  ].join("\n");
 
 export const generateSessionSummary = async (
   transcript: string,
   trace?: TraceContext,
+  outcome?: SessionOutcomeForSummary,
 ): Promise<string> => {
   const startedAt = Date.now();
+  if (outcome && outcome.turn_count < MIN_TURNS_FOR_MODEL_SUMMARY) {
+    return shortSessionSummary(outcome);
+  }
+  const userMessage = outcome
+    ? buildSessionSummaryMessage(transcript, outcome)
+    : transcript;
   const model = geminiClient.preview.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction: {
@@ -621,11 +671,11 @@ export const generateSessionSummary = async (
     temperature: 0.4,
     maxOutputTokens: 1536,
     systemPrompt: SESSION_SUMMARY_SYSTEM_PROMPT,
-    userMessage: transcript,
+    userMessage,
   };
   try {
     const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: transcript }] }],
+      contents: [{ role: "user", parts: [{ text: userMessage }] }],
     });
     const text =
       result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;

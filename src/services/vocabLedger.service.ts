@@ -325,3 +325,52 @@ export const getReinforcementTargets = async (
     last_seen_at: (r as { last_seen_at?: Date | null }).last_seen_at ?? null,
   }));
 };
+
+// ─────────────────────────────────────────────────────────────────────
+// Learner vocabulary summary — Silk brief section 1
+// ─────────────────────────────────────────────────────────────────────
+
+/** A word counts as learned when the ledger marked it retained, or a
+ *  legacy masteryScore says so. This is THE definition: the session
+ *  end screen, the vocabulary page and the learner home all read it. */
+export const LEARNED_WORD_FILTER = {
+  $or: [{ retained: true }, { masteryScore: { $gte: 0.7 } }],
+};
+
+export interface LearnerVocabSummary {
+  /** Distinct words the learner has met in any session. */
+  words_seen: number;
+  /** Distinct words that meet LEARNED_WORD_FILTER. */
+  words_learned: number;
+  /** Most recently seen words, newest first. */
+  recent_words: string[];
+}
+
+export const countLearnedWords = async (
+  learnerId: string | Types.ObjectId,
+): Promise<number> =>
+  VocabLedger.countDocuments({
+    learnerId: toObjectId(learnerId),
+    ...LEARNED_WORD_FILTER,
+  });
+
+export const getLearnerVocabSummary = async (
+  learnerId: string | Types.ObjectId,
+  recentLimit = 12,
+): Promise<LearnerVocabSummary> => {
+  const learnerObjectId = toObjectId(learnerId);
+  const [words_seen, words_learned, recent] = await Promise.all([
+    VocabLedger.countDocuments({ learnerId: learnerObjectId }),
+    countLearnedWords(learnerObjectId),
+    VocabLedger.find({ learnerId: learnerObjectId })
+      .sort({ last_seen_at: -1, introducedAt: -1 })
+      .limit(recentLimit)
+      .select("word")
+      .lean(),
+  ]);
+  return {
+    words_seen,
+    words_learned,
+    recent_words: recent.map((r) => r.word as string),
+  };
+};

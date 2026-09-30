@@ -6,6 +6,7 @@ import {
   startSessionService,
   endSessionService,
   getPendingSpeakingTarget,
+  getLearnerProgressService,
 } from "../services/aiSession.service";
 import {
   synthesizeSpeech,
@@ -361,6 +362,21 @@ export const getVoiceCapabilities: ExpressFunction = async (req, res, next) => {
     return res
       .status(200)
       .json(new ApiResponse(200, "Voice capabilities", voiceCapabilities()));
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/esol/session/progress — every number the learner home shows,
+ * computed over all sessions and the whole vocabulary ledger.
+ */
+export const getMyProgress: ExpressFunction = async (req, res, next) => {
+  try {
+    const ctx = pullContext(req);
+    if (!ctx) return next(new ApiError(403, "Auth + org context required"));
+    const progress = await getLearnerProgressService(ctx.learnerId);
+    return res.status(200).json(new ApiResponse(200, "Progress", progress));
   } catch (err) {
     next(err);
   }

@@ -37,6 +37,8 @@ import { traceWrite } from "./diagnosticTrace.service";
 import {
   updateLedgerForTurn,
   getReinforcementTargets,
+  countLearnedWords,
+  getLearnerVocabSummary,
 } from "./vocabLedger.service";
 import {
   recordTurnEvidence,
@@ -1882,7 +1884,13 @@ interface EndSessionInput {
   orgId: string;
 }
 
-const VOCAB_RETAINED_MIN_SCORE = 0.7;
+/**
+ * A scenario cannot be passed on a handful of turns however well they
+ * scored: the mean of one 0.9 turn is 0.9. Silk brief section 1 found
+ * one turn sessions recorded as passed. Below this many learner turns
+ * the session ends as not passed whatever the score.
+ */
+export const MIN_TURNS_TO_PASS = 4;
 
 // ─────────────────────────────────────────────────────────────────────
 // persistSessionOnEnd — brief Function 8 To-Do 2
@@ -1992,8 +2000,13 @@ export const persistSessionOnEnd = async (
       const scenarioFile = session.scenario_id
         ? loadScenarioById(String(session.scenario_id))
         : null;
+      // turn_scores is pushed once per turn; the max guards fixtures
+      // and legacy rows where one of the two arrays is empty.
+      const turnCount = Math.max(session.turns?.length ?? 0, scores.length);
       if (scenarioFile) {
-        passed = finalScore >= scenarioFile.pass_threshold;
+        passed =
+          turnCount >= MIN_TURNS_TO_PASS &&
+          finalScore >= scenarioFile.pass_threshold;
       } else {
         passed = false;
       }
@@ -2170,10 +2183,12 @@ export const endSessionService = async (
   // ── Vocabulary retained count (Phase 10 stub) ──────────────────
   // Always queried — same value on idempotent replay because the
   // ledger only changes via the worker, not via /end.
-  const vocabularyRetainedCount = await VocabLedger.countDocuments({
-    learnerId: new Types.ObjectId(input.learnerId),
-    masteryScore: { $gte: VOCAB_RETAINED_MIN_SCORE },
-  }).catch((err) => {
+  // Same definition the vocabulary page and learner home use
+  // (Silk brief section 1: this used to count a masteryScore field
+  // the ledger never writes, so the number never moved).
+  const vocabularyRetainedCount = await countLearnedWords(
+    input.learnerId,
+  ).catch((err) => {
     logger.error(
       { err, learnerId: input.learnerId },
       "VocabLedger retained-count query failed",
@@ -2202,12 +2217,25 @@ export const endSessionService = async (
             `Turn ${i + 1}\nLearner: ${t.originalInput ?? ""}\nTutor: ${t.deepSeekResponse ?? ""}`,
         )
         .join("\n\n");
+      const scenarioForSummary = session.scenario_id
+        ? loadScenarioById(String(session.scenario_id))
+        : null;
       sessionSummary =
-        (await generateSessionSummary(transcript, {
-          sessionId: session._id,
-          learnerId: input.learnerId,
-          orgId: input.orgId,
-        })) || null;
+        (await generateSessionSummary(
+          transcript,
+          {
+            sessionId: session._id,
+            learnerId: input.learnerId,
+            orgId: input.orgId,
+          },
+          {
+            passed: persisted.passed,
+            final_score: persisted.final_score,
+            turn_count: turnsForSummary.length,
+            duration_mins: persisted.duration_mins,
+            pass_threshold: scenarioForSummary?.pass_threshold ?? null,
+          },
+        )) || null;
       if (sessionSummary) {
         // updateOne (not session.save()) — persistSessionOnEnd already
         // saved this document; writing a single scalar via updateOne
@@ -2245,4 +2273,67 @@ export const endSessionService = async (
       vocabulary_retained_count: vocabularyRetainedCount,
     },
   );
+};
+
+// ─────────────────────────────────────────────────────────────────────
+// Learner progress — Silk brief section 1
+// ─────────────────────────────────────────────────────────────────────
+
+export interface LearnerProgress {
+  sessions_total: number;
+  sessions_completed: number;
+  sessions_passed: number;
+  turns_total: number;
+  words_seen: number;
+  words_learned: number;
+  recent_words: string[];
+}
+
+/**
+ * One read for every number the learner home shows. Computed over ALL
+ * of the learner's sessions and the whole ledger, never a page of
+ * recent rows: the old home derived its counts from the five most
+ * recent sessions, so they moved backwards between visits.
+ */
+export const getLearnerProgressService = async (
+  learnerId: string,
+): Promise<LearnerProgress> => {
+  const learnerObjectId = new Types.ObjectId(learnerId);
+  const [agg, vocab] = await Promise.all([
+    AISession.aggregate<{
+      sessions_total: number;
+      sessions_completed: number;
+      sessions_passed: number;
+      turns_total: number;
+    }>([
+      { $match: { learnerId: learnerObjectId } },
+      {
+        $group: {
+          _id: null,
+          sessions_total: { $sum: 1 },
+          sessions_completed: {
+            $sum: { $cond: [{ $ne: ["$completedAt", null] }, 1, 0] },
+          },
+          sessions_passed: {
+            $sum: { $cond: [{ $eq: ["$passed", true] }, 1, 0] },
+          },
+          turns_total: { $sum: { $size: { $ifNull: ["$turns", []] } } },
+        },
+      },
+    ]),
+    getLearnerVocabSummary(learnerObjectId),
+  ]);
+  const row = agg[0] ?? {
+    sessions_total: 0,
+    sessions_completed: 0,
+    sessions_passed: 0,
+    turns_total: 0,
+  };
+  return {
+    sessions_total: row.sessions_total,
+    sessions_completed: row.sessions_completed,
+    sessions_passed: row.sessions_passed,
+    turns_total: row.turns_total,
+    ...vocab,
+  };
 };
