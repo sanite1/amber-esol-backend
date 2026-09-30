@@ -1711,6 +1711,9 @@ interface StartSessionInput {
   orgId: string;
 }
 
+/** An in progress session with turns is resumed if touched within this window. */
+export const RESUME_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 export const startSessionService = async (
   input: StartSessionInput,
 ): Promise<ApiResponse> => {
@@ -1795,6 +1798,48 @@ export const startSessionService = async (
   // ── 4 + 5. Idempotent session creation ──────────────────────────
   // Coarse minute window: a double-click within the same minute
   // produces the same key and returns the cached session.
+  // Silk brief section 4: opening a scenario used to create a new
+  // session every time (the seed account had 47 in progress). If the
+  // learner already has a live session on this scenario with at least
+  // one turn, resume it. Untouched sessions older than a day are left
+  // alone and a fresh one starts.
+  const resumeCutoff = new Date(Date.now() - RESUME_WINDOW_MS);
+  const resumable = await AISession.findOne({
+    learnerId: learner._id,
+    scenario_id: input.scenarioId,
+    session_source: "ai_tutor",
+    completedAt: null,
+    "turns.0": { $exists: true },
+    updatedAt: { $gte: resumeCutoff },
+  })
+    .sort({ updatedAt: -1 })
+    .select("_id turns")
+    .lean();
+  if (resumable) {
+    logger.info(
+      {
+        learnerId: input.learnerId,
+        scenarioId: input.scenarioId,
+        sessionId: resumable._id.toString(),
+      },
+      "session start: resuming the learner's in progress session",
+    );
+    return new ApiResponse(200, "Resuming existing session", {
+      session_id: resumable._id.toString(),
+      resumed: true,
+      turn_count: (resumable.turns ?? []).length,
+      opening_message: "",
+      scenario_title: scenarioFile.title.en,
+      unread_messages: unreadMessages.map((m: any) => ({
+        id: m._id?.toString?.() ?? null,
+        teacher_id: m.teacher_id?.toString?.() ?? null,
+        message_text: m.message_text,
+        language: m.language,
+        created_at: m.createdAt,
+      })),
+    });
+  }
+
   const startMinute = Math.floor(Date.now() / 60000);
   const idemKey = createHash("sha256")
     .update(
@@ -1914,6 +1959,8 @@ export const startSessionService = async (
     outcome.hit ? "Resuming existing session" : "Session started",
     {
       session_id: sessionId,
+      resumed: false,
+      turn_count: 0,
       opening_message: openingMessage,
       scenario_title: scenarioFile.title.en,
       unread_messages: unreadMessages.map((m: any) => ({
