@@ -15,6 +15,11 @@ import { ALL_ILR_CODES, IlrSkillCode } from "./esolSkills";
 import { createStage3ObjectivesFromPlacement } from "./rarpa.service";
 import logger from "../config/logger";
 import {
+  traceGeminiCall,
+  traceWrite,
+  type TraceContext,
+} from "./diagnosticTrace.service";
+import {
   PlacementBank,
   PlacementQuestion,
   EsolLevel,
@@ -667,7 +672,18 @@ const parseScoringResponse = (raw: string): GeminiScoringResponse => {
  *  response body so you can diagnose schema drift without re-running. */
 const callGeminiOnce = async (
   prompt: string,
+  trace?: TraceContext,
 ): Promise<GeminiScoringResponse> => {
+  const startedAt = Date.now();
+  const traceBase = {
+    source: "placement_scoring",
+    ...(trace ?? {}),
+    modelName: MODEL_NAME,
+    temperature: SCORING_TEMPERATURE,
+    maxOutputTokens: SCORING_MAX_TOKENS,
+    systemPrompt: SCORING_SYSTEM_PROMPT,
+    userMessage: prompt,
+  };
   const model = geminiClient.preview.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction: {
@@ -683,17 +699,43 @@ const callGeminiOnce = async (
     },
   });
 
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-  });
-  const text =
-    result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  let result;
+  try {
+    result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
+  } catch (err) {
+    traceGeminiCall({
+      ...traceBase,
+      latencyMs: Date.now() - startedAt,
+      error: err,
+    });
+    throw err;
+  }
+  const candidate = result.response?.candidates?.[0];
+  const text = candidate?.content?.parts?.[0]?.text ?? "";
+  const traceCall = (parsed: unknown, error?: unknown) =>
+    traceGeminiCall({
+      ...traceBase,
+      rawResponse: text || null,
+      parsed,
+      finishReason: candidate?.finishReason ?? null,
+      inputTokens: result.response?.usageMetadata?.promptTokenCount ?? null,
+      outputTokens:
+        result.response?.usageMetadata?.candidatesTokenCount ?? null,
+      latencyMs: Date.now() - startedAt,
+      error,
+    });
   if (!text) {
+    traceCall(null, "empty response");
     throw new Error("Empty response from Gemini");
   }
   try {
-    return parseScoringResponse(text);
+    const parsed = parseScoringResponse(text);
+    traceCall(parsed);
+    return parsed;
   } catch (err) {
+    traceCall(null, err);
     // Surface the raw body in the log so we can tell whether Gemini
     // returned junk vs returned valid-shaped JSON that failed our
     // stricter post-parse checks (e.g. confidence as a string,
@@ -785,7 +827,10 @@ export const scorePlacement = async (
       const prompt = buildScoringPayload(bank, attempt.answers);
       for (const attemptNum of [1, 2]) {
         try {
-          scored = await callGeminiOnce(prompt);
+          scored = await callGeminiOnce(prompt, {
+            sessionId: attempt._id.toString(),
+            learnerId,
+          });
           break;
         } catch (err) {
           lastError = err as Error;

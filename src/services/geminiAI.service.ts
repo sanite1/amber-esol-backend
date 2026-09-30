@@ -1,6 +1,7 @@
 import { SchemaType } from "@google-cloud/vertexai";
 import ApiError from "../errors/apiError";
 import logger from "../config/logger";
+import { traceGeminiCall, type TraceContext } from "./diagnosticTrace.service";
 import { AISessionMode } from "../interfaces/aiSession.interface";
 import { geminiClient, MODEL_NAME } from "../lib/gemini";
 
@@ -193,7 +194,10 @@ export const processTurn = async (params: {
   scenario?: ScenarioContext;
   learner: LearnerContext;
   history: DialogueHistoryEntry[];
+  /** Diagnostic trace context (Silk brief section 0). */
+  trace?: TraceContext;
 }): Promise<TurnResponse> => {
+  const startedAt = Date.now();
   const systemInstruction = [
     LAYER_1_IDENTITY,
     LAYER_2_HARD_RULES,
@@ -246,14 +250,36 @@ export const processTurn = async (params: {
     { role: "user", parts: [{ text: params.learnerInput }] },
   ];
 
+  const traceBase = {
+    source: "legacy_turn",
+    ...(params.trace ?? {}),
+    modelName: MODEL_NAME,
+    temperature: 0.7,
+    maxOutputTokens: 8192,
+    systemPrompt: systemInstruction,
+    history: params.history.map((h) => ({ role: h.role, content: h.content })),
+    userMessage: params.learnerInput,
+  };
+  let rawText = "";
   try {
     const result = await model.generateContent({ contents });
-    const text =
-      result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const candidate = result.response?.candidates?.[0];
+    const text = candidate?.content?.parts?.[0]?.text ?? "";
+    rawText = text;
     if (!text) {
       throw new Error("Empty response from Gemini");
     }
     const parsed = JSON.parse(text) as TurnResponse;
+    traceGeminiCall({
+      ...traceBase,
+      rawResponse: text,
+      parsed,
+      finishReason: candidate?.finishReason ?? null,
+      inputTokens: result.response?.usageMetadata?.promptTokenCount ?? null,
+      outputTokens:
+        result.response?.usageMetadata?.candidatesTokenCount ?? null,
+      latencyMs: Date.now() - startedAt,
+    });
 
     // Normalise mode case
     const mode = (parsed.mode || "BRIDGE").toUpperCase() as AISessionMode;
@@ -268,6 +294,12 @@ export const processTurn = async (params: {
         : null,
     };
   } catch (err) {
+    traceGeminiCall({
+      ...traceBase,
+      rawResponse: rawText || null,
+      latencyMs: Date.now() - startedAt,
+      error: err,
+    });
     logger.error({ err }, "Gemini processTurn failed");
     throw new ApiError(
       503,
@@ -351,7 +383,9 @@ const parsePlacementScore = (text: string): PlacementScore => {
 
 const scorePlacementOnce = async (
   userText: string,
+  trace?: TraceContext,
 ): Promise<PlacementScore> => {
+  const startedAt = Date.now();
   const systemInstruction = `You are an experienced ESOL placement assessor working with the UK Adult ESOL Core Curriculum (DfES 2001) and the NQF level descriptors (Entry 1 through Level 2).
 
 Score the learner's responses to the placement assessment below. Apply this rule strictly: NEVER over-assign a level. Always assign the correct level OR ONE LEVEL BELOW. Never assign a level the learner has not clearly demonstrated.
@@ -380,11 +414,42 @@ Return JSON: nqfLevel, confidence (0-1), skillWeaknessFlags (array of skill code
     },
   });
 
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: userText }] }],
-  });
+  const traceBase = {
+    source: "onboarding_placement_scoring",
+    ...(trace ?? {}),
+    modelName: MODEL_NAME,
+    temperature: 0.2,
+    maxOutputTokens: ONBOARDING_SCORING_MAX_TOKENS,
+    systemPrompt: systemInstruction,
+    userMessage: userText,
+  };
+  let result;
+  try {
+    result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: userText }] }],
+    });
+  } catch (err) {
+    traceGeminiCall({
+      ...traceBase,
+      latencyMs: Date.now() - startedAt,
+      error: err,
+    });
+    throw err;
+  }
   const candidate = result.response?.candidates?.[0];
   const text = candidate?.content?.parts?.[0]?.text ?? "";
+  const traceCall = (parsed: unknown, error?: unknown) =>
+    traceGeminiCall({
+      ...traceBase,
+      rawResponse: text || null,
+      parsed,
+      finishReason: candidate?.finishReason ?? null,
+      inputTokens: result.response?.usageMetadata?.promptTokenCount ?? null,
+      outputTokens:
+        result.response?.usageMetadata?.candidatesTokenCount ?? null,
+      latencyMs: Date.now() - startedAt,
+      error,
+    });
 
   if (candidate?.finishReason === "MAX_TOKENS") {
     logger.error(
@@ -393,14 +458,18 @@ Return JSON: nqfLevel, confidence (0-1), skillWeaknessFlags (array of skill code
     );
   }
   if (!text) {
+    traceCall(null, "empty response");
     throw new Error(
       `Empty response from Gemini (finishReason: ${candidate?.finishReason ?? "unknown"})`,
     );
   }
 
   try {
-    return parsePlacementScore(text);
+    const parsed = parsePlacementScore(text);
+    traceCall(parsed);
+    return parsed;
   } catch (err) {
+    traceCall(null, err);
     // Raw-body snippet in the log — mirrors placement.service.ts so
     // schema drift is diagnosable without re-running the request.
     logger.error(
@@ -412,7 +481,13 @@ Return JSON: nqfLevel, confidence (0-1), skillWeaknessFlags (array of skill code
 };
 
 export const scorePlacementAssessment = async (
+  assessment: AssessmentResponse[],
+  trace?: TraceContext,
+): Promise<PlacementScore> => scorePlacementAssessmentInner(assessment, trace);
+
+const scorePlacementAssessmentInner = async (
   responses: AssessmentResponse[],
+  trace?: TraceContext,
 ): Promise<PlacementScore> => {
   const userText = responses
     .map(
@@ -428,7 +503,7 @@ export const scorePlacementAssessment = async (
   let lastError: Error | null = null;
   for (const attemptNum of [1, 2]) {
     try {
-      return await scorePlacementOnce(userText);
+      return await scorePlacementOnce(userText, trace);
     } catch (err) {
       lastError = err as Error;
       logger.warn(
@@ -447,19 +522,23 @@ export const scorePlacementAssessment = async (
 
 /* ── Teacher prep note generator ── */
 
+const PREP_NOTE_SYSTEM_PROMPT = `You are an ESOL teaching assistant. Generate a concise pre-session briefing for a human ESOL teacher. Use British English. Keep under 300 words. Markdown sections: **Learner Snapshot**, **Recent Progress**, **Areas to Focus**, **Suggested Activities**, **Watch For**.`;
+
 export const generateTeacherPrepNote = async (input: {
   esolLevel: string;
   l1Language: string;
   topic?: string;
   recentSessionSummaries: string[];
+  trace?: TraceContext;
 }): Promise<string> => {
+  const startedAt = Date.now();
   const model = geminiClient.preview.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction: {
       role: "system",
       parts: [
         {
-          text: `You are an ESOL teaching assistant. Generate a concise pre-session briefing for a human ESOL teacher. Use British English. Keep under 300 words. Markdown sections: **Learner Snapshot**, **Recent Progress**, **Areas to Focus**, **Suggested Activities**, **Watch For**.`,
+          text: PREP_NOTE_SYSTEM_PROMPT,
         },
       ],
     },
@@ -479,12 +558,34 @@ export const generateTeacherPrepNote = async (input: {
       : "None — first session.",
   ].join("\n");
 
+  const traceBase = {
+    source: "teacher_prep_note",
+    ...(input.trace ?? {}),
+    modelName: MODEL_NAME,
+    temperature: 0.5,
+    maxOutputTokens: 2048,
+    systemPrompt: PREP_NOTE_SYSTEM_PROMPT,
+    userMessage: userText,
+  };
   try {
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: userText }] }],
     });
-    return result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const text =
+      result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    traceGeminiCall({
+      ...traceBase,
+      rawResponse: text,
+      finishReason: result.response?.candidates?.[0]?.finishReason ?? null,
+      latencyMs: Date.now() - startedAt,
+    });
+    return text;
   } catch (err) {
+    traceGeminiCall({
+      ...traceBase,
+      latencyMs: Date.now() - startedAt,
+      error: err,
+    });
     logger.error({ err }, "Teacher prep note generation failed");
     throw new ApiError(500, "Could not generate teacher prep note.");
   }
@@ -492,16 +593,70 @@ export const generateTeacherPrepNote = async (input: {
 
 /* ── Final session summary ── */
 
+const SESSION_SUMMARY_SYSTEM_PROMPT = `You are an ESOL teacher producing a final session summary (3-5 sentences) for the learner's record. Cover: what the learner actually did, vocabulary introduced, and the recommended focus for next session. British English, constructive but honest tone.
+
+The message begins with a SESSION OUTCOME block computed by the platform (passed, score, number of turns, duration). It is the record of truth. Rules:
+- If passed is false, say plainly that the session did not reach the pass mark and what was missing. Do not use words such as "excellent", "great", "confident" or "strong" about the session as a whole.
+- If there were fewer than 4 learner turns, describe the session as short and do not draw conclusions about engagement or progress.
+- Praise only what appears in the transcript. Never invent progress.
+- Do not repeat the numbers in the outcome block; interpret them.`;
+
+/** Outcome fields the platform computed for the session. The summary
+ *  model must see these so its tone matches the record (Silk brief
+ *  section 1: positive summaries appeared on failed sessions). */
+export interface SessionOutcomeForSummary {
+  passed: boolean;
+  final_score: number;
+  turn_count: number;
+  duration_mins: number;
+  pass_threshold?: number | null;
+}
+
+/** Sessions this short get a fixed summary rather than a model call:
+ *  there is nothing to assess and the model was inventing engagement. */
+export const MIN_TURNS_FOR_MODEL_SUMMARY = 2;
+
+export const shortSessionSummary = (o: SessionOutcomeForSummary): string =>
+  `Session ended after ${o.turn_count} ${o.turn_count === 1 ? "turn" : "turns"} (${o.duration_mins} min). Too short to assess progress; it does not count as a completed scenario. Next session: continue the same scenario and aim for at least four exchanges.`;
+
+export const buildSessionSummaryMessage = (
+  transcript: string,
+  outcome: SessionOutcomeForSummary,
+): string =>
+  [
+    "SESSION OUTCOME (computed by the platform)",
+    `passed: ${outcome.passed ? "true" : "false"}${
+      outcome.pass_threshold != null
+        ? ` (pass mark ${outcome.pass_threshold})`
+        : ""
+    }`,
+    `score: ${outcome.final_score.toFixed(2)}`,
+    `learner turns: ${outcome.turn_count}`,
+    `duration: ${outcome.duration_mins} min`,
+    "",
+    "TRANSCRIPT",
+    transcript,
+  ].join("\n");
+
 export const generateSessionSummary = async (
   transcript: string,
+  trace?: TraceContext,
+  outcome?: SessionOutcomeForSummary,
 ): Promise<string> => {
+  const startedAt = Date.now();
+  if (outcome && outcome.turn_count < MIN_TURNS_FOR_MODEL_SUMMARY) {
+    return shortSessionSummary(outcome);
+  }
+  const userMessage = outcome
+    ? buildSessionSummaryMessage(transcript, outcome)
+    : transcript;
   const model = geminiClient.preview.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction: {
       role: "system",
       parts: [
         {
-          text: `You are an ESOL teacher producing a final session summary (3-5 sentences) covering: overall engagement, vocabulary introduced, recommended focus next session. British English, constructive tone.`,
+          text: SESSION_SUMMARY_SYSTEM_PROMPT,
         },
       ],
     },
@@ -509,15 +664,34 @@ export const generateSessionSummary = async (
     // no room for the 3-5 sentence summary after thinking.
     generationConfig: { temperature: 0.4, maxOutputTokens: 1536 },
   });
+  const traceBase = {
+    source: "session_summary",
+    ...(trace ?? {}),
+    modelName: MODEL_NAME,
+    temperature: 0.4,
+    maxOutputTokens: 1536,
+    systemPrompt: SESSION_SUMMARY_SYSTEM_PROMPT,
+    userMessage,
+  };
   try {
     const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: transcript }] }],
+      contents: [{ role: "user", parts: [{ text: userMessage }] }],
     });
-    return (
-      result.response?.candidates?.[0]?.content?.parts?.[0]?.text ??
-      "Session summary could not be generated automatically."
-    );
+    const text =
+      result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
+    traceGeminiCall({
+      ...traceBase,
+      rawResponse: text,
+      finishReason: result.response?.candidates?.[0]?.finishReason ?? null,
+      latencyMs: Date.now() - startedAt,
+    });
+    return text ?? "Session summary could not be generated automatically.";
   } catch (err) {
+    traceGeminiCall({
+      ...traceBase,
+      latencyMs: Date.now() - startedAt,
+      error: err,
+    });
     logger.error({ err }, "Session summary failed");
     return "Session summary could not be generated automatically.";
   }

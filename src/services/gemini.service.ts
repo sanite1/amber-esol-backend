@@ -9,6 +9,7 @@ import {
   GeminiTimeoutError,
 } from "../errors/geminiErrors";
 import logger from "../config/logger";
+import { traceGeminiCall } from "./diagnosticTrace.service";
 
 /**
  * Low-level Gemini wrapper — brief Function 9.
@@ -110,6 +111,8 @@ export interface GenerateTurnArgs {
    * try/catch shape inside `generateTurn`.
    */
   validate?: (parsed: unknown) => unknown;
+  /** Diagnostic trace label (Silk brief section 0), e.g. "tutor_turn". */
+  traceSource?: string;
 }
 
 export interface GenerateTurnResult<T = unknown> {
@@ -229,6 +232,7 @@ const callOnce = async (
   inputTokens: number;
   outputTokens: number;
   cachedTokens: number;
+  finishReason: string | null;
 }> => {
   const model = geminiClient.preview.getGenerativeModel({
     model: MODEL_NAME,
@@ -303,6 +307,7 @@ const callOnce = async (
     inputTokens: usage?.promptTokenCount ?? 0,
     outputTokens: usage?.candidatesTokenCount ?? 0,
     cachedTokens: usage?.cachedContentTokenCount ?? 0,
+    finishReason: candidate?.finishReason ?? null,
   };
 };
 
@@ -437,6 +442,25 @@ export const generateTurn = async <T = unknown>(
             },
             "gemini output failed schema validation",
           );
+          traceGeminiCall({
+            source: args.traceSource ?? "generateTurn",
+            sessionId: args.tracking.sessionId,
+            learnerId: args.tracking.learnerId,
+            orgId: args.tracking.orgId,
+            modelName: MODEL_NAME,
+            temperature: args.temperature ?? DEFAULT_TEMPERATURE,
+            maxOutputTokens: args.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
+            systemPrompt: args.systemPrompt,
+            history: args.conversationHistory,
+            userMessage: args.userMessage,
+            rawResponse: out.rawText,
+            parsed,
+            finishReason: out.finishReason,
+            inputTokens: out.inputTokens,
+            outputTokens: out.outputTokens,
+            latencyMs: Date.now() - startedAt,
+            error: `schema validation: ${issueMessage}`,
+          });
           throw new GeminiSchemaError(issueMessage, out.rawText);
         }
       }
@@ -456,6 +480,25 @@ export const generateTurn = async <T = unknown>(
         },
         "gemini call complete",
       );
+
+      traceGeminiCall({
+        source: args.traceSource ?? "generateTurn",
+        sessionId: args.tracking.sessionId,
+        learnerId: args.tracking.learnerId,
+        orgId: args.tracking.orgId,
+        modelName: MODEL_NAME,
+        temperature: args.temperature ?? DEFAULT_TEMPERATURE,
+        maxOutputTokens: args.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
+        systemPrompt: args.systemPrompt,
+        history: args.conversationHistory,
+        userMessage: args.userMessage,
+        rawResponse: out.rawText,
+        parsed,
+        finishReason: out.finishReason,
+        inputTokens: out.inputTokens,
+        outputTokens: out.outputTokens,
+        latencyMs,
+      });
 
       recordUsage(args, {
         inputTokens: out.inputTokens,
@@ -494,6 +537,21 @@ export const generateTurn = async <T = unknown>(
           },
           "gemini call returned non-JSON body",
         );
+        traceGeminiCall({
+          source: args.traceSource ?? "generateTurn",
+          sessionId: args.tracking.sessionId,
+          learnerId: args.tracking.learnerId,
+          orgId: args.tracking.orgId,
+          modelName: MODEL_NAME,
+          temperature: args.temperature ?? DEFAULT_TEMPERATURE,
+          maxOutputTokens: args.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
+          systemPrompt: args.systemPrompt,
+          history: args.conversationHistory,
+          userMessage: args.userMessage,
+          rawResponse: err.rawBody ?? null,
+          latencyMs: Date.now() - startedAt,
+          error: err,
+        });
         throw err;
       }
 
@@ -533,6 +591,20 @@ export const generateTurn = async <T = unknown>(
     },
     "gemini call failed after retries",
   );
+  traceGeminiCall({
+    source: args.traceSource ?? "generateTurn",
+    sessionId: args.tracking.sessionId,
+    learnerId: args.tracking.learnerId,
+    orgId: args.tracking.orgId,
+    modelName: MODEL_NAME,
+    temperature: args.temperature ?? DEFAULT_TEMPERATURE,
+    maxOutputTokens: args.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
+    systemPrompt: args.systemPrompt,
+    history: args.conversationHistory,
+    userMessage: args.userMessage,
+    latencyMs,
+    error: lastError,
+  });
 
   if (lastError instanceof GeminiTimeoutError) {
     // Surface as GeminiApiError so callers have a single "did the

@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 
 import VocabLedger from "../models/VocabLedger";
 import logger from "../config/logger";
+import { traceEnabled, traceWrite } from "./diagnosticTrace.service";
 import CurriculumLevelService from "./curriculumLevel.service";
 
 /**
@@ -114,6 +115,9 @@ const upsertWord = async (
       ? args.retention_min_encounters
       : RETENTION_MIN_ENCOUNTERS;
 
+  const before = traceEnabled()
+    ? await VocabLedger.findOne({ learnerId: learnerObjectId, word }).lean()
+    : null;
   await VocabLedger.updateOne(
     { learnerId: learnerObjectId, word },
     [
@@ -174,6 +178,22 @@ const upsertWord = async (
     ],
     { upsert: true },
   );
+  if (traceEnabled()) {
+    const after = await VocabLedger.findOne({
+      learnerId: learnerObjectId,
+      word,
+    }).lean();
+    traceWrite({
+      source: "vocab_ledger.upsert_word",
+      collection: "vocab_ledger",
+      docId: (after as { _id?: unknown } | null)?._id as string | undefined,
+      sessionId: ctx.sessionId ?? null,
+      learnerId: learnerObjectId,
+      orgId: ctx.orgId ?? null,
+      before,
+      after,
+    });
+  }
 };
 
 /**
@@ -304,4 +324,53 @@ export const getReinforcementTargets = async (
       (r as { times_encountered?: number }).times_encountered ?? 0,
     last_seen_at: (r as { last_seen_at?: Date | null }).last_seen_at ?? null,
   }));
+};
+
+// ─────────────────────────────────────────────────────────────────────
+// Learner vocabulary summary — Silk brief section 1
+// ─────────────────────────────────────────────────────────────────────
+
+/** A word counts as learned when the ledger marked it retained, or a
+ *  legacy masteryScore says so. This is THE definition: the session
+ *  end screen, the vocabulary page and the learner home all read it. */
+export const LEARNED_WORD_FILTER = {
+  $or: [{ retained: true }, { masteryScore: { $gte: 0.7 } }],
+};
+
+export interface LearnerVocabSummary {
+  /** Distinct words the learner has met in any session. */
+  words_seen: number;
+  /** Distinct words that meet LEARNED_WORD_FILTER. */
+  words_learned: number;
+  /** Most recently seen words, newest first. */
+  recent_words: string[];
+}
+
+export const countLearnedWords = async (
+  learnerId: string | Types.ObjectId,
+): Promise<number> =>
+  VocabLedger.countDocuments({
+    learnerId: toObjectId(learnerId),
+    ...LEARNED_WORD_FILTER,
+  });
+
+export const getLearnerVocabSummary = async (
+  learnerId: string | Types.ObjectId,
+  recentLimit = 12,
+): Promise<LearnerVocabSummary> => {
+  const learnerObjectId = toObjectId(learnerId);
+  const [words_seen, words_learned, recent] = await Promise.all([
+    VocabLedger.countDocuments({ learnerId: learnerObjectId }),
+    countLearnedWords(learnerObjectId),
+    VocabLedger.find({ learnerId: learnerObjectId })
+      .sort({ last_seen_at: -1, introducedAt: -1 })
+      .limit(recentLimit)
+      .select("word")
+      .lean(),
+  ]);
+  return {
+    words_seen,
+    words_learned,
+    recent_words: recent.map((r) => r.word as string),
+  };
 };

@@ -137,8 +137,24 @@ export const listAISessionsService = async (params: {
     AISession.countDocuments(query),
   ]);
 
+  // `turns` is stripped from the list for payload size, so the count
+  // travels separately (Silk brief section 1: the list showed 0 turns
+  // for every session because the client measured the missing array).
+  const turnCounts = await AISession.aggregate<{
+    _id: Types.ObjectId;
+    n: number;
+  }>([
+    { $match: { _id: { $in: sessions.map((s) => s._id) } } },
+    { $project: { n: { $size: { $ifNull: ["$turns", []] } } } },
+  ]);
+  const countById = new Map(turnCounts.map((t) => [t._id.toString(), t.n]));
+  const sessionsWithCounts = sessions.map((s) => ({
+    ...s.toJSON(),
+    turn_count: countById.get(s._id.toString()) ?? 0,
+  }));
+
   return new ApiResponse(200, "Sessions retrieved successfully", {
-    sessions,
+    sessions: sessionsWithCounts,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   });
 };
@@ -250,6 +266,11 @@ export const processTurnService = async (params: {
   let result;
   try {
     result = await geminiProcessTurn({
+      trace: {
+        sessionId: session._id,
+        learnerId: session.learnerId,
+        orgId: session.orgId,
+      },
       learnerInput: params.input,
       scenario,
       learner: {
@@ -547,6 +568,11 @@ export const getTeacherPrepNoteService = async (params: {
     l1Language: learner?.l1Language ?? "",
     topic: session.topic ?? undefined,
     recentSessionSummaries: summaries,
+    trace: {
+      sessionId: session._id,
+      learnerId: session.learnerId,
+      orgId: session.orgId,
+    },
   });
 
   const prepNote = await TeacherPrepNote.create({

@@ -194,3 +194,16 @@ describe("persistSessionOnEnd", () => {
     expect(out.passed).toBe(false);
   });
 });
+
+describe("persistSessionOnEnd — Silk brief section 1", () => {
+  it("does not pass a session with fewer than MIN_TURNS_TO_PASS turns however high the score", async () => {
+    const org = await createOrg();
+    const learner = await createLearner(org._id);
+    const session = await createSession(learner._id, org._id, {
+      turn_scores: [0.9], // one strong turn is not a completed scenario
+    });
+    const out = await persistSessionOnEnd(session._id.toString());
+    expect(out.final_score).toBeCloseTo(0.9, 5);
+    expect(out.passed).toBe(false);
+  });
+});

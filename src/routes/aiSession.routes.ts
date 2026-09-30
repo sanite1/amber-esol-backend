@@ -14,6 +14,7 @@ import {
   transcribeStt,
   getVoiceCapabilities,
   getMyGoals,
+  getMyProgress,
   agreeMyGoals,
 } from "../controllers/aiSession.controller";
 
@@ -129,6 +130,13 @@ router.post(
  *   GET  /goals       — the learner's objectives + L1 negotiation script
  *   POST /goals/agree — the learner confirms them in their L1
  */
+router.get(
+  "/progress",
+  isAuthenticated,
+  requireEsolLearner,
+  requireOrgContext,
+  getMyProgress,
+);
 router.get(
   "/goals",
   isAuthenticated,
