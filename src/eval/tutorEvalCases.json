@@ -1,0 +1,450 @@
+[
+  {
+    "id": "e1-tr-greeting",
+    "purpose": "E1 Turkish learner opens; reply should lead with L1 but carry the English target phrase",
+    "level": "e1",
+    "l1Language": "Turkish",
+    "scenarioId": "s1_gp_appointment",
+    "history": [],
+    "learnerInput": "Hello. I want doctor.",
+    "expect": {
+      "minEnglishShare": 0.25,
+      "maxEnglishShare": 0.6,
+      "mustMatch": ["appointment|doctor"],
+      "scoreMin": 0.3,
+      "scoreMax": 0.8
+    }
+  },
+  {
+    "id": "e1-ar-only-l1",
+    "purpose": "E1 Arabic learner writes only in Arabic; ANCHOR, model the English equivalent, no penalty language",
+    "level": "e1",
+    "l1Language": "Arabic",
+    "scenarioId": "s1_gp_appointment",
+    "history": [],
+    "learnerInput": "أريد موعد مع الطبيب",
+    "expect": {
+      "minEnglishShare": 0.15,
+      "mustMatch": ["appointment"],
+      "mustNotMatch": ["incorrect|wrong"],
+      "scoreMax": 0.5
+    }
+  },
+  {
+    "id": "e1-so-short",
+    "purpose": "E1 Somali learner one word answer; anchor and rebuild",
+    "level": "e1",
+    "l1Language": "Somali",
+    "scenarioId": "s1_gp_appointment",
+    "history": [
+      {
+        "role": "model",
+        "content": "Hello! Today we practise booking a doctor. Are you ready?"
+      }
+    ],
+    "learnerInput": "yes",
+    "expect": { "mode": "anchor", "scoreMax": 0.6 }
+  },
+  {
+    "id": "e2-tr-preposition",
+    "purpose": "E2 Turkish learner preposition slip; recast expected, no direct correction",
+    "level": "e2",
+    "l1Language": "Turkish",
+    "scenarioId": "s1_gp_appointment",
+    "history": [
+      {
+        "role": "model",
+        "content": "Good morning, this is the surgery. How can I help?"
+      }
+    ],
+    "learnerInput": "I want appointment in Monday morning.",
+    "expect": {
+      "recastApplied": true,
+      "mustMatch": ["on Monday"],
+      "mustNotMatch": ["incorrect|wrong|mistake"],
+      "minEnglishShare": 0.4
+    },
+    "specialist_review": true
+  },
+  {
+    "id": "e2-ar-ok-word",
+    "purpose": "'ok' must not score highly (self scoring failure from the live test)",
+    "level": "e2",
+    "l1Language": "Arabic",
+    "scenarioId": "s1_gp_appointment",
+    "history": [
+      {
+        "role": "model",
+        "content": "The doctor has a space at 10 o'clock tomorrow. Is that good for you?"
+      }
+    ],
+    "learnerInput": "ok",
+    "expect": { "scoreMax": 0.5, "mode": "anchor" }
+  },
+  {
+    "id": "e2-zh-payslip",
+    "purpose": "E2 Cantonese learner asks about a payslip word; L1 gloss plus English",
+    "level": "e2",
+    "l1Language": "Cantonese",
+    "scenarioId": "s2_payslip",
+    "history": [],
+    "learnerInput": "What is deduction?",
+    "expect": {
+      "minEnglishShare": 0.4,
+      "mustMatch": ["deduct|take.*(off|out|away)|money"],
+      "scoreMin": 0.4
+    }
+  },
+  {
+    "id": "e3-tr-back-pain",
+    "purpose": "The live test recast: 'I have back pain for two weeks' is NOT a correct recast; present perfect needed",
+    "level": "e3",
+    "l1Language": "Turkish",
+    "scenarioId": "s1_gp_appointment",
+    "history": [
+      {
+        "role": "model",
+        "content": "Good morning. What seems to be the problem?"
+      }
+    ],
+    "learnerInput": "I have pain in my back since two weeks.",
+    "expect": {
+      "recastApplied": true,
+      "mustMatch": [
+        "(have|'ve) had .*(back pain|pain in (my|your) back) for two weeks"
+      ],
+      "mustNotMatch": [
+        "I have back pain for two weeks",
+        "have pain .* for two weeks"
+      ],
+      "minEnglishShare": 0.7
+    },
+    "specialist_review": true
+  },
+  {
+    "id": "e3-tr-english-floor",
+    "purpose": "E3 Turkish learner writes a full English sentence; reply must be mostly English (live test: answered mostly in Turkish)",
+    "level": "e3",
+    "l1Language": "Turkish",
+    "scenarioId": "s1_gp_appointment",
+    "history": [],
+    "learnerInput": "Hello, I would like to book an appointment with the doctor please.",
+    "expect": {
+      "minEnglishShare": 0.7,
+      "mustNotMatch": ["great job|good job"],
+      "scoreMin": 0.6
+    }
+  },
+  {
+    "id": "e3-ar-past-simple",
+    "purpose": "E3 Arabic learner past simple error; recast the verb",
+    "level": "e3",
+    "l1Language": "Arabic",
+    "scenarioId": "s3_housing_rights",
+    "history": [
+      {
+        "role": "model",
+        "content": "Tell me what happened with your landlord."
+      }
+    ],
+    "learnerInput": "Yesterday I go to the council and they say wait.",
+    "expect": {
+      "recastApplied": true,
+      "mustMatch": ["went|said"],
+      "mustNotMatch": ["incorrect|wrong"],
+      "minEnglishShare": 0.7
+    },
+    "specialist_review": true
+  },
+  {
+    "id": "e3-so-confusion",
+    "purpose": "Confusion marker in English; L1 unlocked, anchor, warm",
+    "level": "e3",
+    "l1Language": "Somali",
+    "scenarioId": "s2_payslip",
+    "history": [
+      {
+        "role": "model",
+        "content": "Your gross pay is the amount before tax and National Insurance are taken off."
+      }
+    ],
+    "learnerInput": "I don't understand",
+    "expect": {
+      "mode": "anchor",
+      "mustNotMatch": ["quickly|simply|easy"],
+      "scoreMax": 0.4
+    }
+  },
+  {
+    "id": "e3-tr-vocab",
+    "purpose": "Target vocabulary used correctly; score should reflect a real answer (live test: real answers scored 0.6)",
+    "level": "e3",
+    "l1Language": "Turkish",
+    "scenarioId": "s1_gp_appointment",
+    "history": [
+      {
+        "role": "model",
+        "content": "Which day would you like the appointment?"
+      }
+    ],
+    "learnerInput": "Could I have an appointment on Thursday afternoon, please? My back hurts when I sit for a long time.",
+    "expect": {
+      "scoreMin": 0.7,
+      "minEnglishShare": 0.7,
+      "recastApplied": false,
+      "mustNotMatch": ["great job|good job"]
+    }
+  },
+  {
+    "id": "l1-tr-fluent-stretch",
+    "purpose": "Fluent B2 paragraph at L1 must get a stretch, not generic praise, and stay in English",
+    "level": "l1",
+    "l1Language": "Turkish",
+    "scenarioId": "s4_pay_rise_negotiation",
+    "history": [
+      {
+        "role": "model",
+        "content": "Your manager asks why you think you deserve a pay rise."
+      }
+    ],
+    "learnerInput": "Over the past year I have taken on responsibility for onboarding new colleagues and I have consistently exceeded my targets, so I believe a review of my salary is justified, although I understand the budget is tight this quarter.",
+    "expect": {
+      "minEnglishShare": 0.9,
+      "mustMatch": ["\\?"],
+      "mustNotMatch": ["great job|good job|well done!|excellent!"],
+      "scoreMin": 0.8,
+      "recastApplied": false
+    }
+  },
+  {
+    "id": "l1-ar-conditional",
+    "purpose": "Conditional error at L1; recast to second conditional",
+    "level": "l1",
+    "l1Language": "Arabic",
+    "scenarioId": "s4_pay_rise_negotiation",
+    "history": [
+      { "role": "model", "content": "What would you do if the answer is no?" }
+    ],
+    "learnerInput": "If they will say no, I would ask for training instead.",
+    "expect": {
+      "recastApplied": true,
+      "mustMatch": ["If they (say|said) no"],
+      "minEnglishShare": 0.85
+    },
+    "specialist_review": true
+  },
+  {
+    "id": "l1-zh-articles",
+    "purpose": "Article omission typical for Cantonese L1; gentle recast",
+    "level": "l1",
+    "l1Language": "Cantonese",
+    "scenarioId": "s3_housing_rights",
+    "history": [
+      {
+        "role": "model",
+        "content": "What did the letter from the landlord say?"
+      }
+    ],
+    "learnerInput": "Landlord send letter about rent increase next month.",
+    "expect": {
+      "recastApplied": true,
+      "mustMatch": ["The landlord (sent|has sent) (a|the) letter"],
+      "minEnglishShare": 0.85
+    },
+    "specialist_review": true
+  },
+  {
+    "id": "l2-tr-past-perfect",
+    "purpose": "L2 past perfect accuracy; no recast when correct",
+    "level": "l2",
+    "l1Language": "Turkish",
+    "scenarioId": "s4_pay_rise_negotiation",
+    "history": [
+      {
+        "role": "model",
+        "content": "Tell me about the last time you asked for a rise."
+      }
+    ],
+    "learnerInput": "By the time I raised it, my manager had already agreed the budget with finance, so there was nothing left.",
+    "expect": {
+      "recastApplied": false,
+      "minEnglishShare": 0.95,
+      "scoreMin": 0.8,
+      "mustNotMatch": ["great job|good job"]
+    }
+  },
+  {
+    "id": "l2-ar-register",
+    "purpose": "Register: too informal for a manager; model the formal version",
+    "level": "l2",
+    "l1Language": "Arabic",
+    "scenarioId": "s4_pay_rise_negotiation",
+    "history": [
+      {
+        "role": "model",
+        "content": "Your manager says: I hear you want to talk about money."
+      }
+    ],
+    "learnerInput": "Yeah mate, I want more cash, I work loads.",
+    "expect": {
+      "recastApplied": true,
+      "minEnglishShare": 0.95,
+      "mustMatch": ["I('d| would) like to discuss|salary|pay"]
+    },
+    "specialist_review": true
+  },
+  {
+    "id": "e2-tr-same-input-a",
+    "purpose": "Stability pair A: identical input must give the same recast decision across runs",
+    "level": "e2",
+    "l1Language": "Turkish",
+    "scenarioId": "s2_payslip",
+    "history": [
+      {
+        "role": "model",
+        "content": "Look at the payslip. How much is the tax?"
+      }
+    ],
+    "learnerInput": "The tax is 120 pound.",
+    "expect": {
+      "recastApplied": true,
+      "mustMatch": ["120 pounds|£120"],
+      "scoreSpreadMax": 0.15
+    },
+    "specialist_review": true
+  },
+  {
+    "id": "e2-tr-same-input-b",
+    "purpose": "Stability pair B: a correct sentence must not be recast in any run",
+    "level": "e2",
+    "l1Language": "Turkish",
+    "scenarioId": "s2_payslip",
+    "history": [
+      {
+        "role": "model",
+        "content": "Look at the payslip. How much is the tax?"
+      }
+    ],
+    "learnerInput": "The tax is 120 pounds.",
+    "expect": {
+      "recastApplied": false,
+      "scoreMin": 0.6,
+      "scoreSpreadMax": 0.15
+    }
+  },
+  {
+    "id": "e1-fa-safeguard-free",
+    "purpose": "E1 Dari learner mentions tiredness (not a disclosure); no safeguarding, no probing",
+    "level": "e1",
+    "l1Language": "Dari",
+    "scenarioId": "s1_gp_appointment",
+    "history": [{ "role": "model", "content": "What is the problem?" }],
+    "learnerInput": "I am very tired.",
+    "expect": {
+      "mustMatch": ["tired"],
+      "mustNotMatch": ["111|Samaritans"],
+      "minEnglishShare": 0.2
+    }
+  },
+  {
+    "id": "e3-tr-off-topic",
+    "purpose": "Learner asks for help outside the scenario; stay warm, steer back",
+    "level": "e3",
+    "l1Language": "Turkish",
+    "scenarioId": "s2_payslip",
+    "history": [],
+    "learnerInput": "Can you help me write an email to my son's school?",
+    "expect": {
+      "minEnglishShare": 0.6,
+      "mustMatch": ["payslip|today|first|later|after"]
+    }
+  },
+  {
+    "id": "e3-ar-third-person-s",
+    "purpose": "Third person s omission; recast",
+    "level": "e3",
+    "l1Language": "Arabic",
+    "scenarioId": "s1_gp_appointment",
+    "history": [{ "role": "model", "content": "Who is the appointment for?" }],
+    "learnerInput": "My daughter, she have fever since yesterday.",
+    "expect": {
+      "recastApplied": true,
+      "mustMatch": ["(has|'s) had a fever|has (had )?a fever"],
+      "minEnglishShare": 0.7
+    },
+    "specialist_review": true
+  },
+  {
+    "id": "l1-so-question-form",
+    "purpose": "Question word order error; recast",
+    "level": "l1",
+    "l1Language": "Somali",
+    "scenarioId": "s3_housing_rights",
+    "history": [
+      {
+        "role": "model",
+        "content": "You can ask me anything about the tenancy."
+      }
+    ],
+    "learnerInput": "How much notice the landlord must give?",
+    "expect": {
+      "recastApplied": true,
+      "mustMatch": ["How much notice (must|does) the landlord"],
+      "minEnglishShare": 0.85
+    },
+    "specialist_review": true
+  },
+  {
+    "id": "e2-zh-plural",
+    "purpose": "Plural omission; recast",
+    "level": "e2",
+    "l1Language": "Cantonese",
+    "scenarioId": "s2_payslip",
+    "history": [
+      { "role": "model", "content": "How many hours did you work this week?" }
+    ],
+    "learnerInput": "I work thirty hour this week.",
+    "expect": {
+      "recastApplied": true,
+      "mustMatch": ["thirty hours|30 hours"],
+      "minEnglishShare": 0.4
+    },
+    "specialist_review": true
+  },
+  {
+    "id": "e1-tr-name",
+    "purpose": "E1 gives a name in the roleplay; simple confirm, no over correction",
+    "level": "e1",
+    "l1Language": "Turkish",
+    "scenarioId": "s1_gp_appointment",
+    "history": [{ "role": "model", "content": "What is your name?" }],
+    "learnerInput": "My name Ayşe.",
+    "expect": {
+      "mustMatch": ["My name is"],
+      "mustNotMatch": ["incorrect|wrong"],
+      "minEnglishShare": 0.25,
+      "maxEnglishShare": 0.7
+    }
+  },
+  {
+    "id": "l2-zh-implication",
+    "purpose": "L2 reading style answer; expect a stretch question",
+    "level": "l2",
+    "l1Language": "Cantonese",
+    "scenarioId": "s4_pay_rise_negotiation",
+    "history": [
+      {
+        "role": "model",
+        "content": "The company reported record profits but froze salaries. What does that suggest to you?"
+      }
+    ],
+    "learnerInput": "It suggests the freeze is a choice rather than a necessity, which strengthens my case, provided I frame it around retention rather than fairness.",
+    "expect": {
+      "minEnglishShare": 0.95,
+      "mustMatch": ["\\?"],
+      "recastApplied": false,
+      "scoreMin": 0.8,
+      "mustNotMatch": ["great job|good job|well done"]
+    }
+  }
+]

@@ -235,14 +235,14 @@ export const decideMode = (input: ModeDecisionInput): ModeDecision => {
 
   const l1RatioGuidance = distress
     ? `The learner has signalled confusion or distress. L1 is always available here: use as much of their first language as you need to reassure and make the meaning clear — you may go above the usual ${pct(band.min)}–${pct(band.max)}% band this turn.`
-    : `Aim for roughly ${pct(l1Ratio.min)}–${pct(l1Ratio.max)}% of this reply in the learner's first language (the rest in English), per their level.`;
+    : `Aim for roughly ${pct(l1Ratio.min)}–${pct(l1Ratio.max)}% of this reply in the learner's first language. HARD FLOOR: at least ${pct(1 - l1Ratio.max)}% of the WORDS in "reply" must be English. Count before you answer; a reply written entirely in the first language is wrong at this level.`;
 
   const modeDirective =
     mode === "anchor"
       ? "OPERATE IN ANCHOR MODE this turn: keep it short and slow, lead with the learner's first language, lower the demand, and recast errors gently rather than correcting them. Rebuild confidence before pushing."
       : mode === "immersion"
-        ? "OPERATE IN IMMERSION MODE this turn: the learner is flowing — stay mostly in English, stretch them a little, and reserve the first language for a quick gloss only if something stalls."
-        : "OPERATE IN BRIDGE MODE this turn: blend the first language and English at the level's ratio, recast meaning-affecting errors, and keep the conversation moving.";
+        ? "OPERATE IN IMMERSION MODE this turn: the learner is flowing — stay mostly in English, stretch them a little, and reserve the first language for a quick gloss only if something stalls. Pitch your English one level above theirs (i+1): one new structure or phrase they can copy, nothing more."
+        : "OPERATE IN BRIDGE MODE this turn: blend the first language and English at the level's ratio, recast meaning-affecting errors, and keep the conversation moving. If the learner's message is clearly above their level (longer, accurate, more complex than the level expects), answer in English at the level above (i+1) and give them one stretch: a follow up question that needs a because/so/although clause. Do not give generic praise to a fluent message; name the structure they used well.";
 
   return {
     mode,

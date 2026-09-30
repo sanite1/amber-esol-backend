@@ -21,6 +21,7 @@
     "audit:todo": "ts-node --transpile-only scripts/auditMergedTodo.ts",
     "seed:qa": "ts-node --transpile-only src/scripts/seedQaUsers.ts",
     "trace:session": "ts-node --transpile-only src/scripts/traceSession.ts",
+    "eval:tutor": "ts-node --transpile-only src/scripts/evalTutor.ts",
     "seed:curriculum": "ts-node --transpile-only src/scripts/seedCurriculumLevels.ts"
   },
   "keywords": [],

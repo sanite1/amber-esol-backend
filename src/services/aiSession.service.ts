@@ -35,6 +35,23 @@ import { generateTurn, ConversationTurn } from "./gemini.service";
 import { generateSessionSummary } from "./geminiAI.service";
 import { traceWrite } from "./diagnosticTrace.service";
 import {
+  deterministicTurnScore,
+  resolveTurnScore,
+  turnScoreMode,
+} from "./turnScore.service";
+import { proposeRecast, recastMode, type RecastResult } from "./recast.service";
+
+/**
+ * Silk brief section 3: the tutor turn ran at the wrapper default (0.7),
+ * which is why corrections appeared on one run and vanished on the
+ * next identical input. Lower by default; override with TUTOR_TEMPERATURE
+ * while the eval harness compares settings.
+ */
+export const tutorTemperature = (): number => {
+  const v = Number(process.env.TUTOR_TEMPERATURE);
+  return Number.isFinite(v) && v >= 0 && v <= 2 ? v : 0.3;
+};
+import {
   updateLedgerForTurn,
   getReinforcementTargets,
   countLearnedWords,
@@ -75,7 +92,7 @@ import {
  *   - `grammar_feedback` listed optional so Gemini may include it
  *     without tripping Zod (validator should also drop .strict()).
  */
-const TURN_RESPONSE_SCHEMA = {
+export const TURN_RESPONSE_SCHEMA = {
   type: SchemaType.OBJECT,
   properties: {
     reply: { type: SchemaType.STRING },
@@ -311,7 +328,7 @@ const ANCHOR_FALLBACK_REPLY =
 const SCENARIOS_DIR = resolve(__dirname, "../data/scenarios");
 const scenarioCache = new Map<string, IScenarioFile>();
 
-const loadScenarioById = (scenarioId: string): IScenarioFile | null => {
+export const loadScenarioById = (scenarioId: string): IScenarioFile | null => {
   if (scenarioCache.has(scenarioId)) return scenarioCache.get(scenarioId)!;
   try {
     const path = resolve(SCENARIOS_DIR, `${scenarioId}.json`);
@@ -486,7 +503,7 @@ const buildLearnerProfile = async (
  * Gemini will read (English only — Layer 6 / Layer 4 use the English
  * source for vocabulary definitions).
  */
-const adaptScenario = (
+export const adaptScenario = (
   scenario: IScenarioFile,
   l1Code: string | undefined,
 ): ScenarioForPrompt => ({
@@ -1042,8 +1059,23 @@ export const processTurnService = async (
   // ── 7. Call Gemini ───────────────────────────────────────────────
   let geminiOutput: IGeminiTurnOutput;
   let rawReplyText: string;
+  // Silk brief section 3 (RECAST_MODE=separate): ask for the corrected
+  // sentence in its own tightly scoped call, in parallel with the turn.
+  const recastPromise: Promise<RecastResult | null> =
+    recastMode() === "separate" && inputMode !== "voice"
+      ? proposeRecast({
+          learnerSentence: input.message,
+          level: learnerProfile.esolLevel,
+          tracking: {
+            sessionId: session._id,
+            orgId: input.orgId,
+            learnerId: input.learnerId,
+          },
+        })
+      : Promise.resolve(null);
   try {
     const result = await generateTurn<IGeminiTurnOutput>({
+      temperature: tutorTemperature(),
       systemPrompt: assembled.systemPrompt,
       conversationHistory,
       userMessage: input.message,
@@ -1179,7 +1211,21 @@ export const processTurnService = async (
   //                  0.3 pronunciation; otherwise the content score.
   //   skill codes  = canonical union; Sc forced on spoken turns, Sc/Sd
   //                  stripped on a typed answer to a speaking prompt.
-  const contentScore = geminiOutput.turn_score;
+  // Silk brief section 3: compute a deterministic score alongside the
+  // model's self score; TURN_SCORE_MODE decides which one counts. Both
+  // are traced every turn so they can be compared on real sessions.
+  const deterministic = deterministicTurnScore({
+    learnerMessage: input.message,
+    level: learnerProfile.esolLevel,
+    recastApplied: geminiOutput.recastApplied,
+    vocabularyUsed: geminiOutput.vocabulary_items_used,
+    distress: modeDecision.distress,
+  });
+  const contentScore = resolveTurnScore(
+    geminiOutput.turn_score,
+    deterministic.score,
+  );
+  const separateRecast = await recastPromise;
   const finalScore =
     inputMode === "voice" && pronunciation
       ? round2(
@@ -1232,6 +1278,7 @@ export const processTurnService = async (
     pronunciation,
     speaking_prompt: speakingPrompt,
     reply_segments: replySegments,
+    recast: separateRecast,
     content_score: contentScore,
     audio_seconds:
       inputMode === "voice" &&
@@ -1327,7 +1374,13 @@ export const processTurnService = async (
       micro_stages_completed: session.micro_stages_completed,
       completedAt: session.completedAt ?? null,
       assessmentSummary: session.assessmentSummary ?? null,
-      turn_score: geminiOutput.turn_score,
+      turn_score: finalScore,
+      turn_score_model: geminiOutput.turn_score,
+      turn_score_deterministic: deterministic.score,
+      turn_score_features: deterministic.features,
+      turn_score_mode: turnScoreMode(),
+      recast_separate: separateRecast,
+      recast_mode: recastMode(),
       mode: geminiOutput.mode,
       vocabulary_items_used: geminiOutput.vocabulary_items_used,
       skill_codes_used: geminiOutput.skill_codes_used,
