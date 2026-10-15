@@ -12,6 +12,7 @@ import {
   transcribeSpeech,
   voiceCapabilities,
   ttsRateForLevel,
+  preferredVoiceFor,
 } from "../services/voice.service";
 import { normaliseReplySegments } from "../services/aiSession.service";
 
@@ -123,9 +124,9 @@ describe("F32 VOICE_MOCK transcription", () => {
 
 describe("F33 read-aloud helpers", () => {
   it("slows speech for lower levels only", () => {
-    expect(ttsRateForLevel("e1")).toBe(0.85);
-    expect(ttsRateForLevel("e2")).toBe(0.85);
-    expect(ttsRateForLevel("e3")).toBe(0.92);
+    expect(ttsRateForLevel("e1")).toBe(0.95);
+    expect(ttsRateForLevel("e2")).toBe(0.95);
+    expect(ttsRateForLevel("e3")).toBe(1);
     expect(ttsRateForLevel("l1")).toBe(1);
     expect(ttsRateForLevel(undefined)).toBe(1);
   });
@@ -166,6 +167,31 @@ describe("F33 read-aloud helpers", () => {
       else process.env.VOICE_MOCK = prev.m;
       if (prev.t === undefined) delete process.env.VOICE_TTS_ENABLED;
       else process.env.VOICE_TTS_ENABLED = prev.t;
+    }
+  });
+});
+
+describe("voice quality: Chirp 3 HD everywhere", () => {
+  it("uses a Chirp 3 HD voice with one persona across every voiced locale", () => {
+    for (const locale of [
+      "en-GB",
+      "ar-XA",
+      "tr-TR",
+      "yue-HK",
+      "bn-IN",
+      "ur-IN",
+    ]) {
+      expect(preferredVoiceFor(locale)).toBe(`${locale}-Chirp3-HD-Aoede`);
+    }
+    expect(voiceLocaleFor("bengali")).toBe("bn-IN");
+    expect(voiceLocaleFor("urdu")).toBe("ur-IN");
+  });
+  it("honours a per locale override", () => {
+    process.env.VOICE_NAME_EN_GB = "en-GB-Chirp3-HD-Kore";
+    try {
+      expect(preferredVoiceFor("en-GB")).toBe("en-GB-Chirp3-HD-Kore");
+    } finally {
+      delete process.env.VOICE_NAME_EN_GB;
     }
   });
 });

@@ -67,8 +67,9 @@ export const LANGUAGE_META: Record<SilkLanguage, LanguageMeta> = {
   so: { code: "so", label: "Soomaali", dir: "ltr", voiceLocale: null },
   fa: { code: "fa", label: "دری", dir: "rtl", voiceLocale: null },
   ps: { code: "ps", label: "پښتو", dir: "rtl", voiceLocale: null },
-  bn: { code: "bn", label: "বাংলা", dir: "ltr", voiceLocale: null },
-  ur: { code: "ur", label: "اردو", dir: "rtl", voiceLocale: null },
+  // Chirp 3 HD voices exist for Bengali and Urdu on the EU endpoint.
+  bn: { code: "bn", label: "বাংলা", dir: "ltr", voiceLocale: "bn-IN" },
+  ur: { code: "ur", label: "اردو", dir: "rtl", voiceLocale: "ur-IN" },
 };
 
 export const isMvpLanguage = (code: string): code is SilkLanguage =>

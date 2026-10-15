@@ -76,15 +76,30 @@ const STT_ENDPOINT =
 // ── Voice selection per locale ─────────────────────────────────────────
 
 /**
- * Preferred Neural2/WaveNet voice per MVP locale. Falls back to letting
- * Google pick by languageCode when a locale has no premium voice (e.g.
- * Cantonese yue-HK currently ships Standard voices only).
+ * Preferred voice per locale. Chirp 3 HD is Google's current
+ * generation and sounds markedly more natural than the Neural2 and
+ * WaveNet voices used before (learners said Amber "sounded too AI").
+ * "Aoede" is the same warm female voice across every locale, so Amber
+ * keeps one identity when a reply switches language mid sentence.
+ * Verified available on the EU endpoint for all six locales below.
+ * Override per locale with VOICE_NAME_<LOCALE>, e.g. VOICE_NAME_EN_GB.
  */
+const DEFAULT_VOICE_NAME = process.env.VOICE_PERSONA || "Aoede";
 const PREFERRED_VOICE: Record<string, string | null> = {
-  "en-GB": "en-GB-Neural2-A",
-  "ar-XA": "ar-XA-Wavenet-A",
-  "tr-TR": "tr-TR-Wavenet-A",
-  "yue-HK": null, // Standard only — let Google choose by languageCode.
+  "en-GB": `en-GB-Chirp3-HD-${DEFAULT_VOICE_NAME}`,
+  "ar-XA": `ar-XA-Chirp3-HD-${DEFAULT_VOICE_NAME}`,
+  "tr-TR": `tr-TR-Chirp3-HD-${DEFAULT_VOICE_NAME}`,
+  "yue-HK": `yue-HK-Chirp3-HD-${DEFAULT_VOICE_NAME}`,
+  "bn-IN": `bn-IN-Chirp3-HD-${DEFAULT_VOICE_NAME}`,
+  "ur-IN": `ur-IN-Chirp3-HD-${DEFAULT_VOICE_NAME}`,
+};
+
+/** Resolve the voice name for a locale, honouring a per locale override. */
+export const preferredVoiceFor = (locale: string): string | null => {
+  const override =
+    process.env[`VOICE_NAME_${locale.replace(/-/g, "_").toUpperCase()}`];
+  if (override && override.trim()) return override.trim();
+  return PREFERRED_VOICE[locale] ?? null;
 };
 
 /** Resolve the TTS/STT locale for a learner language, or null. */
@@ -188,11 +203,15 @@ export interface SynthesisOptions {
   speakingRate?: number;
 }
 
-/** Slower speech for lower ESOL levels: E1/E2 0.85, E3 0.92, L1+ 1.0. */
+/**
+ * Slightly slower speech for the lowest levels: E1/E2 0.95, otherwise
+ * 1.0. The earlier 0.85 made even a good voice sound mechanical; Chirp
+ * 3 HD at near normal pace is clearer for a beginner than a slowed
+ * older voice.
+ */
 export const ttsRateForLevel = (level: string | null | undefined): number => {
   const l = (level ?? "").toLowerCase();
-  if (l === "e1" || l === "e2") return 0.85;
-  if (l === "e3") return 0.92;
+  if (l === "e1" || l === "e2") return 0.95;
   return 1.0;
 };
 
@@ -230,7 +249,7 @@ export const synthesizeSpeech = async (
   }
 
   const rate = clampRate(opts.speakingRate);
-  const preferred = PREFERRED_VOICE[locale] ?? null;
+  const preferred = preferredVoiceFor(locale);
   const key = cacheKey(trimmed, locale, `${preferred ?? "auto"}@${rate}`);
   const cached = cacheGet(key);
   if (cached)
